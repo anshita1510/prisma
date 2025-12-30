@@ -9,6 +9,7 @@ import { SendEmailUseCase } from "../../usecase/email/sendEmail.usecase";
 import { NodemailerService } from "../../repository/email/nodemailer.service";
 import { prisma } from "../../../config/db";
 import { UpdatePasswordUsecase } from "../../usecase/auth/updatePassword.usecase";
+import { CreateSuperAdminUsecase } from "../../usecase/super_admin/create.superAdmin.usecase";
 
 const userRepo = new UserRepository();
 const emailService = new NodemailerService();
@@ -29,15 +30,36 @@ declare global {
   }
 }
 export class UserController {
+
+  async createSuperAdmin(req: Request, res: Response) {
+    try {
+      const usecase = new CreateSuperAdminUsecase();
+      const user = await usecase.execute(req.body);
+
+      res.status(201).json({
+        message: "Super Admin created successfully",
+        user,
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message });
+    }
+  }
+
   async inviteEmployee(req: Request, res: Response) {
     try {
       // 🔒 AUTH REQUIRED
       const inviter = req.user;
       console.log('inviter----', inviter);
 
-      if (!inviter || inviter.role == Role.MANAGER || inviter.role == Role.EMPLOYEE) {
-        return res.status(401).json({ error: "Unauthorized" });
+      const allowedRoles = new Set<Role>([
+        Role.SUPER_ADMIN,
+        Role.ADMIN,
+      ]);
+
+      if (!allowedRoles.has(inviter.role)) {
+        return res.status(403).json({ error: "Forbidden" });
       }
+
       const {
         email,
         firstName,
@@ -91,8 +113,8 @@ export class UserController {
       const { newPassword } = req.body;
       const targetUserId = Number(req.params.id);
 
-      if(isNaN(targetUserId)){
-        return res.status(400).json({error: "Invalid User id"});
+      if (isNaN(targetUserId)) {
+        return res.status(400).json({ error: "Invalid User id" });
       }
 
       if (!newPassword) {

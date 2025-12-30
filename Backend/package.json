@@ -32,7 +32,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^25.0.2",
+    "@types/node": "^25.0.3",
     "@types/nodemailer": "^7.0.4",
     "@types/pg": "^8.16.0",
     "concurrently": "^9.2.1",
@@ -40,8 +40,5 @@
     "prisma": "^6.19.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
-  },
-  "prisma": {
-    "seed": "node prisma/seed.js"
   }
 }

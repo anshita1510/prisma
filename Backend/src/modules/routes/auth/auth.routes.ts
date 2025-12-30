@@ -1,19 +1,21 @@
 import { Router } from 'express';
 import { UserController } from '../../controller/auth/auth.controller';
-import { optionalAuthMiddleware } from '../../../middlewares/auth.optional.middleware';
+import { authenticate } from '../../../middlewares/auth.optional.middleware';
 
 const router = Router();
 const controller = new UserController();
 
-router.post("/invite", optionalAuthMiddleware, controller.inviteEmployee);
+router.post("/invite", authenticate, controller.inviteEmployee);
 router.post("/login", controller.login);               //done
-router.put("/update/:id", optionalAuthMiddleware, controller.updateCredentials);    //done
-router.post("/:id/setPassword", optionalAuthMiddleware, controller.updatePassword); 
-router.get("/details",(req,res)=>{
-    res.json({users: ["ansh", "a", "b"]});
-});
-router.get("/profile", optionalAuthMiddleware, (req, res)=>{
+router.put("/update/:id", authenticate, controller.updateCredentials);    //done
+router.post("/:id/setPassword", authenticate, controller.updatePassword); 
+
+
+router.get("/profile", authenticate, (req, res)=>{
     res.json(req.user);
-}); //done
+});
+
+router.post("/super_admin", controller.createSuperAdmin);
+
 
 export default router;

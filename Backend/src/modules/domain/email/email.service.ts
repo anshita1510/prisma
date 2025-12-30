@@ -1,7 +1,6 @@
+
+import { SendEmailDTO } from "../../dto/email/sendEmail.dto";
+
 export interface EmailService {
-    sendEmail(
-        to: string,
-        subject: string,
-        html: string
-    ): Promise<void>;
+  sendEmail(data: SendEmailDTO): Promise<void>;
 }
