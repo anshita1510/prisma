@@ -1,0 +1,279 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//////////////////////////////////////////////////////
+// ENUMS
+//////////////////////////////////////////////////////
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum Designation {
+  INTERN
+  SOFTWARE_ENGINEER
+  SENIOR_ENGINEER
+  TECH_LEAD
+  MANAGER
+  HR
+  DIRECTOR
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+  LEAVE
+}
+
+enum LeaveType {
+  CASUAL
+  SICK
+  EARNED
+  UNPAID
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum DepartmentType {
+  IT
+  SALES
+  HR
+  FINANCE
+  MARKETING
+  OPERATIONS
+}
+
+enum Status {
+  PENDING
+  ACTIVE
+  INACTIVE
+}
+
+//////////////////////////////////////////////////////
+// PERMISSIONS
+//////////////////////////////////////////////////////
+
+model Permission {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique // e.g., USERS:CREATE
+  description String?
+
+  roles       RolePermission[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model RolePermission {
+  id           Int        @id @default(autoincrement())
+  role         Role
+  permissionId Int
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([role, permissionId])
+}
+
+//////////////////////////////////////////////////////
+// COMPANY
+//////////////////////////////////////////////////////
+
+model Company {
+  id       Int     @id @default(autoincrement())
+  name     String
+  code     String  @unique
+  isActive Boolean @default(true)
+
+  users       User[]
+  departments Department[]
+  attendances Attendance[]
+  projects    Project[]
+  employees   Employee[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//////////////////////////////////////////////////////
+// USER (AUTH ONLY)
+//////////////////////////////////////////////////////
+
+model User {
+  id                Int       @id @default(autoincrement())
+  email             String    @unique
+  password          String?
+  firstName         String?
+  lastName          String?
+  phone             String?
+  designation       String?
+  role              Role
+  status            Status    @default(PENDING)
+  verificationToken String?
+  tokenExpiry       DateTime?
+
+  company           Company?  @relation(fields: [companyId], references: [id])
+  companyId         Int?
+
+  employee          Employee?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//////////////////////////////////////////////////////
+// DEPARTMENT
+//////////////////////////////////////////////////////
+
+model Department {
+  id   Int            @id @default(autoincrement())
+  name String
+  type DepartmentType
+
+  companyId Int
+  company   Company @relation(fields: [companyId], references: [id])
+
+  managerId Int?      @unique
+  manager   Employee? @relation("DepartmentManager", fields: [managerId], references: [id])
+
+  employees Employee[] @relation("DepartmentEmployees")
+
+  projects    Project[]
+  attendances Attendance[]
+  leaves      Leave[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, name])
+}
+
+//////////////////////////////////////////////////////
+// EMPLOYEE (REAL PERSON)
+//////////////////////////////////////////////////////
+
+model Employee {
+  id           Int @id @default(autoincrement())
+  userId       Int @unique
+  companyId    Int
+  departmentId Int
+
+  user       User       @relation(fields: [userId], references: [id])
+  company    Company    @relation(fields: [companyId], references: [id])
+  department Department @relation("DepartmentEmployees", fields: [departmentId], references: [id])
+
+  name         String
+  designation  Designation
+  employeeCode String      @unique
+
+  managerId    Int?
+  manager      Employee?  @relation("ReportingManager", fields: [managerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  subordinates Employee[] @relation("ReportingManager")
+
+  managedDepartment Department? @relation("DepartmentManager")
+
+  attendances    Attendance[]
+  leaves         Leave[]
+  approvedLeaves Leave[]      @relation("LeaveApprover")
+
+  ownedProjects  Project[] @relation("ProjectOwner")
+  memberProjects Project[] @relation("ProjectMembers")
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//////////////////////////////////////////////////////
+// ATTENDANCE
+//////////////////////////////////////////////////////
+
+model Attendance {
+  id Int @id @default(autoincrement())
+
+  employeeId Int
+  employee   Employee @relation(fields: [employeeId], references: [id])
+
+  companyId Int
+  company   Company @relation(fields: [companyId], references: [id])
+
+  departmentId Int
+  department   Department @relation(fields: [departmentId], references: [id])
+
+  date     DateTime
+  status   AttendanceStatus
+  checkIn  DateTime?
+  checkOut DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([employeeId, date])
+}
+
+//////////////////////////////////////////////////////
+// LEAVE
+//////////////////////////////////////////////////////
+
+model Leave {
+  id Int @id @default(autoincrement())
+
+  employeeId Int
+  employee   Employee @relation(fields: [employeeId], references: [id])
+
+  departmentId Int
+  department   Department @relation(fields: [departmentId], references: [id])
+
+  type   LeaveType
+  status LeaveStatus @default(PENDING)
+  reason String?
+
+  startDate DateTime
+  endDate   DateTime
+
+  approvedById Int?
+  approvedBy   Employee? @relation("LeaveApprover", fields: [approvedById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//////////////////////////////////////////////////////
+// PROJECT
+//////////////////////////////////////////////////////
+
+model Project {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+
+  companyId Int
+  company   Company @relation(fields: [companyId], references: [id])
+
+  departmentId Int
+  department   Department @relation(fields: [departmentId], references: [id])
+
+  ownerId Int
+  owner   Employee @relation("ProjectOwner", fields: [ownerId], references: [id])
+
+  members Employee[] @relation("ProjectMembers")
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
