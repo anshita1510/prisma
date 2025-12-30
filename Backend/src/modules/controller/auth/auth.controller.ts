@@ -131,6 +131,26 @@ export class UserController {
     }
   }
 
+  async setPassword(req: Request, res: Response) {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({
+        error: "Token and password are required",
+      });
+    }
+
+    const usecase = new SetPasswordUsecase();
+    const result = await usecase.execute(token, password);
+
+    return res.status(200).json(result);
+  } catch (error: any) {
+    return res.status(400).json({ error: error.message });
+  }
+}
+
+
   async updateCredentials(req: Request, res: Response) {
 
     // 🔐 Logged-in user (from JWT)

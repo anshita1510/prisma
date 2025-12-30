@@ -17,5 +17,8 @@ router.get("/profile", authenticate, (req, res)=>{
 
 router.post("/super_admin", controller.createSuperAdmin);
 
+router.post("/set-password", controller.setPassword);
+
+
 
 export default router;

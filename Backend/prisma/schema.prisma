@@ -63,6 +63,7 @@ enum Status {
   INACTIVE
 }
 
+
 //////////////////////////////////////////////////////
 // PERMISSIONS
 //////////////////////////////////////////////////////
@@ -125,6 +126,8 @@ model User {
   status            Status    @default(PENDING)
   verificationToken String?
   tokenExpiry       DateTime?
+  inviteToken   String?
+  inviteExpiry  DateTime?
 
   company           Company?  @relation(fields: [companyId], references: [id])
   companyId         Int?
