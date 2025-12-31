@@ -4,12 +4,11 @@ import { InviteEmployeeUsecase } from "../../usecase/employees/inviteEmployee.us
 import { SetPasswordUsecase } from "../../usecase/password/setPassword.usecase";
 import { LoginUsecase } from "../../usecase/auth/login.usecase";
 import { UpdateCredentialsUsecase } from "../../usecase/auth/update.credentials.usecase";
-import { Role } from "@prisma/client";
-import { SendEmailUseCase } from "../../usecase/email/sendEmail.usecase";
-import { NodemailerService } from "../../repository/email/nodemailer.service";
-import { prisma } from "../../../config/db";
 import { UpdatePasswordUsecase } from "../../usecase/auth/updatePassword.usecase";
 import { CreateSuperAdminUsecase } from "../../usecase/super_admin/create.superAdmin.usecase";
+import { SendEmailUseCase } from "../../usecase/email/sendEmail.usecase";
+import { NodemailerService } from "../../repository/email/nodemailer.service";
+import { Role } from "@prisma/client";
 
 const userRepo = new UserRepository();
 const emailService = new NodemailerService();
@@ -22,178 +21,159 @@ const inviteEmployeeUsecase = new InviteEmployeeUsecase(
 declare global {
   namespace Express {
     interface Request {
-      user: {
+      user?: {
         id: number;
         role: Role;
       };
     }
   }
 }
+
 export class UserController {
 
+  /** ✅ CREATE SUPER ADMIN (ONLY ONE ALLOWED) */
   async createSuperAdmin(req: Request, res: Response) {
     try {
       const usecase = new CreateSuperAdminUsecase();
       const user = await usecase.execute(req.body);
 
-      res.status(201).json({
+      return res.status(201).json({
         message: "Super Admin created successfully",
         user,
       });
     } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      return res.status(400).json({ error: error.message });
     }
   }
 
+  /** ✅ INVITE EMPLOYEE */
   async inviteEmployee(req: Request, res: Response) {
     try {
-      // 🔒 AUTH REQUIRED
-      const inviter = req.user;
-      console.log('inviter----', inviter);
+      if (!req.user) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
 
       const allowedRoles = new Set<Role>([
         Role.SUPER_ADMIN,
         Role.ADMIN,
       ]);
 
-      if (!allowedRoles.has(inviter.role)) {
+      if (!allowedRoles.has(req.user.role)) {
         return res.status(403).json({ error: "Forbidden" });
       }
 
-      const {
-        email,
-        firstName,
-        lastName,
-        phone,
-        designation,
-        role: invitedRole,
-      } = req.body;
 
-      if (
-        !email ||
-        !firstName ||
-        !lastName ||
-        !phone ||
-        !designation ||
-        !invitedRole
-      ) {
+      const { email, firstName, lastName, phone, designation, role } = req.body;
+
+      if (!email || !firstName || !lastName || !phone || !designation || !role) {
         return res.status(400).json({ error: "All fields are required" });
       }
 
-      if (!Object.values(Role).includes(invitedRole)) {
+      if (!Object.values(Role).includes(role)) {
         return res.status(400).json({ error: "Invalid role" });
       }
-      await inviteEmployeeUsecase.execute(inviter.role, {
+
+      await inviteEmployeeUsecase.execute(req.user.role, {
         email,
         firstName,
         lastName,
         phone,
         designation,
-        role: invitedRole,
+        role,
       });
 
-      return res
-        .status(201)
-        .json({ message: "Invitation email sent successfully" });
+      return res.status(201).json({
+        message: "Invitation email sent successfully",
+      });
+
     } catch (error: any) {
       return res.status(400).json({ error: error.message });
     }
   }
 
-  login = async (req: Request, res: Response) => {
-    const { email, password } = req.body;
-    const usecase = new LoginUsecase(userRepo);
-    const result = await usecase.execute(email, password);
-    res.json(result);
-  };
+  /** ✅ LOGIN */
+  async login(req: Request, res: Response) {
+    try {
+      const { email, password } = req.body;
+      const usecase = new LoginUsecase(userRepo);
 
+      const result = await usecase.execute(email, password);
+      return res.json(result);
+    } catch (error: any) {
+      return res.status(401).json({ error: error.message });
+    }
+  }
+
+  /** ✅ UPDATE PASSWORD (SELF OR SUPER ADMIN) */
   async updatePassword(req: Request, res: Response) {
     try {
-      const userId = req.user.id;
-      const { newPassword } = req.body;
-      const targetUserId = Number(req.params.id);
-
-      if (isNaN(targetUserId)) {
-        return res.status(400).json({ error: "Invalid User id" });
+      if (!req.user) {
+        return res.status(401).json({ error: "Unauthorized" });
       }
 
-      if (!newPassword) {
-        return res.status(400).json({ error: "New password is required" });
+      const targetUserId = Number(req.params.id);
+      const { newPassword } = req.body;
+
+      if (!newPassword || isNaN(targetUserId)) {
+        return res.status(400).json({ error: "Invalid input" });
+      }
+
+      if (
+        req.user.id !== targetUserId &&
+        req.user.role !== Role.SUPER_ADMIN
+      ) {
+        return res.status(403).json({ error: "Forbidden" });
       }
 
       const usecase = new UpdatePasswordUsecase(userRepo);
-
       const result = await usecase.execute(targetUserId, newPassword);
 
-      return res.status(200).json(result);
+      return res.json(result);
     } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      return res.status(400).json({ error: error.message });
     }
   }
 
+  /** ✅ SET PASSWORD FROM INVITE */
   async setPassword(req: Request, res: Response) {
-  try {
-    const { token, password } = req.body;
+    try {
+      const { token, password } = req.body;
 
-    if (!token || !password) {
-      return res.status(400).json({
-        error: "Token and password are required",
-      });
+      if (!token || !password) {
+        return res.status(400).json({ error: "Token and password required" });
+      }
+
+      const usecase = new SetPasswordUsecase(userRepo);
+      const result = await usecase.execute(token, password);
+
+      return res.json(result);
+    } catch (error: any) {
+      return res.status(400).json({ error: error.message });
     }
-
-    const usecase = new SetPasswordUsecase(userRepo);
-    const result = await usecase.execute(token, password);
-
-    return res.status(200).json(result);
-  } catch (error: any) {
-    return res.status(400).json({ error: error.message });
   }
-}
 
-
+  /** ✅ UPDATE USER CREDENTIALS (ADMIN ONLY) */
   async updateCredentials(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
 
-    // 🔐 Logged-in user (from JWT)
-    const loggedInUserId = req.user.id;
+      if (req.user.role !== Role.ADMIN) {
+        return res.status(403).json({ error: "Admin access required" });
+      }
 
+      const userId = Number(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: "Invalid user id" });
+      }
 
-    if (!loggedInUserId) {
-      console.log("LoggedInUser: ", req.user.id)
-      console.log("Token user: ", req.user);
-      console.log("Params id:", req.params.id);
-      console.log("Body:", req.body);
-      return res.status(401).json({
-        error: "Unauthorized hhhh"
-      });
+      const usecase = new UpdateCredentialsUsecase(userRepo);
+      const user = await usecase.execute(userId, req.body);
+
+      return res.json(user);
+    } catch (error: any) {
+      return res.status(400).json({ error: error.message });
     }
-
-    // 🆔 Target user id (from params → string)
-    const paramId = req.params.id;
-
-    if (!paramId) {
-      return res.status(400).json({
-        error: "User id param is required"
-      });
-    }
-
-    // ✅ Convert string → number
-    const userId = Number(paramId);
-
-    if (isNaN(userId)) {
-      return res.status(400).json({
-        error: "Invalid user id"
-      });
-    }
-    if (req.user?.role !== "ADMIN") {
-      return res.status(403).json({ error: "Unauthorized with admin code." })
-    }
-
-    const usecase = new UpdateCredentialsUsecase(userRepo);
-    const user = await usecase.execute(userId, req.body);
-    return res.json(user);
-
   }
 }
-
-
-

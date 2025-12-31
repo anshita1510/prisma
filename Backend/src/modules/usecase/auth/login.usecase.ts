@@ -1,3 +1,4 @@
+
 import { UserRepository } from "../../repository/auth/user.repository";
 import { comparePassword } from "../../../shared/utils/password";
 import { generateAuthToken } from "../../../shared/utils/jwt";
@@ -17,8 +18,11 @@ export class LoginUsecase {
       throw new Error("Please set your password");
     }
 
-    const isValid = await comparePassword(password, user.password);
+    if (user.status === Status.INACTIVE) {
+      throw new Error("Account is inactive");
+    }
 
+    const isValid = await comparePassword(password, user.password);
     if (!isValid) {
       throw new Error("Invalid email or password");
     }
@@ -26,14 +30,11 @@ export class LoginUsecase {
     const token = generateAuthToken({
       id: user.id,
       role: user.role,
-      email: user.email, // ✅ or remove if unused
+      email: user.email,
     });
 
     const { password: _, ...safeUser } = user;
 
-    return {
-      user: safeUser,
-      token,
-    };
+    return { user: safeUser, token };
   }
 }
