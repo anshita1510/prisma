@@ -1,36 +1,46 @@
-import { UserRepository } from "../../repository/auth/user.repository";
-import { verifyToken } from "../../../shared/utils/jwt";
-import { hashPassword } from "../../../shared/utils/password";
-
 import bcrypt from "bcrypt";
 import { prisma } from "../../../config/db";
 import { Status } from "@prisma/client";
+import { UserRepository } from "../../repository/auth/user.repository";
 
 export class SetPasswordUsecase {
-  async execute(token: string, newPassword: string) {
-    const user = await prisma.user.findFirst({
-      where: {
-        inviteToken: token,
-        inviteExpiry: { gt: new Date() },
-      },
-    });
 
-    if (!user) {
-      throw new Error("Invalid or expired link");
-    }
+  constructor(private userRepo: UserRepository) { }
 
-    const hashed = await bcrypt.hash(newPassword, 10);
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        password: hashed,
+  // async execute(token: string, newPassword: string) {
+    // const user = await prisma.user.findFirst({
+    //   where: {
+    //     inviteToken: token,
+    //     inviteExpiry: { gt: new Date() },
+    //   },
+    // });
+
+    async execute(token: string, newPassword: string) {
+      const user = await this.userRepo.findByInviteToken(token);
+
+
+
+      if (!user) {
+        throw new Error("Invalid or expired link");
+      }
+
+      if (user.inviteExpiry && user.inviteExpiry < new Date()) {
+        throw new Error("Token required");
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await this.userRepo.update(
+        user.id, {
+        password: hashedPassword,
         status: Status.ACTIVE,
+        isActive: true,
         inviteToken: null,
         inviteExpiry: null,
       },
-    });
+      );
 
-    return { message: "Password set successfully" };
+
+      return { message: "Password set successfully" };
+    }
   }
-}

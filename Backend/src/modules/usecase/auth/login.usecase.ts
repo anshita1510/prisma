@@ -13,8 +13,8 @@ export class LoginUsecase {
       throw new Error("Invalid email or password");
     }
 
-    if (user.status !== Status.ACTIVE) {
-      throw new Error("Account not active");
+    if (user.status === Status.PENDING) {
+      throw new Error("Please set your password");
     }
 
     const isValid = await comparePassword(password, user.password);

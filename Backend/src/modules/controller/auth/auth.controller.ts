@@ -141,7 +141,7 @@ export class UserController {
       });
     }
 
-    const usecase = new SetPasswordUsecase();
+    const usecase = new SetPasswordUsecase(userRepo);
     const result = await usecase.execute(token, password);
 
     return res.status(200).json(result);
