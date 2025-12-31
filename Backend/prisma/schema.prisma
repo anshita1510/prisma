@@ -115,28 +115,22 @@ model Company {
 //////////////////////////////////////////////////////
 
 model User {
-  id                Int       @id @default(autoincrement())
-  email             String    @unique
-  password          String?
-  firstName         String?
-  lastName          String?
-  phone             String?
-  designation       String?
-  role              Role
-  status            Status    @default(PENDING)
-  verificationToken String?
-  tokenExpiry       DateTime?
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  firstName     String
+  lastName      String
+  phone         String
+  designation   String
+  role          Role
+  password      String?
+  status        Status
+  isActive      Boolean   @default(false) // ✅ ADD THIS
   inviteToken   String?
   inviteExpiry  DateTime?
-
-  company           Company?  @relation(fields: [companyId], references: [id])
-  companyId         Int?
-
-  employee          Employee?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
+
 
 //////////////////////////////////////////////////////
 // DEPARTMENT

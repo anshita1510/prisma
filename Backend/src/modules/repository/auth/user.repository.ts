@@ -24,15 +24,21 @@ export class UserRepository {
 
   create(data: {
     email: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    designation: string;
     role: any;
     status: any;
     password?: string;
     inviteToken?: string;
     inviteExpiry?: Date;
-    isActive?: boolean;
+    isActive?: boolean; // ✅ ADD THIS
   }) {
     return prisma.user.create({ data });
   }
+
+
 
   update(id: number, data: any) {
     return prisma.user.update({

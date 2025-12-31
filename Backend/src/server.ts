@@ -19,7 +19,7 @@ app.get("/", (_req, res) => {
 
 app.use("/api/users", userRoutes);
 
-const PORT= 5000;
+const PORT= 5004;
 
 app.listen(PORT, () => {
   // console.log(process.env.SMTP_HOST, process.env.SMTP_PORT);
