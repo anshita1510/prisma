@@ -56,8 +56,7 @@ const DashboardPage = () => {
           <NavItem icon={<Clock size={20} />} label="Attendance" hasSubmenu isActive={activeTab === 'Attendance'} onClick={() => { setActiveTab('Attendance'); setIsOpen(false); }} />
           <NavItem icon={<CalendarDays size={20} />} label="Leaves" hasSubmenu isActive={activeTab === 'Leaves'} onClick={() => { setActiveTab('Leaves'); setIsOpen(false); }} />
 
-          <SectionLabel label="Super Admin" className="mt-6" />
-          <NavItem icon={<UserPlus size={20} />} label="Create" isActive={activeTab === 'Create User'} onClick={() => {  router.push("/dashboard_superadmin/supercreate"), setActiveTab('Create User'); setIsOpen(false); }} />
+       
 
         </nav>
 
