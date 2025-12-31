@@ -152,7 +152,7 @@ export class UserController {
     }
   }
 
-  /** ✅ UPDATE USER CREDENTIALS (ADMIN ONLY) */
+  /** ✅ UPDATE USER CREDENTIALS (ADMIN ONLY)hhhhh */
   async updateCredentials(req: Request, res: Response) {
     try {
       if (!req.user) {
