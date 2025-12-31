@@ -23,6 +23,6 @@ const PORT= 5004;
 
 app.listen(PORT, () => {
   // console.log(process.env.SMTP_HOST, process.env.SMTP_PORT);
-  console.log("Server running on port 5000");
+  console.log(`Server running on port ${PORT}`);
 });
 

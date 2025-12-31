@@ -59,7 +59,7 @@ export class UserController {
       ]);
 
       if (!allowedRoles.has(req.user.role)) {
-        return res.status(403).json({ error: "Forbidden" });
+        return res.status(403).json({ error: "hhhhh" });
       }
 
 
@@ -108,7 +108,7 @@ export class UserController {
   async updatePassword(req: Request, res: Response) {
     try {
       if (!req.user) {
-        return res.status(401).json({ error: "Unauthorized" });
+        return res.status(401).json({ error: "Unauthorizedd" });
       }
 
       const targetUserId = Number(req.params.id);
@@ -156,7 +156,7 @@ export class UserController {
   async updateCredentials(req: Request, res: Response) {
     try {
       if (!req.user) {
-        return res.status(401).json({ error: "Unauthorized" });
+        return res.status(401).json({ error: "Unauthorizedddd" });
       }
 
       if (req.user.role !== Role.ADMIN) {
