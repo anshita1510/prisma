@@ -1,7 +1,8 @@
 import dotenv from "dotenv";
 dotenv.config(); 
 
-import express from "express";
+import express from "express"; 
+import leaveRouters from "./modules/routes/leave/leave.routes"
 import userRoutes from "./modules/routes/auth/auth.routes";
 import cors from "cors";
 
@@ -18,6 +19,7 @@ app.get("/", (_req, res) => {
 });
 
 app.use("/api/users", userRoutes);
+app.use("/leave", leaveRouters );
 
 const PORT= 5004;
 
