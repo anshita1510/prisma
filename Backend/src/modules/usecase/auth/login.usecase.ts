@@ -18,6 +18,10 @@ export class LoginUsecase {
       throw new Error("Please set your password");
     }
 
+    if(!user.isActive){
+      throw new Error("Accoount disabled");
+    }
+
     if (user.status === Status.INACTIVE) {
       throw new Error("Account is inactive");
     }

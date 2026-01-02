@@ -63,19 +63,18 @@ enum Status {
   INACTIVE
 }
 
-
 //////////////////////////////////////////////////////
 // PERMISSIONS
 //////////////////////////////////////////////////////
 
 model Permission {
-  id          Int      @id @default(autoincrement())
-  code        String   @unique // e.g., USERS:CREATE
+  id          Int     @id @default(autoincrement())
+  code        String  @unique // e.g., USERS:CREATE
   description String?
 
-  roles       RolePermission[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  roles     RolePermission[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
 }
 
 model RolePermission {
@@ -115,22 +114,33 @@ model Company {
 //////////////////////////////////////////////////////
 
 model User {
-  id            Int       @id @default(autoincrement())
-  email         String    @unique
-  firstName     String
-  lastName      String
-  phone         String
-  designation   String
-  role          Role
-  password      String?
-  status        Status
-  isActive      Boolean   @default(false) // ✅ ADD THIS
-  inviteToken   String?
-  inviteExpiry  DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-}
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  firstName    String
+  lastName     String
+  phone        String
+  designation  String
+  role         Role
+  status       Status   @default(PENDING)
+  password     String?  // final hashed password after setup
+  hashPassword String?  // deprecated or repurpose
+  isActive     Boolean  @default(false)
 
+  // Invite flow fields
+  inviteToken    String?   @unique
+  inviteExpiry   DateTime?
+  tempPassword   String?   // hashed temporary password
+  otp            String?   // hashed OTP
+  otpExpiry      DateTime?
+
+  companyId    Int?
+  company      Company? @relation(fields: [companyId], references: [id])
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  employee     Employee?
+}
 
 //////////////////////////////////////////////////////
 // DEPARTMENT
