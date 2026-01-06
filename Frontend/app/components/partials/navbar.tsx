@@ -58,7 +58,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/">
             <img
-              src="/Images/innerlogo.png"
+              src="#¸"
               alt="Tikr Logo"
               width={120}
               height={60}
