@@ -1,178 +1,164 @@
-// "use client";
+"use client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import React, { useState, useEffect } from 'react';
+import { 
+  Menu, 
+  X, 
+  LayoutDashboard, 
+  CalendarOff, 
+  UserCheck, 
+  Briefcase,
+  UserPlus,
+  ChevronRight,
+  LogOut,
+  Target
+} from 'lucide-react';
 
-// import React, { useState, useEffect } from 'react';
-// import { 
-//   LayoutDashboard, 
-//   Calendar, 
-//   Clock, 
-//   FolderKanban, 
-//   UserPlus, 
-//   LogOut, 
-//   Menu, 
-//   X, 
-//   ChevronRight,
-//   HelpCircle
-// } from 'lucide-react';
+/**
+ * Navigation Items Configuration
+ * Use these IDs or HREFs to trigger navigation in your parent component/router
+ */
+const NAV_ITEMS = [
+  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, href: '/admin/dashboard' }, 
+  { id: 'leave', name: 'Leave', icon: CalendarOff, href: '/admin/leave' },       
+  { id: 'attendance', name: 'Attendance', icon: UserCheck, href: '/admin/Attendance' },    
+  { id: 'project', name: 'Project', icon: Briefcase, href: '/admin/project_m' },            
+  { id: 'create-user', name: 'Create User', icon: UserPlus, href: '/admin/createUser' },  
+];
 
-// // Define Interface for Type Safety
-// interface NavItemType {
-//   name: string;
-//   id: string;
-//   icon: React.ElementType;
-// }
+export default function Sidebar() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('dashboard');
 
-// export default function Sidebar() {
-//   const [open, setOpen] = useState(false);
-//   const [isMobile, setIsMobile] = useState(false);
-//   const [activeTab, setActiveTab] = useState('Dashboard');
+  // Close sidebar when window is resized to desktop width
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-//   // Handle responsive detection
-//   useEffect(() => {
-//     const handleResize = () => {
-//       setIsMobile(window.innerWidth < 768);
-//       if (window.innerWidth >= 768) setOpen(false);
-//     };
-//     handleResize();
-//     window.addEventListener('resize', handleResize);
-//     return () => window.removeEventListener('resize', handleResize);
-//   }, []);
+  const toggleSidebar = () => setIsOpen(!isOpen);
 
-//   const navItems: NavItemType[] = [
-//     { name: "Dashboard", id: "dashboard", icon: LayoutDashboard },
-//     { name: "Leave", id: "leave", icon: Calendar },
-//     { name: "Attendance", id: "attendance", icon: Clock },
-//     { name: "Project", id: "project", icon: FolderKanban },
-//     { name: "Create User", id: "create-user", icon: UserPlus }
-//   ];
+  const handleLogout = () => {
+    // Add your logout logic here
+    console.log("User logged out");
+  };
 
-//   return (
-//     <div className="flex min-h-screen bg-slate-50">
-//       {/* 1. Mobile Top Navbar (Visible only on small screens) */}
-//       <div className="fixed top-0 z-40 flex h-16 w-full items-center justify-between bg-emerald-600 px-4 text-white shadow-md md:hidden">
-//         <div className="flex items-center gap-2">
-//           <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center border border-white/30">
-//             <div className="w-4 h-4 border-2 border-white rounded-sm rotate-45" />
-//           </div>
-//           <span className="text-lg font-bold tracking-tight">TIKR</span>
-//         </div>
-//         <button 
-//           onClick={() => setOpen(true)}
-//           className="p-2 hover:bg-emerald-700 rounded-lg transition-colors"
-//         >
-//           <Menu size={24} />
-//         </button>
-//       </div>
+  return (
+    <>
+      {/* MOBILE TOP BAR - Fixed for mobile screens */}
+      <div className="lg:hidden flex items-center justify-between bg-green-700 p-4 text-white fixed top-0 left-0 right-0 z-40 shadow-md">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center font-bold text-white">T</div>
+          <span className="font-semibold text-lg tracking-tight">Tikr</span>
+        </div>
+        <button onClick={toggleSidebar} className="p-2 hover:bg-green-600 rounded-md transition-colors">
+          <Menu size={24} />
+        </button>
+      </div>
 
-//       {/* 2. Mobile Drawer Overlay */}
-//       {open && (
-//         <div 
-//           className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm md:hidden transition-opacity"
-//           onClick={() => setOpen(false)}
-//         >
-//           <div 
-//             className="h-full w-72 bg-white shadow-2xl flex flex-col animate-in slide-in-from-left duration-300"
-//             onClick={(e) => e.stopPropagation()}
-//           >
-//             <div className="flex items-center justify-between p-6 border-b border-slate-100">
-//               <div className="flex items-center gap-2">
-//                 <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-100">
-//                   <div className="w-5 h-5 border-2 border-white rounded-sm rotate-45" />
-//                 </div>
-//                 <span className="text-2xl font-bold text-slate-800 tracking-tight">Tikr</span>
-//               </div>
-//               <button 
-//                 onClick={() => setOpen(false)}
-//                 className="p-2 text-slate-400 hover:bg-slate-50 rounded-lg"
-//               >
-//                 <X size={24} />
-//               </button>
-//             </div>
+      {/* MOBILE OVERLAY */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm transition-opacity"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
 
-//             <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
-//               {navItems.map((item) => (
-//                 <button
-//                   key={item.name}
-//                   onClick={() => {
-//                     setActiveTab(item.name);
-//                     setOpen(false);
-//                   }}
-//                   className={`flex w-full items-center justify-between group rounded-xl px-4 py-3 transition-all ${
-//                     activeTab === item.name 
-//                       ? 'bg-emerald-50 text-emerald-600' 
-//                       : 'text-slate-600 hover:bg-slate-50'
-//                   }`}
-//                 >
-//                   <div className="flex items-center gap-3">
-//                     <item.icon size={20} />
-//                     <span className="font-medium">{item.name}</span>
-//                   </div>
-//                   <ChevronRight size={14} className={`${activeTab === item.name ? 'opacity-100' : 'opacity-0'} group-hover:opacity-100 transition-opacity`} />
-//                 </button>
-//               ))}
-//             </nav>
+      {/* SIDEBAR ASIDE */}
+      <aside className={`
+        fixed inset-y-0 left-0 z-50 w-64 bg-green-700 text-white transform transition-transform duration-300 ease-in-out
+        lg:translate-x-0 lg:static lg:h-screen
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
+        <div className="flex flex-col h-full border-r border-green-800/30 shadow-2xl lg:shadow-none">
+          
+          {/* LOGO SECTION */}
+          <div className="p-6 flex items-center justify-between border-b border-green-600/50">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white text-green-700 rounded-xl flex items-center justify-center shadow-lg font-bold">
+                <Target size={24} />
+              </div>
+              <span className="font-bold text-xl tracking-tight uppercase">Tikr</span>
+            </div>
+            <button onClick={() => setIsOpen(false)} className="lg:hidden p-1.5 hover:bg-green-600 rounded-full">
+              <X size={20} />
+            </button>
+          </div>
 
-//             <div className="p-4 border-t border-slate-100 bg-slate-50/50">
-//               <button className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-rose-500 hover:bg-rose-50 transition-colors">
-//                 <LogOut size={20} />
-//                 <span className="font-semibold">Logout</span>
-//               </button>
-//             </div>
-//           </div>
-//         </div>
-//       )}
+          {/* NAV LINKS */}
+          <nav className="flex-1 px-4 py-8 space-y-1.5 overflow-y-auto custom-scrollbar">
+  {NAV_ITEMS.map((item) => {
+    const pathname = usePathname();
+    const isActive = pathname === item.href;
 
-//       {/* 3. Desktop Sidebar (Visible only on medium+ screens) */}
-//       <aside className="fixed left-0 top-0 hidden h-screen w-64 flex-col border-r border-slate-200 bg-white md:flex">
-//         <div className="h-20 flex items-center px-6 mb-2 border-b border-slate-50 shrink-0">
-//           <div className="flex items-center gap-3">
-//             <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-100">
-//               <div className="w-5 h-5 border-2 border-white rounded-sm rotate-45" />
-//             </div>
-//             <span className="text-2xl font-bold text-slate-800 tracking-tight">Tikr</span>
-//           </div>
-//         </div>
+    return (
+      <Link
+        key={item.id}
+        href={item.href}
+        onClick={() => {
+          setActiveTab(item.id); // optional (can remove later)
+          setIsOpen(false);
+        }}
+        className={`w-full group flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 
+          ${isActive ? 'bg-white text-green-800 shadow-lg' : 'hover:bg-green-600/80 text-white'}
+        `}
+      >
+        <div className="flex items-center gap-4">
+          <item.icon
+            size={22}
+            className={`${isActive ? 'text-green-700' : 'text-green-300'}`}
+          />
+          <span className="font-semibold text-sm tracking-wide">
+            {item.name}
+          </span>
+        </div>
 
-//         <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
-//           {navItems.map((item) => (
-//             <button
-//               key={item.name}
-//               onClick={() => setActiveTab(item.name)}
-//               className={`flex w-full items-center justify-between group rounded-xl px-4 py-3 transition-all ${
-//                 activeTab === item.name 
-//                   ? 'bg-emerald-50 text-emerald-600' 
-//                   : 'text-slate-500 hover:bg-emerald-50/50 hover:text-emerald-600'
-//               }`}
-//             >
-//               <div className="flex items-center gap-3">
-//                 <item.icon size={20} />
-//                 <span className="font-medium">{item.name}</span>
-//               </div>
-//               <ChevronRight size={14} className={`${activeTab === item.name ? 'opacity-100' : 'opacity-0'} group-hover:opacity-100 transition-opacity`} />
-//             </button>
-//           ))}
-//         </nav>
+        <ChevronRight
+          size={14}
+          className={`transition-all ${
+            isActive ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'
+          }`}
+        />
+      </Link>
+    );
+  })}
+</nav>
 
-//         <div className="p-4 border-t border-slate-100 space-y-1">
-//           <button className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-slate-500 hover:bg-slate-50 transition-colors">
-//             <HelpCircle size={20} />
-//             <span className="font-medium">Support</span>
-//           </button>
-//           <button className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-rose-500 hover:bg-rose-100/50 transition-colors font-bold">
-//             <LogOut size={20} />
-//             <span>Logout</span>
-//           </button>
-//         </div>
-//       </aside>
 
-//       {/* 4. Main Content Area */}
-//       <main className="flex-1 md:ml-64 p-8 pt-24 md:pt-8">
-//         <div className="max-w-4xl">
-//           <h1 className="text-2xl font-bold text-slate-800">{activeTab}</h1>
-//           <div className="mt-6 border-2 border-dashed border-slate-200 rounded-3xl h-64 flex items-center justify-center text-slate-400">
-//             Content for {activeTab} will appear here.
-//           </div>
-//         </div>
-//       </main>
-//     </div>
-//   );
-// }
+          {/* USER & LOGOUT SECTION */}
+          <div className="p-4 border-t border-green-600/50 space-y-3 bg-green-800/20 mt-auto">
+            <div className="flex items-center gap-3 p-2.5 rounded-xl bg-green-800/40">
+              <div className="w-9 h-9 rounded-full bg-green-400 border-2 border-green-500/50 flex items-center justify-center text-green-900 font-bold text-xs uppercase">
+                JD
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold truncate">John Doe</p>
+                <p className="text-[10px] text-green-300 font-bold uppercase tracking-widest">Super Admin</p>
+              </div>
+            </div> 
+            
+            <button 
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-4 py-3 text-red-100 hover:bg-red-500/20 hover:text-white rounded-xl transition-colors font-semibold text-sm"
+            >
+              <LogOut size={20} />
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Global CSS for hidden scrollbar */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+      `}} />
+    </>
+  );
+}
