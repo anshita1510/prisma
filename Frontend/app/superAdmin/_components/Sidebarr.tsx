@@ -20,7 +20,7 @@ import {
  * Use these IDs or HREFs to trigger navigation in your parent component/router
  */
 const NAV_ITEMS = [
-  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, href: '/superAdmin/dashboard' }, 
+  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, href: '/superAdmin' }, 
   { id: 'leave', name: 'Leave', icon: CalendarOff, href: '/superAdmin/leave' },       
   { id: 'attendance', name: 'Attendance', icon: UserCheck, href: '/superAdmin/Attendance' },    
   { id: 'project', name: 'Project', icon: Briefcase, href: '/superAdmin/project_m' },            

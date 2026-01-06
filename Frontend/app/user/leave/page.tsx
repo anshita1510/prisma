@@ -8,8 +8,21 @@ export default function page() {
     <Sidebar></Sidebar>
 
     {/* Main Content */}
-    <main className="flex-1 p-6">
-      welcome dashboard
+
+
+    <main className="flex-1 ">
+      
+      
+
+
+
+
+
+
+
+
+
+
     </main>
 
   </div>
