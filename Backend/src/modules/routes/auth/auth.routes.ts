@@ -1,24 +1,56 @@
-import { Router } from 'express';
-import { UserController } from '../../controller/auth/auth.controller';
-import { authenticate } from '../../../middlewares/auth.optional.middleware';
+
+import { Router } from "express";
+import { UserController } from "../../controller/auth/auth.controller";
+import { inviteAuthMiddleware } from "../../../middlewares/inviteAuth.middleware";
+import { authMiddleware } from "../../../middlewares/auth.middleware";
+import { requireRole } from "../../../middlewares/role.middleware";
+import { Role } from "@prisma/client";
 
 const router = Router();
 const controller = new UserController();
 
-router.post("/invite", authenticate, controller.inviteEmployee);
-router.post("/login", controller.login);               //done
-router.put("/update/:id", authenticate, controller.updateCredentials);    //done
-router.post("/:id/setPassword", authenticate, controller.updatePassword); 
-
-
-router.get("/profile", authenticate, (req, res)=>{
-    res.json(req.user);
-});
-
+/* ---------------- AUTH ---------------- */
+router.post("/login", controller.login);
 router.post("/super_admin", controller.createSuperAdmin);
 
-router.post("/set-password", controller.setPassword);
+/* ---------------- AUTHENTICATED USER ---------------- */
+router.post(
+    "/register",
+    authMiddleware,
+    requireRole(Role.ADMIN, Role.SUPER_ADMIN),
+    controller.inviteEmployee
+);
 
+router.put(
+    "/update/:id",
+    authMiddleware,
+    requireRole(Role.ADMIN),
+    controller.updateCredentials
+);
 
+router.get(
+    "/profile",
+    authMiddleware,
+    (req, res) => res.json(req.user)
+);
+
+router.post(
+    "/:id/update-password",
+    authMiddleware,
+    controller.updatePassword
+);
+
+/* ---------------- INVITE FLOW ---------------- */
+router.post(
+    "/set-password",
+    inviteAuthMiddleware,
+    controller.setPassword
+);
+
+router.post(
+    "/resend-otp",
+    inviteAuthMiddleware,
+    controller.resendOtp
+);
 
 export default router;

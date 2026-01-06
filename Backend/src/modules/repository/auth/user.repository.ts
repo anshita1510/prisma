@@ -1,19 +1,68 @@
+import { Role, Status, User } from "@prisma/client";
 import { prisma } from "../../../config/db";
 
 export class UserRepository {
-
-  async countUsers(): Promise<number> {
-    return prisma.user.count();
+  /* Find user by invite token (via password table) */
+  async findByInviteToken(token: string): Promise<User | null> {
+    return prisma.user.findFirst({
+      where: { inviteToken: token },
+    });
   }
 
+  /* Find by email */
   async findByEmail(email: string) {
     return prisma.user.findUnique({ where: { email } });
   }
 
+  /* Find by ID */
+  async findById(id: number) {
+    return prisma.user.findUnique({ where: { id } });
+  }
+
+  /* Count Super Admins */
+  async countSuperAdmins() {
+    return prisma.user.count({
+      where: { role: Role.SUPER_ADMIN },
+    });
+  }
+
+  /* Create user – password is optional (null during invite) */
+  async create(data: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    designation: string;
+    role: Role;
+    status: Status;
+    password?: string | null;
+    isActive?: boolean;
+    tempPassword?: string | null;
+    otp?: string | null;
+    otpExpiry?: Date | null;
+    inviteToken?: string | null;
+    inviteExpiry?: Date | null;
+
+  }) {
+    return prisma.user.create({
+      data: {
+        ...data,
+        password: data.password ?? null,
+        isActive: data.isActive ?? false,
+      },
+    });
+  }
+
+  /* Generic update */
+  async updateUser(id: number, data: Partial<User>): Promise<User> {
+    return prisma.user.update({
+      where: { id },
+      data,
+    });
+  }
+
+  /* Specific method to update only the password – CLEAN & REUSABLE */
   async updatePassword(userId: number, hashedPassword: string) {
-
-    console.log("Updating password for user: ", userId);
-
     return prisma.user.update({
       where: { id: userId },
       data: {
@@ -22,43 +71,30 @@ export class UserRepository {
     });
   }
 
-  async findById(id: number) {
-    return prisma.user.findUnique({
-      where: { id },
-      select:{
-        id: true,
-        email: true
-      }
-    });
-  }
-
-  async create(data: any) {
-    console.log("Creating user with data: ", data);
-    return prisma.user.create({
-      data: {
-        email: data.email,
-        role: data.role,
-        // firstName: data.firstName,
-        // lastName: data.lastName,
-        status: data.status,
-        password: data.password,
-        verificationToken: data.verificationToken,
-        tokenExpiry: data.tokenExpiry
-      }
-    });
-  }
-
-  async update(id: number, data: any) {
-    return prisma.user.update({ where: { id }, data });
-  }
-
-  async findVerificationToken(token: string) {
+  async findByOtp(otp: string) {
     return prisma.user.findFirst({
       where: {
-        verificationToken: token,
-        tokenExpiry: {
-          gt: new Date()
-        },
+        otp,
+        otpExpiry: { gt: new Date() },
+      },
+    });
+  }
+
+
+  /* Activate user after setting password (used in invite flow) */
+  async activateUser(userId: number, hashedPassword: string) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: hashedPassword,
+        status: Status.ACTIVE,
+        isActive: true,
+        // Clear invite fields
+        inviteToken: null,
+        inviteExpiry: null,
+        tempPassword: null,
+        otp: null,
+        otpExpiry: null,
       },
     });
   }

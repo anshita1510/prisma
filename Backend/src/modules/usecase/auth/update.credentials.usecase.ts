@@ -20,6 +20,6 @@ export class UpdateCredentialsUsecase {
       throw new Error("User not found");
     }
 
-    return this.repo.update(userId, data);
+    return this.repo.updateUser(userId, data);
   }
 }
