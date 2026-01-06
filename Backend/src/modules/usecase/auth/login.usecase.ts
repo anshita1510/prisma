@@ -11,7 +11,7 @@ export class LoginUsecase {
     const user = await this.userRepo.findByEmail(email);
 
     if (!user || !user.password) {
-      throw new Error("Invalid email or password");
+      throw new Error("Invalid email or password hello");
     }
 
     if (user.status === Status.PENDING) {
@@ -28,7 +28,7 @@ export class LoginUsecase {
 
     const isValid = await comparePassword(password, user.password);
     if (!isValid) {
-      throw new Error("Invalid email or password");
+      throw new Error("Invalid email or password wow" );
     }
 
     const token = generateAuthToken({

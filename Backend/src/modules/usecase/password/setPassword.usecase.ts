@@ -1,50 +1,51 @@
-// src/modules/usecase/password/setPassword.usecase.ts
-
 import bcrypt from "bcrypt";
+import { Status } from "@prisma/client";
 import { UserRepository } from "../../repository/auth/user.repository";
-import { prisma } from "../../../config/db";
-import { User } from "@prisma/client";
-
 
 export class SetPasswordUsecase {
   constructor(private userRepo: UserRepository) {}
 
   async execute(
-    user: User,
+    user: any,
     otp: string,
-    currentPassword: string,  // temporary password
+    currentPassword: string,
     newPassword: string
   ) {
-    // For now, since we don't store OTP in DB, skip OTP check or add field later
-    // Optional: add otp to user model to verify
-
-    // Verify temporary password
-    if (!user.password) {
-      throw new Error("No temporary password set");
+    // 1️⃣ OTP checks
+    if (!user.otp || !user.otpExpiry) {
+      throw new Error("OTP not found");
     }
 
-    const isTempValid = await bcrypt.compare(currentPassword, user.password);
-    if (!isTempValid) {
+    if (user.otpExpiry < new Date()) {
+      throw new Error("OTP expired");
+    }
+
+    const otpValid = await bcrypt.compare(otp, user.otp);
+    if (!otpValid) {
+      throw new Error("Invalid OTP");
+    }
+
+    // 2️⃣ Temporary password check
+    const tempPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.tempPassword
+    );
+
+    if (!tempPasswordValid) {
       throw new Error("Invalid temporary password");
     }
 
-    // Hash new password
-    const hashedNew = await bcrypt.hash(newPassword, 10);
+    // 3️⃣ Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update user: set final password, activate, clear invite fields
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        password: hashedNew,
-        status: "ACTIVE",
-        isActive: true,
-        inviteToken: null,
-        inviteExpiry: null,
-        // otp: null,
-        // otpExpiry: null,
-      },
+    // 4️⃣ Update user
+    await this.userRepo.updateUser(user.id, {
+      password: hashedPassword,
+      tempPassword: null,
+      otp: null,
+      otpExpiry: null,
+      status: Status.ACTIVE,
+      isActive: true,
     });
-
-    return { message: "Password set successfully" };
   }
 }

@@ -1,19 +1,25 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, FormEvent, JSX } from "react";
 import { useRouter } from "next/navigation";
 
-export default function LoginPage() {
+interface LoginResponse {
+  token: string;
+  role: "SUPER_ADMIN" | "ADMIN" | "MANAGER" | "EMPLOYEE";
+  userId: string;
+}
+
+export default function LoginPage(): JSX.Element {
   const router = useRouter();
 
-  // 🔹 State (FRONTEND)
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  // 🔹 State
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
 
-  // 🔹 Login handler (FRONTEND → BACKEND)
-  const handleLogin = async (e) => {
+  // 🔹 Login handler
+  const handleLogin = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setLoading(true);
     setError("");
@@ -23,26 +29,50 @@ export default function LoginPage() {
         `${process.env.NEXT_PUBLIC_API_URL}/api/users/login`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({ email, password }),
         }
       );
 
-      const data = await res.json();
+      const data: LoginResponse | { message?: string } = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || "Login failed");
+        throw new Error(
+          "message" in data ? data.message : "Login failed"
+        );
       }
 
-      console.log("Login Success:", data);
+      const loginData = data as LoginResponse;
 
-      // 🔥 Role based redirect (optional)
-      if (data.role === "ADMIN") router.push("/dashboard_admin");
-      else if (data.role === "SUPERADMIN") router.push("/dashboard_super");
-      else router.push("/dashboard_user");
+      // ✅ Store token securely (later: switch to httpOnly cookies)
+      localStorage.setItem("token", loginData.token);
+      localStorage.setItem(
+        "user",
+        JSON.stringify({
+          id: loginData.userId,
+          role: loginData.role,
+        })
+      );
 
+      // 🔥 Role-based redirect
+      switch (loginData.role) {
+        case "SUPER_ADMIN":
+          router.push("/dashboard_super");
+          break;
+        case "ADMIN":
+          router.push("/dashboard_admin");
+          break;
+        default:
+          router.push("/dashboard_user");
+      }
     } catch (err) {
-      setError(err.message);
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Something went wrong");
+      }
     } finally {
       setLoading(false);
     }
@@ -57,7 +87,6 @@ export default function LoginPage() {
       }}
     >
       <div className="w-full max-w-md bg-white/80 backdrop-blur-md rounded-2xl shadow-2xl p-8">
-
         {/* Logo */}
         <div className="flex justify-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Tikr</h1>
@@ -72,12 +101,13 @@ export default function LoginPage() {
 
         {/* ❌ Error */}
         {error && (
-          <p className="text-red-500 text-sm text-center mt-3">{error}</p>
+          <p className="text-red-500 text-sm text-center mt-3">
+            {error}
+          </p>
         )}
 
         {/* 🔹 Login Form */}
         <form className="mt-6 space-y-4" onSubmit={handleLogin}>
-
           {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -87,7 +117,9 @@ export default function LoginPage() {
               type="email"
               placeholder="you@company.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setEmail(e.target.value)
+              }
               required
               className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -102,7 +134,9 @@ export default function LoginPage() {
               type="password"
               placeholder="••••••••"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setPassword(e.target.value)
+              }
               required
               className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />

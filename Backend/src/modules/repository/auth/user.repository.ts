@@ -71,6 +71,16 @@ export class UserRepository {
     });
   }
 
+  async findByOtp(otp: string) {
+    return prisma.user.findFirst({
+      where: {
+        otp,
+        otpExpiry: { gt: new Date() },
+      },
+    });
+  }
+
+
   /* Activate user after setting password (used in invite flow) */
   async activateUser(userId: number, hashedPassword: string) {
     return prisma.user.update({
