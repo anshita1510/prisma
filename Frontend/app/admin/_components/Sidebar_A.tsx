@@ -23,7 +23,7 @@ const NAV_ITEMS = [
   { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, href: '/admin/dashboard' }, 
   { id: 'leave', name: 'Leave', icon: CalendarOff, href: '/admin/leave' },       
   { id: 'attendance', name: 'Attendance', icon: UserCheck, href: '/admin/Attendance' },    
-  { id: 'project', name: 'Project', icon: Briefcase, href: '/admin/project_m' },            
+  { id: 'project', name: 'Project', icon: Briefcase, href: '/admin/project' },            
   { id: 'create-user', name: 'Create User', icon: UserPlus, href: '/admin/createUser' },  
 ];
 
