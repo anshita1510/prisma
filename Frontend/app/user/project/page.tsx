@@ -1,10 +1,10 @@
-import Sidebar from "../_components/sidebar_u";
-
-
+import React from 'react'
+import Sidebar from '../_components/sidebar_u'
 
 export default function page() {
   return (
-    <div className="flex min-h-screen">
+    <div>
+        <div className="flex min-h-screen">
     {/* Sidebar */}
     <Sidebar></Sidebar>
 
@@ -14,5 +14,6 @@ export default function page() {
     </main>
 
   </div>
+    </div>
   )
 }

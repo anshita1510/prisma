@@ -1,5 +1,6 @@
 'use client';
 
+<<<<<<< HEAD
 import Sidebar from '../superAdmin/_components/Sidebarr';
 import { useState, useEffect } from 'react';
 import { userService, AttendanceRecord } from '@/app/services/user.service';
@@ -47,6 +48,9 @@ export default function Page() {
       </div>
     );
   }
+=======
+import Sidebar from "./_components/sidebar_u"
+>>>>>>> beta1
 
   return (
     <div className="flex h-screen">
