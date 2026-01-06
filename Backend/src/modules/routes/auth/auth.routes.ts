@@ -2,7 +2,7 @@
 import { Router } from "express";
 import { UserController } from "../../controller/auth/auth.controller";
 import { inviteAuthMiddleware } from "../../../middlewares/inviteAuth.middleware";
-import { authMiddleware } from "../../../middlewares/auth.middleware";
+import { authenticate } from "../../../middlewares/auth.middleware";
 import { requireRole } from "../../../middlewares/role.middleware";
 import { Role } from "@prisma/client";
 
@@ -16,41 +16,41 @@ router.post("/super_admin", controller.createSuperAdmin);
 /* ---------------- AUTHENTICATED USER ---------------- */
 router.post(
     "/register",
-    authMiddleware,
+    authenticate,
     requireRole(Role.ADMIN, Role.SUPER_ADMIN),
     controller.inviteEmployee
 );
 
-router.put(
-    "/update/:id",
-    authMiddleware,
-    requireRole(Role.ADMIN),
-    controller.updateCredentials
-);
+// router.put(
+//     "/update/:id",
+//     authMiddleware,
+//     requireRole(Role.ADMIN),
+//     controller.updateCredentials
+// );
 
 router.get(
     "/profile",
-    authMiddleware,
+    authenticate,
     (req, res) => res.json(req.user)
 );
 
-router.post(
-    "/:id/update-password",
-    authMiddleware,
-    controller.updatePassword
-);
+// router.post(
+//     "/:id/update-password",
+//     authMiddleware,
+//     controller.updatePassword
+// );
 
 /* ---------------- INVITE FLOW ---------------- */
-router.post(
-    "/set-password",
-    inviteAuthMiddleware,
-    controller.setPassword
-);
+// router.post(
+//     "/set-password",
+//     inviteAuthMiddleware,
+//     controller.setPassword
+// );
 
-router.post(
-    "/resend-otp",
-    inviteAuthMiddleware,
-    controller.resendOtp
-);
+// router.post(
+//     "/resend-otp",
+//     inviteAuthMiddleware,
+//     controller.resendOtp
+// );
 
 export default router;

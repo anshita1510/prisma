@@ -16,7 +16,6 @@ export default function LoginPage(): JSX.Element {
   const [password, setPassword] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
-
   const handleLogin = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setLoading(true);
@@ -29,21 +28,36 @@ export default function LoginPage(): JSX.Element {
         body: JSON.stringify({ email, password }),
       });
 
-      const data: LoginResponse | { message?: string } = await res.json();
-      if (!res.ok) throw new Error("message" in data ? data.message : "Login failed");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Login failed");
 
-      const loginData = data as LoginResponse;
-      localStorage.setItem("token", loginData.token);
-      localStorage.setItem("user", JSON.stringify({ id: loginData.userId, role: loginData.role }));
+      // Extract token and user from response
+      const { token, user } = data;
 
-      // Role-based routing
-      const routes = {
-        SUPER_ADMIN: "/dashboard/super-admin",
-        ADMIN: "/dashboard/admin",
-        MANAGER: "/dashboard/admin",
+      // 1. Store session data
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+
+      console.log("ROLE RECEIVED:", user.role);
+
+      // 2. Define the route mapping
+      const routes: Record<string, string> = {
+        // SUPER_ADMIN: "/dashboard/super-admin",
+        SUPER_ADMIN: "/superAdmin",
+        ADMIN: "/admin",
+        MANAGER: "/manager",
         EMPLOYEE: "/dashboard/user",
       };
-      router.push(routes[loginData.role] || "/login");
+
+      // 3. Perform the redirection
+      const targetRoute = routes[user.role as keyof typeof routes];
+
+      if (targetRoute) {
+        router.push(targetRoute);
+      } else {
+        // Fallback if role is undefined or doesn't match
+        router.push("/dashboard");
+      }
 
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
