@@ -20,11 +20,11 @@ import {
  * Use these IDs or HREFs to trigger navigation in your parent component/router
  */
 const NAV_ITEMS = [
-  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, href: '/superAdmin' }, 
-  { id: 'leave', name: 'Leave', icon: CalendarOff, href: '/superAdmin/leave' },       
-  { id: 'attendance', name: 'Attendance', icon: UserCheck, href: '/superAdmin/Attendance' },    
-  { id: 'project', name: 'Project', icon: Briefcase, href: '/superAdmin/project_m' },            
-  { id: 'create-user', name: 'Create User', icon: UserPlus, href: '/superAdmin/createUser' },  
+  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, href: '/admin' }, 
+  { id: 'leave', name: 'Leave', icon: CalendarOff, href: '/admin/leave' },       
+  { id: 'attendance', name: 'Attendance', icon: UserCheck, href: '/admin/Attendance' },    
+  { id: 'project', name: 'Project', icon: Briefcase, href: '/admin/project' },            
+  { id: 'create-user', name: 'Create User', icon: UserPlus, href: '/admin/createUser' },  
 ];
 
 export default function Sidebar() {
@@ -139,7 +139,7 @@ export default function Sidebar() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold truncate">John Doe</p>
-                <p className="text-[10px] text-green-300 font-bold uppercase tracking-widest">Super Admin</p>
+                <p className="text-[10px] text-green-300 font-bold uppercase tracking-widest"> Admin</p>
               </div>
             </div> 
             
