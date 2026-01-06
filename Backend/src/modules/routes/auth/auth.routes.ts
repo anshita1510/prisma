@@ -11,7 +11,7 @@ const controller = new UserController();
 
 /* ---------------- AUTH ---------------- */
 router.post("/login", controller.login);
-router.post("/super_admin", controller.createSuperAdmin);
+router.post("/superAdmin", controller.createSuperAdmin);
 
 /* ---------------- AUTHENTICATED USER ---------------- */
 router.post(
@@ -21,12 +21,12 @@ router.post(
     controller.inviteEmployee
 );
 
-// router.put(
-//     "/update/:id",
-//     authMiddleware,
-//     requireRole(Role.ADMIN),
-//     controller.updateCredentials
-// );
+router.put(
+    "/update/:id",
+    authenticate,
+    requireRole(Role.ADMIN),
+    controller.updateCredentials
+);
 
 router.get(
     "/profile",
@@ -34,23 +34,23 @@ router.get(
     (req, res) => res.json(req.user)
 );
 
-// router.post(
-//     "/:id/update-password",
-//     authMiddleware,
-//     controller.updatePassword
-// );
+router.post(
+    "/:id/update-password",
+    authenticate,
+    controller.updatePassword
+);
 
 /* ---------------- INVITE FLOW ---------------- */
-// router.post(
-//     "/set-password",
-//     inviteAuthMiddleware,
-//     controller.setPassword
-// );
+router.post(
+    "/set-password",
+    inviteAuthMiddleware,
+    controller.setPassword
+);
 
-// router.post(
-//     "/resend-otp",
-//     inviteAuthMiddleware,
-//     controller.resendOtp
-// );
+router.post(
+    "/resend-otp",
+    inviteAuthMiddleware,
+    controller.resendOtp
+);
 
 export default router;
