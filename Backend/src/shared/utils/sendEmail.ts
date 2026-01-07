@@ -10,13 +10,18 @@ export const sendEmail = async (
     port: 587,
     secure: false,
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
     },
   });
+  console.log("SMTP_USER:", process.env.SMTP_USER);
+  console.log(
+    "SMTP_PASS:",
+    process.env.SMTP_PASS ? "LOADED" : "MISSING"
+  );
 
   await transporter.sendMail({
-    from: `"Support" <${process.env.EMAIL_USER}>`,
+    from: `"Support" <${process.env.SMTP_USER}>`,
     to,
     subject,
     text,

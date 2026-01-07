@@ -25,23 +25,18 @@ export const verifyOtp = async (req: Request, res: Response) => {
     return res.status(400).json({ message: "Invalid OTP" });
   }
 
-  // invalidate OTP
   await prisma.user.update({
-    where: { email },
-    data: {
-      resetOtp: null,
-      resetOtpExpiry: null,
-    },
-  });
+  where: { email },
+  data: {
+    passwordResetAllowed: true,
+    resetOtp: null,
+    resetOtpExpiry: null,
+  },
+});
 
-  const resetToken = jwt.sign(
-    { userId: user.id },
-    process.env.RESET_SECRET!,
-    { expiresIn: "10m" }
-  );
 
   res.json({
     message: "OTP verified successfully",
-    resetToken,
+    // resetToken,
   });
 };

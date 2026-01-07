@@ -56,7 +56,7 @@ router.post(
 );
 
 router.post(
-    "/forget-password",
+    "/forgot-password",
     forgotPassword
 )
 
