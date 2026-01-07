@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useState, useEffect } from 'react';
+import { authService } from '../../../services/auth.services';
 import {
   Menu,
   X,
@@ -64,8 +65,7 @@ export default function Sidebar() {
   const toggleSidebar = () => setIsOpen(!isOpen);
 
   const handleLogout = () => {
-    // Add your logout logic here
-    console.log("User logged out");
+    authService.logout();
   };
 
   return (

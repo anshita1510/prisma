@@ -1,54 +1,64 @@
 "use client";
 
-import React, { useState, FormEvent, JSX } from "react";
+import { useState, FormEvent, JSX, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { verifyOtpAPI, forgotPasswordAPI } from "../../../lib/api";
 
-// --- Types ---
-interface LoginResponse {
-  token: string;
-  role: "SUPER_ADMIN" | "ADMIN" | "MANAGER" | "EMPLOYEE";
-  userId: string;
-}
-
-export default function LoginPage(): JSX.Element {
+export default function OTPVerificationPage(): JSX.Element {
   const router = useRouter();
   const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
+  const [otp, setOtp] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
+  const [success, setSuccess] = useState<string>("");
+  const [resendLoading, setResendLoading] = useState<boolean>(false);
 
-  const handleLogin = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
+  useEffect(() => {
+    // Get email from localStorage
+    const resetEmail = localStorage.getItem("resetEmail");
+    if (resetEmail) {
+      setEmail(resetEmail);
+    } else {
+      // If no email found, redirect to forgot password
+      router.push("/Forget_pass");
+    }
+  }, [router]);
+
+  const handleVerifyOTP = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setSuccess("");
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data: LoginResponse | { message?: string } = await res.json();
-      if (!res.ok) throw new Error("message" in data ? data.message : "Login failed");
-
-      const loginData = data as LoginResponse;
-      localStorage.setItem("token", loginData.token);
-      localStorage.setItem("user", JSON.stringify({ id: loginData.userId, role: loginData.role }));
-
-      // Role-based routing
-      const routes = {
-        SUPER_ADMIN: "/dashboard/super-admin",
-        ADMIN: "/dashboard/admin",
-        MANAGER: "/dashboard/admin",
-        EMPLOYEE: "/dashboard/user",
-      };
-      router.push(routes[loginData.role] || "/login");
+      await verifyOtpAPI(email, otp);
+      setSuccess("OTP verified successfully!");
+      
+      // Redirect to set password page after 1 second
+      setTimeout(() => {
+        router.push("/set_pass");
+      }, 1000);
 
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendOTP = async (): Promise<void> => {
+    setResendLoading(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      await forgotPasswordAPI(email);
+      setSuccess("OTP resent successfully!");
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -60,10 +70,10 @@ export default function LoginPage(): JSX.Element {
           <div className="mb-10">
             <h1 className="text-4xl font-black tracking-tight text-green-600">Tikr.</h1>
             <h2 className="mt-6 text-2xl font-bold leading-9 tracking-tight text-gray-900">
-              Welcome back
+              Verify OTP
             </h2>
             <p className="mt-2 text-sm text-gray-500">
-              Please enter your details to access your dashboard.
+              Enter the 6-digit OTP sent to your email address.
             </p>
           </div>
 
@@ -73,31 +83,37 @@ export default function LoginPage(): JSX.Element {
             </div>
           )}
 
-          <form className="space-y-5" onSubmit={handleLogin}>
+          {success && (
+            <div className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-600">
+              {success}
+            </div>
+          )}
+
+          <form className="space-y-5" onSubmit={handleVerifyOTP}>
             <div>
               <label className="block text-sm font-semibold text-gray-700">Email Address</label>
               <input
                 type="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all outline-none"
+                readOnly
+                className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 shadow-sm bg-gray-50 text-gray-600 outline-none"
                 placeholder="name@company.com"
               />
             </div>
 
             <div>
               <div className="flex items-center justify-between">
-                <label className="block text-sm font-semibold text-gray-700">otp</label>
-              
+                <label className="block text-sm font-semibold text-gray-700">OTP</label>
               </div>
               <input
-                type="password"
+                type="text"
                 required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all outline-none"
-                placeholder="••••••••"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                maxLength={6}
+                className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all outline-none text-center text-lg tracking-widest"
+                placeholder="000000"
               />
             </div>
 
@@ -109,12 +125,32 @@ export default function LoginPage(): JSX.Element {
               {loading ? (
                 <span className="flex items-center gap-2">
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Verifying...
+                  Verifying OTP...
                 </span>
               ) : (
-                "Submit"
+                "Verify OTP"
               )}
             </button>
+
+            <div className="text-center space-y-2">
+              <button
+                type="button"
+                onClick={handleResendOTP}
+                disabled={resendLoading}
+                className="text-sm text-green-600 hover:text-green-700 font-medium disabled:opacity-50"
+              >
+                {resendLoading ? "Resending..." : "Resend OTP"}
+              </button>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => router.push("/Forget_pass")}
+                  className="text-sm text-gray-600 hover:text-gray-700"
+                >
+                  Back to Forgot Password
+                </button>
+              </div>
+            </div>
           </form>
         </div>
       </div>

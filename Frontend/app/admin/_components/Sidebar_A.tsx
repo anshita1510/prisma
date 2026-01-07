@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useState, useEffect } from 'react';
+import { authService } from '../../services/auth.services';
 import { 
   Menu, 
   X, 
@@ -30,6 +31,36 @@ const NAV_ITEMS = [
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [user, setUser] = useState({
+    name: "Loading...",
+    role: "User",
+    initials: "??"
+  });
+
+  // Load user data from localStorage
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        const initials = parsedUser.name
+          ? parsedUser.name
+            .split(" ")
+            .map((n: string) => n[0])
+            .join("")
+            .toUpperCase()
+          : "??";
+
+        setUser({
+          name: parsedUser.name || "Unknown",
+          role: parsedUser.role || "User",
+          initials,
+        });
+      } catch (error) {
+        console.error("Invalid user data in localStorage");
+      }
+    }
+  }, []);
 
   // Close sidebar when window is resized to desktop width
   useEffect(() => {
@@ -45,8 +76,7 @@ export default function Sidebar() {
   const toggleSidebar = () => setIsOpen(!isOpen);
 
   const handleLogout = () => {
-    // Add your logout logic here
-    console.log("User logged out");
+    authService.logout();
   };
 
   return (
@@ -135,11 +165,11 @@ export default function Sidebar() {
           <div className="p-4 border-t border-green-600/50 space-y-3 bg-green-800/20 mt-auto">
             <div className="flex items-center gap-3 p-2.5 rounded-xl bg-green-800/40">
               <div className="w-9 h-9 rounded-full bg-green-400 border-2 border-green-500/50 flex items-center justify-center text-green-900 font-bold text-xs uppercase">
-                JD
+                {user.initials}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold truncate">John Doe</p>
-                <p className="text-[10px] text-green-300 font-bold uppercase tracking-widest"> Admin</p>
+                <p className="text-sm font-bold truncate">{user.name}</p>
+                <p className="text-[10px] text-green-300 font-bold uppercase tracking-widest">{user.role}</p>
               </div>
             </div> 
             

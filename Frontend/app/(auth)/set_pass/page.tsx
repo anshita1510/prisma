@@ -1,49 +1,56 @@
 "use client";
 
-import React, { useState, FormEvent, JSX } from "react";
+import { useState, FormEvent, JSX, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { resetPasswordAPI } from "../../../lib/api";
 
-// --- Types ---
-interface LoginResponse {
-  token: string;
-  role: "SUPER_ADMIN" | "ADMIN" | "MANAGER" | "EMPLOYEE";
-  userId: string;
-}
-
-export default function LoginPage(): JSX.Element {
+export default function SetPasswordPage(): JSX.Element {
   const router = useRouter();
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
+  const [newPassword, setNewPassword] = useState<string>("");
+  const [confirmPassword, setConfirmPassword] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
+  const [success, setSuccess] = useState<string>("");
 
-  const handleLogin = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
+  useEffect(() => {
+    // Check if user came from OTP verification
+    const resetEmail = localStorage.getItem("resetEmail");
+    if (!resetEmail) {
+      // If no email found, redirect to forgot password
+      router.push("/Forget_pass");
+    }
+  }, [router]);
+
+  const handleResetPassword = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setSuccess("");
+
+    // Client-side validation
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match");
+      setLoading(false);
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError("Password must be at least 6 characters long");
+      setLoading(false);
+      return;
+    }
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data: LoginResponse | { message?: string } = await res.json();
-      if (!res.ok) throw new Error("message" in data ? data.message : "Login failed");
-
-      const loginData = data as LoginResponse;
-      localStorage.setItem("token", loginData.token);
-      localStorage.setItem("user", JSON.stringify({ id: loginData.userId, role: loginData.role }));
-
-      // Role-based routing
-      const routes = {
-        SUPER_ADMIN: "/dashboard/super-admin",
-        ADMIN: "/dashboard/admin",
-        MANAGER: "/dashboard/admin",
-        EMPLOYEE: "/dashboard/user",
-      };
-      router.push(routes[loginData.role] || "/login");
+      await resetPasswordAPI(newPassword, confirmPassword);
+      setSuccess("Password reset successfully!");
+      
+      // Clear stored email
+      localStorage.removeItem("resetEmail");
+      
+      // Redirect to login page after 2 seconds
+      setTimeout(() => {
+        router.push("/login");
+      }, 2000);
 
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -60,10 +67,10 @@ export default function LoginPage(): JSX.Element {
           <div className="mb-10">
             <h1 className="text-4xl font-black tracking-tight text-green-600">Tikr.</h1>
             <h2 className="mt-6 text-2xl font-bold leading-9 tracking-tight text-gray-900">
-              Welcome back
+              Set New Password
             </h2>
             <p className="mt-2 text-sm text-gray-500">
-              Please enter your details to access your dashboard.
+              Create a new password for your account.
             </p>
           </div>
 
@@ -73,45 +80,40 @@ export default function LoginPage(): JSX.Element {
             </div>
           )}
 
-          <form className="space-y-5" onSubmit={handleLogin}>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700">Email Address</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all outline-none"
-                placeholder="name@company.com"
-              />
+          {success && (
+            <div className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-600">
+              {success}
             </div>
+          )}
 
+          <form className="space-y-5" onSubmit={handleResetPassword}>
             <div>
               <div className="flex items-center justify-between">
-                <label className="block text-sm font-semibold text-gray-700">Password</label>
-                
+                <label className="block text-sm font-semibold text-gray-700">New Password</label>
               </div>
               <input
                 type="password"
                 required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
                 className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all outline-none"
                 placeholder="••••••••"
+                minLength={6}
               />
             </div>
+            
             <div>
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-semibold text-gray-700">Confirm Password</label>
-                
               </div>
               <input
                 type="password"
                 required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all outline-none"
                 placeholder="••••••••"
+                minLength={6}
               />
             </div>
 
@@ -123,10 +125,10 @@ export default function LoginPage(): JSX.Element {
               {loading ? (
                 <span className="flex items-center gap-2">
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Verifying...
+                  Resetting Password...
                 </span>
               ) : (
-                "Sign in"
+                "Reset Password"
               )}
             </button>
           </form>

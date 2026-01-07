@@ -53,7 +53,8 @@ export const authService = {
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    window.location.href = '/login';
+    localStorage.removeItem('resetEmail'); // Clear any password reset data
+    window.location.href = '/';
   },
 
   getCurrentUser: async () => {

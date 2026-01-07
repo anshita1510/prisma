@@ -1,49 +1,32 @@
 "use client";
 
-import React, { useState, FormEvent, JSX } from "react";
+import { useState, FormEvent, JSX } from "react";
 import { useRouter } from "next/navigation";
+import { forgotPasswordAPI } from "../../../lib/api";
 
-// --- Types ---
-interface LoginResponse {
-  token: string;
-  role: "SUPER_ADMIN" | "ADMIN" | "MANAGER" | "EMPLOYEE";
-  userId: string;
-}
-
-export default function LoginPage(): JSX.Element {
+export default function ForgotPasswordPage(): JSX.Element {
   const router = useRouter();
   const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
+  const [success, setSuccess] = useState<string>("");
 
-  const handleLogin = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
+  const handleForgotPassword = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setSuccess("");
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data: LoginResponse | { message?: string } = await res.json();
-      if (!res.ok) throw new Error("message" in data ? data.message : "Login failed");
-
-      const loginData = data as LoginResponse;
-      localStorage.setItem("token", loginData.token);
-      localStorage.setItem("user", JSON.stringify({ id: loginData.userId, role: loginData.role }));
-
-      // Role-based routing
-      const routes = {
-        SUPER_ADMIN: "/dashboard/super-admin",
-        ADMIN: "/dashboard/admin",
-        MANAGER: "/dashboard/admin",
-        EMPLOYEE: "/dashboard/user",
-      };
-      router.push(routes[loginData.role] || "/login");
+      await forgotPasswordAPI(email);
+      setSuccess("OTP sent to your email successfully!");
+      // Store email for next step
+      localStorage.setItem("resetEmail", email);
+      
+      // Redirect to OTP verification page after 2 seconds
+      setTimeout(() => {
+        router.push("/otp_check");
+      }, 2000);
 
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -60,10 +43,10 @@ export default function LoginPage(): JSX.Element {
           <div className="mb-10">
             <h1 className="text-4xl font-black tracking-tight text-green-600">Tikr.</h1>
             <h2 className="mt-6 text-2xl font-bold leading-9 tracking-tight text-gray-900">
-              Welcome back
+              Forgot Password
             </h2>
             <p className="mt-2 text-sm text-gray-500">
-              Please enter your details to access your dashboard.
+              Enter your email address and we'll send you an OTP to reset your password.
             </p>
           </div>
 
@@ -73,7 +56,13 @@ export default function LoginPage(): JSX.Element {
             </div>
           )}
 
-          <form className="space-y-5" onSubmit={handleLogin}>
+          {success && (
+            <div className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-600">
+              {success}
+            </div>
+          )}
+
+          <form className="space-y-5" onSubmit={handleForgotPassword}>
             <div>
               <label className="block text-sm font-semibold text-gray-700">Email Address</label>
               <input
@@ -95,12 +84,22 @@ export default function LoginPage(): JSX.Element {
               {loading ? (
                 <span className="flex items-center gap-2">
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Verifying...
+                  Sending OTP...
                 </span>
               ) : (
-                "Forgot"
+                "Send OTP"
               )}
             </button>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => router.push("/login")}
+                className="text-sm text-green-600 hover:text-green-700 font-medium"
+              >
+                Back to Login
+              </button>
+            </div>
           </form>
         </div>
       </div>

@@ -103,9 +103,13 @@ export default function LoginPage(): JSX.Element {
             <div>
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-semibold text-gray-700">Password</label>
-                <a href="#" className="text-xs font-semibold text-green-600 hover:text-green-500">
+                <button
+                  type="button"
+                  onClick={() => router.push("/Forget_pass")}
+                  className="text-xs font-semibold text-green-600 hover:text-green-500"
+                >
                   Forgot password?
-                </a>
+                </button>
               </div>
               <input
                 type="password"

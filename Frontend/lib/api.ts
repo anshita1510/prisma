@@ -1,69 +1,47 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL|| 'http://localhost:5004';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5004';
 
-export class ApiError extends Error {
-    constructor(public status: number, message: string){
-        super(message);
-        this.name ='ApiError';
-    }
-}
-
-async function handleResponse<T>(response: Response): Promise<T> {
-    if(!response.ok){
-        const error= await response.json().catch(() =>({
-            message: "an error occured at resopen ok "
-        }));
-
-        throw new ApiError(response.status, error.message || response.statusText);
-    }
-
-    return response.json();
-}
-
-export const api={
-    async get<T>(endpoint: string): Promise<T>{
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-             credentials: 'include',
-        });
-        return handleResponse<T>(response);
+export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
+  const url = `${API_BASE_URL}/api/users${endpoint}`;
+  
+  const defaultOptions: RequestInit = {
+    headers: {
+      'Content-Type': 'application/json',
     },
+  };
 
-    async post<T>(endpoint: string, data: any): Promise<T> {
-        const response= await fetch(`${API_BASE_URL}${endpoint}`, {
-            method: 'POST',
-            headers:{
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify(data),
-        });
-        return handleResponse<T>(response);
+  const response = await fetch(url, {
+    ...defaultOptions,
+    ...options,
+    headers: {
+      ...defaultOptions.headers,
+      ...options.headers,
     },
-    
-    async put<T>(endpoint: string, data: any): Promise<T> {
-        const response= await fetch(`${API_BASE_URL}${endpoint}`, {
-            method: 'PUT',
-            headers:{
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            body: JSON.stringify(data),
-        });
-        return handleResponse<T>(response);
-    },
+  });
 
-      async delete<T>(endpoint: string, data: any): Promise<T> {
-        const response= await fetch(`${API_BASE_URL}${endpoint}`, {
-            method: 'DELETE',
-            headers:{
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-        });
-        return handleResponse<T>(response);
-    },
+  const data = await response.json();
 
-}
+  if (!response.ok) {
+    throw new Error(data.message || 'API request failed');
+  }
+
+  return data;
+};
+
+// Password reset API calls
+export const forgotPasswordAPI = (email: string) => 
+  apiCall('/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+
+export const verifyOtpAPI = (email: string, otp: string) => 
+  apiCall('/verify-otp', {
+    method: 'POST',
+    body: JSON.stringify({ email, otp }),
+  });
+
+export const resetPasswordAPI = (newPassword: string, confirmPassword: string) => 
+  apiCall('/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ newPassword, confirmPassword }),
+  });
