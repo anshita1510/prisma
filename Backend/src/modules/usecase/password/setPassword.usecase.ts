@@ -3,17 +3,18 @@ import { Status } from "@prisma/client";
 import { UserRepository } from "../../repository/auth/user.repository";
 
 export class SetPasswordUsecase {
-  constructor(private userRepo: UserRepository) {}
+  constructor(private userRepo: UserRepository) { }
 
   async execute(
-    user: any,
+    email: string,
     otp: string,
     currentPassword: string,
     newPassword: string
   ) {
-    // 1️⃣ OTP checks
-    if (!user.otp || !user.otpExpiry) {
-      throw new Error("OTP not found");
+    const user = await this.userRepo.findByEmail(email);
+
+    if (!user || !user.otp || !user.otpExpiry) {
+      throw new Error("Invalid OTP request");
     }
 
     if (user.otpExpiry < new Date()) {
@@ -25,7 +26,11 @@ export class SetPasswordUsecase {
       throw new Error("Invalid OTP");
     }
 
-    // 2️⃣ Temporary password check
+    if (!user.tempPassword) {
+      throw new Error("Temporary password not set");
+    }
+
+
     const tempPasswordValid = await bcrypt.compare(
       currentPassword,
       user.tempPassword
@@ -35,10 +40,8 @@ export class SetPasswordUsecase {
       throw new Error("Invalid temporary password");
     }
 
-    // 3️⃣ Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // 4️⃣ Update user
     await this.userRepo.updateUser(user.id, {
       password: hashedPassword,
       tempPassword: null,

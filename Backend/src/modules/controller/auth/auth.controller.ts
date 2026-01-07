@@ -155,22 +155,17 @@ export class UserController {
   /* ================= SET PASSWORD FROM INVITE ================= */
   async setPassword(req: Request, res: Response) {
     try {
-      const user = req.invitedUser;
 
-      if (!user) {
-        return res.status(401).json({ error: "Invalid or expired invite token" });
-      }
+      const { email, otp, currentPassword, newPassword } = req.body;
 
-      const { otp, currentPassword, newPassword } = req.body;
-
-      if (!otp || !currentPassword || !newPassword) {
+      if (!email || !otp || !currentPassword || !newPassword) {
         return res.status(400).json({
           error: "OTP, temporary password, and new password are required",
         });
       }
 
       const usecase = new SetPasswordUsecase(userRepo);
-      await usecase.execute(user, otp.trim(), currentPassword, newPassword);
+      await usecase.execute(email, otp.trim(), currentPassword, newPassword);
 
       return res.json({
         message: "Password set successfully. You can now log in.",
@@ -183,12 +178,12 @@ export class UserController {
   /* ================= RESEND OTP ================= */
   async resendOtp(req: Request, res: Response) {
     try {
-      const user = req.invitedUser;
+      const { email } = req.body;
 
+      const user = await prisma.user.findUnique({ where: { email } });
       if (!user || user.status !== Status.PENDING) {
-        return res.status(400).json({ error: "Invalid or expired invite" });
+        return res.status(400).json({ error: "Invalid user or status" });
       }
-
       const rawOtp = Math.floor(100000 + Math.random() * 900000).toString();
       const hashedOtp = await bcrypt.hash(rawOtp, 10);
       const otpExpiry = new Date(Date.now() + 30 * 60 * 1000);

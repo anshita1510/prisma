@@ -114,31 +114,35 @@ model Company {
 //////////////////////////////////////////////////////
 
 model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
-  firstName    String
-  lastName     String
-  phone        String
-  designation  String
-  role         Role
-  status       Status   @default(PENDING)
-  password     String?  // final hashed password after setup
-  isActive     Boolean  @default(false)
+  id              Int      @id @default(autoincrement())
+  email           String   @unique
+  firstName       String
+  lastName        String
+  phone           String
+  designation     String
+  role            Role
+  status          Status   @default(PENDING)
+  password        String?
+  isActive        Boolean  @default(false)
 
-  // Invite flow fields
-  inviteToken    String?   @unique
-  inviteExpiry   DateTime?
-  tempPassword   String?   // hashed temporary password
-  otp            String?   // hashed OTP
-  otpExpiry      DateTime?
+  inviteToken     String?   @unique
+  inviteExpiry    DateTime?
+  tempPassword    String?
+  otp             String?
+  otpExpiry       DateTime?
 
-  companyId    Int?
-  company      Company? @relation(fields: [companyId], references: [id])
+  resetOtp        String?
+  resetOtpExpiry  DateTime?
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  passwordResetAllowed Boolean @default(false) // ✅ ADD THIS
 
-  employee     Employee?
+  companyId       Int?
+  company         Company? @relation(fields: [companyId], references: [id])
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  employee        Employee?
 }
 
 //////////////////////////////////////////////////////
