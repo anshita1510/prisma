@@ -5,6 +5,9 @@ import { inviteAuthMiddleware } from "../../../middlewares/inviteAuth.middleware
 import { authenticate } from "../../../middlewares/auth.middleware";
 import { requireRole } from "../../../middlewares/role.middleware";
 import { Role } from "@prisma/client";
+import {forgotPassword} from "../../controller/password/forget.password.controller"
+import { verifyOtp } from "../../controller/password/verify.password";
+import { resetPassword } from "../../controller/password/reset.password.controller";
 
 const router = Router();
 const controller = new UserController();
@@ -51,5 +54,21 @@ router.post(
     inviteAuthMiddleware,
     controller.resendOtp
 );
+
+router.post(
+    "/forget-password",
+    forgotPassword
+)
+
+
+router.post(
+    "/verify-otp",
+    verifyOtp
+
+)
+router.post(
+    "/reset-password",
+    resetPassword
+)
 
 export default router;

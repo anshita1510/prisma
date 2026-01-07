@@ -1,23 +1,15 @@
+
 import { Request, Response } from "express";
-import { NodemailerService } from "../../repository/email/nodemailer.service";
-import { SendEmailUseCase } from "../../usecase/email/sendEmail.usecase";
+import { sendEmail } from "../../../shared/utils/sendEmail";
 
-export const sendEmailController = async (
-    req: Request,
-    res: Response
-) => {
-    const { to, subject, html } = req.body;
+export const sendEmailController = async (req: Request, res: Response) => {
+  const { to, subject, message } = req.body;
 
-    const emailService = new NodemailerService();
-    const sendEmailUseCase = new SendEmailUseCase(emailService);
+  if (!to || !subject || !message) {
+    return res.status(400).json({ message: "Missing fields" });
+  }
 
-    await sendEmailUseCase.execute({
-        to,
-        subject,
-        html,
-    });
-    return res.status(200).json({
-        message: " Email sent successfully",
-    })
+  await sendEmail(to, subject, message);
 
-}
+  return res.json({ message: "Email sent successfully" });
+};

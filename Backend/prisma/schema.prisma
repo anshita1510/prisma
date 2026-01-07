@@ -132,6 +132,10 @@ model User {
   otp            String?   // hashed OTP
   otpExpiry      DateTime?
 
+  resetOtp       String?
+  resetOtpExpiry DateTime?
+
+
   companyId    Int?
   company      Company? @relation(fields: [companyId], references: [id])
 
