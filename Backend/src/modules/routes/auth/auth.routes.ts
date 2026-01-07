@@ -43,7 +43,6 @@ router.post(
 /* ---------------- INVITE FLOW ---------------- */
 router.post(
     "/set-password",
-    inviteAuthMiddleware,
     controller.setPassword
 );
 

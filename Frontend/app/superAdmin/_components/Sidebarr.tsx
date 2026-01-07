@@ -15,25 +15,13 @@ import {
   Target
 } from 'lucide-react';
 
-/**
- * Navigation Items Configuration
- * Use these IDs or HREFs to trigger navigation in your parent component/router
- */
 
 const NAV_ITEMS = [
-<<<<<<< HEAD
-  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, href: '/superAdmin/dashboard' },
-  { id: 'leave', name: 'Leave', icon: CalendarOff, href: '/superAdmin/leave' },
-  { id: 'attendance', name: 'Attendance', icon: UserCheck, href: '/superAdmin/Attendance' },
-  { id: 'project', name: 'Project', icon: Briefcase, href: '/superAdmin/project_m' },
-  { id: 'create-user', name: 'Create User', icon: UserPlus, href: '/superAdmin/createUser' },
-=======
   { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, href: '/superAdmin' }, 
   { id: 'leave', name: 'Leave', icon: CalendarOff, href: '/superAdmin/leave' },       
   { id: 'attendance', name: 'Attendance', icon: UserCheck, href: '/superAdmin/Attendance' },    
   { id: 'project', name: 'Project', icon: Briefcase, href: '/superAdmin/project_m' },            
   { id: 'create-user', name: 'Create User', icon: UserPlus, href: '/superAdmin/createUser' },  
->>>>>>> beta1
 ];
 
 export default function Sidebar() {

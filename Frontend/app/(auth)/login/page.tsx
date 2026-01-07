@@ -46,7 +46,7 @@ export default function LoginPage(): JSX.Element {
         SUPER_ADMIN: "/superAdmin",
         ADMIN: "/admin",
         MANAGER: "/manager",
-        EMPLOYEE: "/dashboard/user",
+        EMPLOYEE: "/user",
       };
 
       // 3. Perform the redirection
