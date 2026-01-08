@@ -32,9 +32,9 @@ router.put(
 );
 
 router.get(
-    "/profile",
+    "/me",
     authenticate,
-    (req, res) => res.json(req.user)
+    controller.getCurrentUser
 );
 
 router.post(

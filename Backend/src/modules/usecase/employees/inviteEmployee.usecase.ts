@@ -3,7 +3,7 @@ import crypto from "crypto";
 import bcrypt from "bcrypt";
 import { UserRepository } from "../../repository/auth/user.repository";
 import { SendEmailUseCase } from "../email/sendEmail.usecase";
-import { Role, Status } from "@prisma/client";
+import { Role, Status, Designation, DepartmentType } from "@prisma/client";
 import { prisma } from "../../../config/db";
 
 export class InviteEmployeeUsecase {
@@ -21,6 +21,8 @@ export class InviteEmployeeUsecase {
       phone: string;
       designation: string;
       role: Role;
+      companyId?: number;
+      departmentId?: number;
     }
   ) {
     const allowedRoles: Role[] = [Role.SUPER_ADMIN, Role.ADMIN];
@@ -78,6 +80,9 @@ export class InviteEmployeeUsecase {
       },
     });
 
+    /* 🏢 CREATE EMPLOYEE RECORD */
+    await this.createEmployeeRecord(user.id, data);
+
     /* 📧 Send invite email */
     await this.sendEmailUseCase.execute({
       to: data.email,
@@ -100,6 +105,87 @@ export class InviteEmployeeUsecase {
       message: "Invitation sent successfully",
       email: data.email,
     };
+  }
+
+  private async createEmployeeRecord(userId: number, data: any) {
+    try {
+      // Get or create default company
+      let companyId = data.companyId;
+      if (!companyId) {
+        const defaultCompany = await prisma.company.upsert({
+          where: { code: 'DEFAULT_COMPANY' },
+          update: {},
+          create: {
+            name: 'Default Company',
+            code: 'DEFAULT_COMPANY',
+            isActive: true
+          }
+        });
+        companyId = defaultCompany.id;
+
+        // Update user with company
+        await prisma.user.update({
+          where: { id: userId },
+          data: { companyId }
+        });
+      }
+
+      // Get or create default department
+      let departmentId = data.departmentId;
+      if (!departmentId) {
+        const defaultDepartment = await prisma.department.upsert({
+          where: {
+            companyId_name: {
+              companyId: companyId,
+              name: 'General'
+            }
+          },
+          update: {},
+          create: {
+            name: 'General',
+            type: DepartmentType.OPERATIONS,
+            companyId: companyId
+          }
+        });
+        departmentId = defaultDepartment.id;
+      }
+
+      // Map user role to employee designation
+      let designation: Designation;
+      switch (data.role) {
+        case 'SUPER_ADMIN':
+        case 'ADMIN':
+          designation = Designation.MANAGER;
+          break;
+        case 'MANAGER':
+          designation = Designation.MANAGER;
+          break;
+        default:
+          designation = Designation.SOFTWARE_ENGINEER;
+      }
+
+      // Generate unique employee code
+      const employeeCode = `EMP${userId.toString().padStart(4, '0')}`;
+
+      // Create employee record
+      const employee = await prisma.employee.create({
+        data: {
+          userId,
+          companyId,
+          departmentId,
+          name: `${data.firstName} ${data.lastName}`.trim(),
+          designation,
+          employeeCode,
+          isActive: true
+        }
+      });
+
+      console.log(`✅ Created employee record for user ${userId} (Employee ID: ${employee.id}, Code: ${employeeCode})`);
+      return employee;
+    } catch (error) {
+      console.error(`❌ Failed to create employee record for user ${userId}:`, error);
+      // Don't throw error to avoid breaking user creation
+    }
   }
 }
 
