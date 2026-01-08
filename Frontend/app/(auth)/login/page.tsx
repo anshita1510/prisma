@@ -24,15 +24,26 @@ export default function LoginPage(): JSX.Element {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+        },
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Login failed");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || errorData.message || "Login failed");
+      }
 
-      // Extract token and user from response
+      const data = await res.json();
+
+      // Extract token and user from response (backend returns {user, token})
       const { token, user } = data;
+
+      if (!token || !user) {
+        throw new Error("Invalid response format");
+      }
 
       // 1. Store session data
       localStorage.setItem("token", token);
@@ -60,6 +71,7 @@ export default function LoginPage(): JSX.Element {
       }
 
     } catch (err) {
+      console.error("Login error:", err);
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setLoading(false);

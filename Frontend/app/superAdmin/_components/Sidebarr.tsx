@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useState, useEffect } from 'react';
-import { authService } from '../../../services/auth.services';
+import { authService } from '../../services/auth.services';
 import {
   Menu,
   X,

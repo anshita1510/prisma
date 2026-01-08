@@ -6,10 +6,18 @@ const prisma = new PrismaClient();
 export const createLeave = async (req: Request, res: Response) => {
   try {
     const { employeeId, departmentId, type, reason, startDate, endDate } = req.body;
+    
+    // Validate required fields
+    if (!employeeId || !departmentId || !type || !startDate || !endDate) {
+      return res.status(400).json({ 
+        error: "Missing required fields: employeeId, departmentId, type, startDate, endDate" 
+      });
+    }
+
     const leave = await prisma.leave.create({
       data: {
-        employeeId,
-        departmentId,
+        employeeId: Number(employeeId),
+        departmentId: Number(departmentId),
         type,
         reason,
         startDate: new Date(startDate),
@@ -18,7 +26,11 @@ export const createLeave = async (req: Request, res: Response) => {
     });
     res.status(201).json(leave);
   } catch (error) {
-    res.status(500).json({ error: "Failed to create leave" });
+    console.error("Create leave error:", error);
+    res.status(500).json({ 
+      error: "Failed to create leave",
+      details: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 };
 
