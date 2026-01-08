@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './modules/routes/auth/auth.routes';
+import attendanceRoutes from './modules/routes/attendance/attendance.routes';
+import { errorHandler } from './middlewares/validation.middleware';
 
 dotenv.config();
 
@@ -10,7 +12,7 @@ const PORT = process.env.PORT || 5004;
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: ['http://localhost:3000', 'http://localhost:3001'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -21,16 +23,16 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/users', authRoutes);
+app.use('/api/attendance', attendanceRoutes);
 
-// Error handling
-// app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-//   console.error(err.stack);
-//   res.status(500).json({
-//     success: false,
-//     message: 'Something went wrong!'
-//   });
-// });
 
+// Error handling middleware
+app.use(errorHandler);
+
+// Start server
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`🚀 Server is running on port ${PORT}`);
+  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
+
+export default app;
