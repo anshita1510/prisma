@@ -61,8 +61,8 @@ export class InviteEmployeeUsecase {
       phone: data.phone,
       designation: data.designation,
       role: data.role,
-      status: Status.PENDING,
-      isActive: false,
+      status: Status.ACTIVE,  // Changed from PENDING to ACTIVE
+      isActive: true,         // Changed from false to true
       tempPassword: hashedTempPassword,
       otp: hashedOtp,
       otpExpiry: otpExpiry,

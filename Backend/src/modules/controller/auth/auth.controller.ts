@@ -118,7 +118,7 @@ export class UserController {
     }
   }
 
-  /* ================= UPDATE PASSWORD (SELF OR SUPER_ADMIN) ================= */
+  /* ================= FORGET PASSWORD (SELF OR SUPER_ADMIN) ================= */
   async updatePassword(req: Request, res: Response) {
     try {
       if (!req.user) return res.status(401).json({ error: "Unauthorized" });
