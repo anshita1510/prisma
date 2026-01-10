@@ -8,6 +8,8 @@ declare global {
         id: number;
         role: Role;
         email: string;
+        employeeId?: number;
+        companyId?: number;
       };
       invitedUser?: any;
     }
