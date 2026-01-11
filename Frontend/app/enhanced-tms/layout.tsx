@@ -37,10 +37,10 @@ export default function EnhancedTMSLayout({
       {/* Mobile sidebar */}
       <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
-        <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white">
-          <div className="flex h-16 items-center justify-between px-4 border-b">
-            <h1 className="text-xl font-bold text-gray-900">Enhanced TMS</h1>
-            <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(false)}>
+        <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-gradient-to-b from-blue-600 to-purple-700 text-white">
+          <div className="flex h-16 items-center justify-between px-4 border-b border-blue-600/50">
+            <h1 className="text-xl font-bold text-white">Enhanced TMS</h1>
+            <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(false)} className="text-blue-100 hover:text-white hover:bg-blue-600/50">
               <X className="h-5 w-5" />
             </Button>
           </div>
@@ -52,14 +52,14 @@ export default function EnhancedTMSLayout({
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
+                  className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                     isActive
-                      ? 'bg-blue-100 text-blue-900'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-white text-blue-800 shadow-lg'
+                      : 'text-blue-100 hover:bg-blue-600/80 hover:text-white'
                   }`}
                   onClick={() => setSidebarOpen(false)}
                 >
-                  <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
+                  <Icon className={`mr-3 h-5 w-5 flex-shrink-0 ${isActive ? 'text-blue-700' : 'text-blue-300'}`} />
                   {item.name}
                 </Link>
               );
@@ -70,9 +70,9 @@ export default function EnhancedTMSLayout({
 
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex flex-col flex-grow bg-white border-r border-gray-200">
-          <div className="flex h-16 items-center px-4 border-b">
-            <h1 className="text-xl font-bold text-gray-900">Enhanced TMS</h1>
+        <div className="flex flex-col flex-grow bg-gradient-to-b from-blue-600 to-purple-700 text-white border-r border-blue-800/30">
+          <div className="flex h-16 items-center px-4 border-b border-blue-600/50">
+            <h1 className="text-xl font-bold text-white">Enhanced TMS</h1>
           </div>
           <nav className="flex-1 space-y-1 px-2 py-4">
             {navigation.map((item) => {
@@ -82,28 +82,28 @@ export default function EnhancedTMSLayout({
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
+                  className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                     isActive
-                      ? 'bg-blue-100 text-blue-900'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-white text-blue-800 shadow-lg'
+                      : 'text-blue-100 hover:bg-blue-600/80 hover:text-white'
                   }`}
                 >
-                  <Icon className="mr-3 h-5 w-5 flex-shrink-0" />
+                  <Icon className={`mr-3 h-5 w-5 flex-shrink-0 ${isActive ? 'text-blue-700' : 'text-blue-300'}`} />
                   {item.name}
                 </Link>
               );
             })}
           </nav>
-          <div className="flex-shrink-0 border-t border-gray-200 p-4">
+          <div className="flex-shrink-0 border-t border-blue-600/50 p-4">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+              <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center text-blue-900 text-sm font-medium">
                 JD
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">John Doe</p>
-                <p className="text-xs text-gray-500 truncate">Tech Lead</p>
+                <p className="text-sm font-medium text-white truncate">John Doe</p>
+                <p className="text-xs text-blue-300 truncate">Tech Lead</p>
               </div>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="text-blue-100 hover:text-white hover:bg-blue-600/50">
                 <Settings className="h-4 w-4" />
               </Button>
             </div>

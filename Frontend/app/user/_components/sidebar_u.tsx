@@ -58,12 +58,12 @@ export default function Sidebar() {
   return (
     <>
       {/* MOBILE TOP BAR - Fixed for mobile screens */}
-      <div className="lg:hidden flex items-center justify-between bg-green-700 p-4 text-white fixed top-0 left-0 right-0 z-40 shadow-md">
+      <div className="lg:hidden flex items-center justify-between bg-gradient-to-r from-blue-600 to-purple-600 p-4 text-white fixed top-0 left-0 right-0 z-40 shadow-md">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center font-bold text-white">T</div>
           <span className="font-semibold text-lg tracking-tight">Tikr</span>
         </div>
-        <button onClick={toggleSidebar} className="p-2 hover:bg-green-600 rounded-md transition-colors">
+        <button onClick={toggleSidebar} className="p-2 hover:bg-blue-600/80 rounded-md transition-colors">
           <Menu size={24} />
         </button>
       </div>
@@ -78,21 +78,21 @@ export default function Sidebar() {
 
       {/* SIDEBAR ASIDE */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-green-700 text-white transform transition-transform duration-300 ease-in-out
+        fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-blue-600 to-purple-700 text-white transform transition-transform duration-300 ease-in-out
         lg:translate-x-0 lg:static lg:h-screen
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <div className="flex flex-col h-full border-r border-green-800/30 shadow-2xl lg:shadow-none">
+        <div className="flex flex-col h-full border-r border-blue-800/30 shadow-2xl lg:shadow-none">
           
           {/* LOGO SECTION */}
-          <div className="p-6 flex items-center justify-between border-b border-green-600/50">
+          <div className="p-6 flex items-center justify-between border-b border-blue-600/50">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white text-green-700 rounded-xl flex items-center justify-center shadow-lg font-bold">
+              <div className="w-10 h-10 bg-white text-blue-700 rounded-xl flex items-center justify-center shadow-lg font-bold">
                 <Target size={24} />
               </div>
               <span className="font-bold text-xl tracking-tight uppercase">Tikr</span>
             </div>
-            <button onClick={() => setIsOpen(false)} className="lg:hidden p-1.5 hover:bg-green-600 rounded-full">
+            <button onClick={() => setIsOpen(false)} className="lg:hidden p-1.5 hover:bg-blue-600 rounded-full">
               <X size={20} />
             </button>
           </div>
@@ -112,13 +112,13 @@ export default function Sidebar() {
           setIsOpen(false);
         }}
         className={`w-full group flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 
-          ${isActive ? 'bg-white text-green-800 shadow-lg' : 'hover:bg-green-600/80 text-white'}
+          ${isActive ? 'bg-white text-blue-800 shadow-lg' : 'hover:bg-blue-600/80 text-white'}
         `}
       >
         <div className="flex items-center gap-4">
           <item.icon
             size={22}
-            className={`${isActive ? 'text-green-700' : 'text-green-300'}`}
+            className={`${isActive ? 'text-blue-700' : 'text-blue-300'}`}
           />
           <span className="font-semibold text-sm tracking-wide">
             {item.name}
@@ -138,14 +138,14 @@ export default function Sidebar() {
 
 
           {/* USER & LOGOUT SECTION */}
-          <div className="p-4 border-t border-green-600/50 space-y-3 bg-green-800/20 mt-auto">
-            <div className="flex items-center gap-3 p-2.5 rounded-xl bg-green-800/40">
-              <div className="w-9 h-9 rounded-full bg-green-400 border-2 border-green-500/50 flex items-center justify-center text-green-900 font-bold text-xs uppercase">
+          <div className="p-4 border-t border-blue-600/50 space-y-3 bg-blue-800/20 mt-auto">
+            <div className="flex items-center gap-3 p-2.5 rounded-xl bg-blue-800/40">
+              <div className="w-9 h-9 rounded-full bg-blue-400 border-2 border-blue-500/50 flex items-center justify-center text-blue-900 font-bold text-xs uppercase">
                 {getUserInitials()}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold truncate">{user?.name || "Loading..."}</p>
-                <p className="text-[10px] text-green-300 font-bold uppercase tracking-widest">{getRoleDisplay()}</p>
+                <p className="text-[10px] text-blue-300 font-bold uppercase tracking-widest">{getRoleDisplay()}</p>
               </div>
             </div> 
             

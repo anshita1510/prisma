@@ -41,6 +41,20 @@ const Dialog = ({ open, onOpenChange, children }: DialogProps) => {
   )
 }
 
+const DialogTrigger = React.forwardRef<
+  HTMLButtonElement,
+  React.ButtonHTMLAttributes<HTMLButtonElement>
+>(({ className, children, ...props }, ref) => (
+  <button
+    ref={ref}
+    className={className}
+    {...props}
+  >
+    {children}
+  </button>
+))
+DialogTrigger.displayName = "DialogTrigger"
+
 const DialogContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -101,6 +115,7 @@ DialogFooter.displayName = "DialogFooter"
 
 export {
   Dialog,
+  DialogTrigger,
   DialogContent,
   DialogDescription,
   DialogFooter,

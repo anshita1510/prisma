@@ -170,6 +170,45 @@ export class EnhancedProjectController {
     }
   };
 
+  // Global project statistics for dashboard
+  getGlobalProjectStats = async (req: Request, res: Response) => {
+    try {
+      const { employeeId, companyId } = req.user as any;
+
+      // Get user's accessible projects
+      const accessibleProjects = await this.projectService.getAccessibleProjects(employeeId, companyId);
+      
+      // Calculate global stats
+      const totalProjects = accessibleProjects.length;
+      const activeProjects = accessibleProjects.filter(p => p.status === 'ACTIVE').length;
+      const completedProjects = accessibleProjects.filter(p => p.status === 'COMPLETED').length;
+      const onHoldProjects = accessibleProjects.filter(p => p.status === 'ON_HOLD').length;
+      
+      const totalBudget = accessibleProjects.reduce((sum, p) => sum + Number(p.budget || 0), 0);
+      const actualCost = accessibleProjects.reduce((sum, p) => sum + Number(p.actualCost || 0), 0);
+
+      const stats = {
+        totalProjects,
+        activeProjects,
+        completedProjects,
+        onHoldProjects,
+        totalBudget,
+        actualCost,
+        budgetUtilization: totalBudget > 0 ? Math.round((actualCost / totalBudget) * 100) : 0
+      };
+
+      res.json({
+        success: true,
+        data: stats
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        success: false,
+        message: error.message || 'Failed to fetch global project statistics'
+      });
+    }
+  };
+
   // Milestone management
   createMilestone = async (req: Request, res: Response) => {
     try {

@@ -76,7 +76,7 @@ export class UserController {
         return res.status(403).json({ error: "Forbidden: Admin access required" });
       }
 
-      const { email, firstName, lastName, phone, designation, role } = req.body;
+      const { email, firstName, lastName, phone, designation, role, employeeCode } = req.body;
 
       if (!email || !firstName || !lastName || !phone || !designation || !role) {
         return res.status(400).json({ error: "All fields are required" });
@@ -94,6 +94,7 @@ export class UserController {
         phone,
         designation,
         role: role as Role,
+        employeeCode,
       });
       console.log('Auth is here: ', req.body.authorization);
       console.log("REQ.USER 👉", req.user);
@@ -205,7 +206,66 @@ export class UserController {
     }
   }
 
-  /* ================= GET CURRENT USER PROFILE ================= */
+  /* ================= GET ALL USERS (ADMIN ONLY) ================= */
+  async getAllUsers(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      if (!isAdminRole(req.user.role)) {
+        return res.status(403).json({ error: "Forbidden: Admin access required" });
+      }
+
+      // Get all users with their employee information
+      const users = await prisma.user.findMany({
+        include: {
+          employee: true
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+
+      // Format users for frontend
+      const formattedUsers = users.map(user => {
+        const firstName = user.firstName || '';
+        const lastName = user.lastName || '';
+        
+        // Create name, avoiding duplicates and handling empty values
+        let name = firstName;
+        if (lastName && lastName !== firstName) {
+          name = `${firstName} ${lastName}`;
+        }
+        name = name.trim() || 'User';
+
+        return {
+          id: user.id,
+          name,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          phone: user.phone,
+          designation: user.designation,
+          role: user.role,
+          status: user.status,
+          isActive: user.isActive,
+          employeeCode: user.employee?.employeeCode || null,
+          createdAt: user.createdAt.toISOString(),
+          updatedAt: user.updatedAt.toISOString()
+        };
+      });
+
+      return res.json({
+        success: true,
+        users: formattedUsers,
+        count: formattedUsers.length
+      });
+    } catch (error: any) {
+      console.error('Get all users error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  }
   async getCurrentUser(req: Request, res: Response) {
     try {
       if (!req.user) {

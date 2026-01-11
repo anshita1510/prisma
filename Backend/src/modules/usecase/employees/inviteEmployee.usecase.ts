@@ -21,6 +21,7 @@ export class InviteEmployeeUsecase {
       phone: string;
       designation: string;
       role: Role;
+      employeeCode?: string;
       companyId?: number;
       departmentId?: number;
     }
@@ -40,6 +41,16 @@ export class InviteEmployeeUsecase {
     const existingUser = await this.userRepo.findByEmail(data.email);
     if (existingUser) {
       throw new Error("User with this email already exists");
+    }
+
+    /* 🆔 Check existing employee code if provided */
+    if (data.employeeCode) {
+      const existingEmployee = await prisma.employee.findUnique({
+        where: { employeeCode: data.employeeCode }
+      });
+      if (existingEmployee) {
+        throw new Error("Employee code already exists");
+      }
     }
 
     /* ⏳ Tokens & Expiry */
@@ -165,7 +176,7 @@ export class InviteEmployeeUsecase {
       }
 
       // Generate unique employee code
-      const employeeCode = `EMP${userId.toString().padStart(4, '0')}`;
+      const employeeCode = data.employeeCode || `EMP${userId.toString().padStart(4, '0')}`;
 
       // Create employee record
       const employee = await prisma.employee.create({

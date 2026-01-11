@@ -1,0 +1,438 @@
+'use client';
+
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription } from '../../../components/ui/alert';
+import { Loader2, UserPlus, Mail, Phone, User, Briefcase, Shield, CheckCircle, AlertCircle } from 'lucide-react';
+import { userService, CreateUserData } from '@/app/services/userService';
+
+const ROLES = [
+  { value: 'EMPLOYEE', label: 'Employee', description: 'Basic user with limited access' },
+  { value: 'MANAGER', label: 'Manager', description: 'Can manage team and projects' },
+  { value: 'ADMIN', label: 'Admin', description: 'Full administrative access' },
+  { value: 'SUPER_ADMIN', label: 'Super Admin', description: 'Complete system access' }
+];
+
+const DESIGNATIONS = [
+  'INTERN',
+  'SOFTWARE_ENGINEER', 
+  'SENIOR_ENGINEER',
+  'TECH_LEAD',
+  'MANAGER',
+  'HR',
+  'DIRECTOR'
+];
+
+export default function CreateUserForm() {
+  const [formData, setFormData] = useState<CreateUserData>({
+    email: '',
+    firstName: '',
+    lastName: '',
+    phone: '',
+    designation: '',
+    role: 'EMPLOYEE',
+    employeeCode: ''
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    // Email validation
+    if (!formData.email) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+
+    // First name validation
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    } else if (formData.firstName.trim().length < 2) {
+      newErrors.firstName = 'First name must be at least 2 characters';
+    }
+
+    // Last name validation
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
+    } else if (formData.lastName.trim().length < 2) {
+      newErrors.lastName = 'Last name must be at least 2 characters';
+    }
+
+    // Phone validation
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    } else if (!/^\+?[\d\s\-\(\)]{10,}$/.test(formData.phone.trim())) {
+      newErrors.phone = 'Please enter a valid phone number';
+    }
+
+    // Employee Code validation (optional but if provided, should be valid)
+    if (formData.employeeCode && formData.employeeCode.trim()) {
+      if (formData.employeeCode.trim().length < 3) {
+        newErrors.employeeCode = 'Employee ID must be at least 3 characters';
+      } else if (!/^[A-Z0-9_-]+$/i.test(formData.employeeCode.trim())) {
+        newErrors.employeeCode = 'Employee ID can only contain letters, numbers, hyphens, and underscores';
+      }
+    }
+
+    // Designation validation
+    if (!formData.designation) {
+      newErrors.designation = 'Designation is required';
+    }
+
+    // Role validation
+    if (!formData.role) {
+      newErrors.role = 'Role is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleInputChange = (field: keyof CreateUserData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Clear error for this field when user starts typing
+    if (errors[field]) {
+      const newErrors = { ...errors };
+      delete newErrors[field];
+      setErrors(newErrors);
+    }
+    
+    // Clear general message when user makes changes
+    if (message) {
+      setMessage(null);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+    setMessage(null);
+
+    try {
+      const result = await userService.createUser(formData);
+      
+      if (result.success) {
+        setMessage({ 
+          type: 'success', 
+          text: result.message || 'User created successfully! An invitation email has been sent.' 
+        });
+        
+        // Reset form on success
+        setFormData({
+          email: '',
+          firstName: '',
+          lastName: '',
+          phone: '',
+          designation: '',
+          role: 'EMPLOYEE',
+          employeeCode: ''
+        });
+        setErrors({});
+      } else {
+        setMessage({ 
+          type: 'error', 
+          text: result.message || 'Failed to create user. Please try again.' 
+        });
+      }
+    } catch (error) {
+      console.error('Form submission error:', error);
+      setMessage({ 
+        type: 'error', 
+        text: 'An unexpected error occurred. Please try again.' 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReset = () => {
+    setFormData({
+      email: '',
+      firstName: '',
+      lastName: '',
+      phone: '',
+      designation: '',
+      role: 'EMPLOYEE',
+      employeeCode: ''
+    });
+    setErrors({});
+    setMessage(null);
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto p-6">
+      <Card className="shadow-lg">
+        <CardHeader className="space-y-1">
+          <div className="flex items-center space-x-2">
+            <UserPlus className="w-6 h-6 text-blue-600" />
+            <CardTitle className="text-2xl font-bold">Create New User</CardTitle>
+          </div>
+          <CardDescription>
+            Add a new user to the system. An invitation email will be sent to the provided email address.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          {message && (
+            <Alert className={`mb-6 ${message.type === 'success' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+              {message.type === 'success' ? (
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              ) : (
+                <AlertCircle className="h-4 w-4 text-red-600" />
+              )}
+              <AlertDescription className={message.type === 'success' ? 'text-green-800' : 'text-red-800'}>
+                {message.text}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email Field */}
+            <div className="space-y-2">
+              <Label htmlFor="email" className="flex items-center space-x-2">
+                <Mail className="w-4 h-4" />
+                <span>Email Address *</span>
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="john.doe@company.com"
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                className={errors.email ? 'border-red-500 focus:border-red-500' : ''}
+                disabled={loading}
+              />
+              {errors.email && (
+                <p className="text-sm text-red-600 flex items-center space-x-1">
+                  <AlertCircle className="w-3 h-3" />
+                  <span>{errors.email}</span>
+                </p>
+              )}
+            </div>
+
+            {/* Name Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName" className="flex items-center space-x-2">
+                  <User className="w-4 h-4" />
+                  <span>First Name *</span>
+                </Label>
+                <Input
+                  id="firstName"
+                  type="text"
+                  placeholder="John"
+                  value={formData.firstName}
+                  onChange={(e) => handleInputChange('firstName', e.target.value)}
+                  className={errors.firstName ? 'border-red-500 focus:border-red-500' : ''}
+                  disabled={loading}
+                />
+                {errors.firstName && (
+                  <p className="text-sm text-red-600 flex items-center space-x-1">
+                    <AlertCircle className="w-3 h-3" />
+                    <span>{errors.firstName}</span>
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="lastName" className="flex items-center space-x-2">
+                  <User className="w-4 h-4" />
+                  <span>Last Name *</span>
+                </Label>
+                <Input
+                  id="lastName"
+                  type="text"
+                  placeholder="Doe"
+                  value={formData.lastName}
+                  onChange={(e) => handleInputChange('lastName', e.target.value)}
+                  className={errors.lastName ? 'border-red-500 focus:border-red-500' : ''}
+                  disabled={loading}
+                />
+                {errors.lastName && (
+                  <p className="text-sm text-red-600 flex items-center space-x-1">
+                    <AlertCircle className="w-3 h-3" />
+                    <span>{errors.lastName}</span>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Phone Field */}
+            <div className="space-y-2">
+              <Label htmlFor="phone" className="flex items-center space-x-2">
+                <Phone className="w-4 h-4" />
+                <span>Phone Number *</span>
+              </Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="+1 (555) 123-4567"
+                value={formData.phone}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                className={errors.phone ? 'border-red-500 focus:border-red-500' : ''}
+                disabled={loading}
+              />
+              {errors.phone && (
+                <p className="text-sm text-red-600 flex items-center space-x-1">
+                  <AlertCircle className="w-3 h-3" />
+                  <span>{errors.phone}</span>
+                </p>
+              )}
+            </div>
+
+            {/* Employee ID Field */}
+            <div className="space-y-2">
+              <Label htmlFor="employeeCode" className="flex items-center space-x-2">
+                <Briefcase className="w-4 h-4" />
+                <span>Employee ID</span>
+                <span className="text-xs text-gray-500">(Optional - will auto-generate if not provided)</span>
+              </Label>
+              <Input
+                id="employeeCode"
+                type="text"
+                placeholder="EMP001 or JOHN_DOE"
+                value={formData.employeeCode}
+                onChange={(e) => handleInputChange('employeeCode', e.target.value)}
+                className={errors.employeeCode ? 'border-red-500 focus:border-red-500' : ''}
+                disabled={loading}
+              />
+              {errors.employeeCode && (
+                <p className="text-sm text-red-600 flex items-center space-x-1">
+                  <AlertCircle className="w-3 h-3" />
+                  <span>{errors.employeeCode}</span>
+                </p>
+              )}
+              <p className="text-xs text-gray-500">
+                Leave empty to auto-generate (e.g., EMP0001). Must be unique and contain only letters, numbers, hyphens, and underscores.
+              </p>
+            </div>
+
+            {/* Designation and Role Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="designation" className="flex items-center space-x-2">
+                  <Briefcase className="w-4 h-4" />
+                  <span>Designation *</span>
+                </Label>
+                <Select 
+                  value={formData.designation} 
+                  onValueChange={(value) => handleInputChange('designation', value)}
+                >
+                  <SelectTrigger 
+                    className={errors.designation ? 'border-red-500 focus:border-red-500' : ''}
+                    disabled={loading}
+                  >
+                    <SelectValue placeholder="Select designation" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DESIGNATIONS.map((designation) => (
+                      <SelectItem key={designation} value={designation}>
+                        {designation.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.designation && (
+                  <p className="text-sm text-red-600 flex items-center space-x-1">
+                    <AlertCircle className="w-3 h-3" />
+                    <span>{errors.designation}</span>
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="role" className="flex items-center space-x-2">
+                  <Shield className="w-4 h-4" />
+                  <span>Role *</span>
+                </Label>
+                <Select 
+                  value={formData.role} 
+                  onValueChange={(value) => handleInputChange('role', value as CreateUserData['role'])}
+                >
+                  <SelectTrigger 
+                    className={errors.role ? 'border-red-500 focus:border-red-500' : ''}
+                    disabled={loading}
+                  >
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ROLES.map((role) => (
+                      <SelectItem key={role.value} value={role.value}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{role.label}</span>
+                          <span className="text-xs text-gray-500">{role.description}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.role && (
+                  <p className="text-sm text-red-600 flex items-center space-x-1">
+                    <AlertCircle className="w-3 h-3" />
+                    <span>{errors.role}</span>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <Button 
+                type="submit" 
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Creating User...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Create User & Send Invitation
+                  </>
+                )}
+              </Button>
+              
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={handleReset}
+                disabled={loading}
+                className="flex-1 sm:flex-none"
+              >
+                Reset Form
+              </Button>
+            </div>
+          </form>
+
+          {/* Info Section */}
+          <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 className="font-medium text-blue-900 mb-2">What happens next?</h4>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>• An invitation email will be sent to the provided email address</li>
+              <li>• The user will receive a temporary password and OTP</li>
+              <li>• They can set their permanent password using the OTP</li>
+              <li>• Once activated, they can log in with their credentials</li>
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

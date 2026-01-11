@@ -72,7 +72,7 @@ export default function LoginPage(): JSX.Element {
       <div className="flex flex-1 flex-col justify-center px-8 py-12 sm:px-12 lg:flex-none lg:w-1/2 xl:w-[40%]">
         <div className="mx-auto w-full max-w-sm">
           <div className="mb-10">
-            <h1 className="text-4xl font-black tracking-tight text-green-600">Tikr.</h1>
+            <h1 className="text-4xl font-black tracking-tight text-blue-600">Tikr.</h1>
             <h2 className="mt-6 text-2xl font-bold leading-9 tracking-tight text-gray-900">
               Welcome back
             </h2>
@@ -95,7 +95,7 @@ export default function LoginPage(): JSX.Element {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all outline-none"
+                className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
                 placeholder="name@company.com"
               />
             </div>
@@ -106,7 +106,7 @@ export default function LoginPage(): JSX.Element {
                 <button
                   type="button"
                   onClick={() => router.push("/Forget_pass")}
-                  className="text-xs font-semibold text-green-600 hover:text-green-500"
+                  className="text-xs font-semibold text-blue-600 hover:text-blue-500"
                 >
                   Forgot password?
                 </button>
@@ -116,7 +116,7 @@ export default function LoginPage(): JSX.Element {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all outline-none"
+                className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all outline-none"
                 placeholder="••••••••"
               />
             </div>
@@ -124,7 +124,7 @@ export default function LoginPage(): JSX.Element {
             <button
               type="submit"
               disabled={loading}
-              className="group relative flex w-full justify-center rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-70 transition-all active:scale-[0.98]"
+              className="group relative flex w-full justify-center rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-70 transition-all active:scale-[0.98]"
             >
               {loading ? (
                 <span className="flex items-center gap-2">
@@ -146,7 +146,7 @@ export default function LoginPage(): JSX.Element {
           src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=2070"
           alt="Office Background"
         />
-        <div className="absolute inset-0 bg-green-900/40 backdrop-blur-[2px] flex flex-col justify-end p-20 text-white">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/80 via-purple-800/60 to-transparent backdrop-blur-[2px] flex flex-col justify-end p-20 text-white">
           <blockquote className="space-y-2">
             <p className="text-3xl font-medium">
               "Tikr has completely transformed how our team tracks productivity and stays organized."

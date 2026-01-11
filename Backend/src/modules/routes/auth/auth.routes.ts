@@ -37,6 +37,13 @@ router.get(
     controller.getCurrentUser
 );
 
+router.get(
+    "/",
+    authenticate,
+    requireRole(Role.ADMIN, Role.SUPER_ADMIN),
+    controller.getAllUsers
+);
+
 router.post(
     "/:id/update-password",
     authenticate,

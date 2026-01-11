@@ -3,18 +3,21 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { TaskCard } from '@/components/tasks/TaskCard';
 import { ProjectCard } from '@/components/projects/ProjectCard';
 import { Task, Project, TaskStats } from '@/app/types/project';
 import { taskService } from '@/app/services/taskService';
 import { projectService } from '@/app/services/projectService';
+import { authService } from '@/app/services/authService';
 import { 
   FolderOpen, 
   CheckSquare, 
   Clock, 
   AlertCircle, 
   TrendingUp,
-  Plus
+  Plus,
+  User
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -22,8 +25,11 @@ export default function DashboardPage() {
   const [recentProjects, setRecentProjects] = useState<Project[]>([]);
   const [taskStats, setTaskStats] = useState<TaskStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
+    const currentUser = authService.getStoredUser();
+    setUser(currentUser);
     loadDashboardData();
   }, []);
 
@@ -89,9 +95,35 @@ export default function DashboardPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {/* Welcome Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-8 text-white mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold mb-2">
+              Welcome {user?.name || 'User'}! 👋
+            </h1>
+            <p className="text-blue-100 text-lg">
+              Here's what's happening with your projects and tasks today
+            </p>
+            <div className="flex items-center mt-3 space-x-4">
+              <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                {user?.role || 'USER'}
+              </Badge>
+              <span className="text-blue-100">•</span>
+              <span className="text-blue-100">{user?.designation || 'Team Member'}</span>
+            </div>
+          </div>
+          <div className="hidden md:block">
+            <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center">
+              <User className="w-12 h-12 text-white" />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-2">Welcome back! Here's what's happening with your projects and tasks.</p>
+        <h2 className="text-2xl font-bold text-gray-900">Dashboard Overview</h2>
+        <p className="text-gray-600 mt-2">Track your progress and manage your work efficiently.</p>
       </div>
 
       {/* Stats Cards */}

@@ -1,0 +1,116 @@
+import axios from 'axios';
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5004';
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+});
+
+// Add auth token to requests
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export interface CreateUserData {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  designation: string;
+  role: 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'EMPLOYEE';
+  employeeCode?: string;
+}
+
+export interface User {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  designation: string;
+  role: string;
+  status: string;
+  isActive: boolean;
+  employeeCode?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const userService = {
+  // Create/Invite new user
+  async createUser(userData: CreateUserData) {
+    try {
+      const response = await api.post('/api/users/register', userData);
+      return {
+        success: true,
+        message: response.data.message,
+        data: response.data
+      };
+    } catch (error: any) {
+      console.error('Create user error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.error || 'Failed to create user'
+      };
+    }
+  },
+
+  // Get all users (for admin)
+  async getUsers() {
+    try {
+      const response = await api.get('/api/users');
+      return {
+        success: true,
+        data: response.data.users || []
+      };
+    } catch (error: any) {
+      console.error('Get users error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.error || 'Failed to fetch users',
+        data: []
+      };
+    }
+  },
+
+  // Update user credentials
+  async updateUser(userId: number, userData: Partial<CreateUserData>) {
+    try {
+      const response = await api.put(`/api/users/update/${userId}`, userData);
+      return {
+        success: true,
+        message: response.data.message,
+        data: response.data.user
+      };
+    } catch (error: any) {
+      console.error('Update user error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.error || 'Failed to update user'
+      };
+    }
+  },
+
+  // Update user password
+  async updatePassword(userId: number, newPassword: string) {
+    try {
+      const response = await api.post(`/api/users/${userId}/update-password`, {
+        newPassword
+      });
+      return {
+        success: true,
+        message: response.data.message
+      };
+    } catch (error: any) {
+      console.error('Update password error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.error || 'Failed to update password'
+      };
+    }
+  }
+};
