@@ -1,4 +1,5 @@
 import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
 import { cn } from "@/lib/utils"
 
 interface DialogProps {
@@ -41,18 +42,24 @@ const Dialog = ({ open, onOpenChange, children }: DialogProps) => {
   )
 }
 
-const DialogTrigger = React.forwardRef<
-  HTMLButtonElement,
-  React.ButtonHTMLAttributes<HTMLButtonElement>
->(({ className, children, ...props }, ref) => (
-  <button
-    ref={ref}
-    className={className}
-    {...props}
-  >
-    {children}
-  </button>
-))
+interface DialogTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  asChild?: boolean
+}
+
+const DialogTrigger = React.forwardRef<HTMLButtonElement, DialogTriggerProps>(
+  ({ className, children, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button"
+    return (
+      <Comp
+        ref={ref}
+        className={className}
+        {...props}
+      >
+        {children}
+      </Comp>
+    )
+  }
+)
 DialogTrigger.displayName = "DialogTrigger"
 
 const DialogContent = React.forwardRef<

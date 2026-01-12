@@ -188,36 +188,10 @@ export default function UserTasksPage() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Welcome Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-8 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl font-bold mb-2">
-                Welcome {user?.name || 'User'}! 👋
-              </h1>
-              <p className="text-blue-100 text-lg">
-                Here are your assigned tasks - stay organized and productive
-              </p>
-              <div className="flex items-center mt-3 space-x-4">
-                <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-                  {user?.role || 'EMPLOYEE'}
-                </Badge>
-                <span className="text-blue-100">•</span>
-                <span className="text-blue-100">{user?.designation || 'Team Member'}</span>
-              </div>
-            </div>
-            <div className="hidden md:block">
-              <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center">
-                <User className="w-12 h-12 text-white" />
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Page Title and Description */}
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">My Tasks</h2>
+            <h1 className="text-3xl font-bold text-gray-900">My Tasks</h1>
             <p className="text-gray-600 mt-1">Track progress and manage your assigned work</p>
           </div>
         </div>

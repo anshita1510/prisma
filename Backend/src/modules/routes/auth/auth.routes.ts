@@ -14,6 +14,9 @@ const controller = new UserController();
 
 /* ---------------- AUTH ---------------- */
 router.post("/login", controller.login);
+router.post("/check-user", controller.checkUser);
+router.post("/google-login", controller.googleLogin);
+router.post("/microsoft-login", controller.microsoftLogin);
 router.post("/superAdmin", controller.createSuperAdmin);
 
 /* ---------------- AUTHENTICATED USER ---------------- */
@@ -77,5 +80,16 @@ router.post(
     "/reset-password",
     resetPassword
 )
+
+/* ---------------- API DOCUMENTATION ---------------- */
+router.get(
+    "/api-docs",
+    controller.getApiDocumentation
+);
+
+router.get(
+    "/postman-collection",
+    controller.downloadPostmanCollection
+);
 
 export default router;

@@ -34,6 +34,10 @@ export class LoginUsecase {
       throw new Error("Account is inactive");
     }
 
+    return this.generateTokenForUser(user);
+  }
+
+  async generateTokenForUser(user: any) {
     const token = generateAuthToken({
       id: user.id,
       role: user.role,
@@ -61,7 +65,8 @@ export class LoginUsecase {
       phone: user.phone,
       designation: user.designation,
       status: user.status,
-      isActive: user.isActive
+      isActive: user.isActive,
+      authProvider: user.authProvider
     };
 
     return { 

@@ -11,6 +11,13 @@ datasource db {
 // ENUMS
 //////////////////////////////////////////////////////
 
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+  MICROSOFT
+  MOBILE
+}
+
 enum Role {
   SUPER_ADMIN
   ADMIN
@@ -178,7 +185,12 @@ model User {
   status          Status   @default(PENDING)
   password        String?
   isActive        Boolean  @default(false)
-
+  
+  // Authentication provider
+  authProvider    AuthProvider @default(LOCAL)
+  googleId        String?      @unique
+  microsoftId     String?      @unique
+  
   inviteToken     String?   @unique
   inviteExpiry    DateTime?
   tempPassword    String?
@@ -188,7 +200,7 @@ model User {
   resetOtp        String?
   resetOtpExpiry  DateTime?
 
-  passwordResetAllowed Boolean @default(false) // ✅ ADD THIS
+  passwordResetAllowed Boolean @default(false)
 
   companyId       Int?
   company         Company? @relation(fields: [companyId], references: [id])

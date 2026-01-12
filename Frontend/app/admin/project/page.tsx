@@ -1,6 +1,5 @@
 import React from 'react'
 import Sidebar from '../_components/Sidebar_A'
-import Banner from '../_components/banner_A'
 
 export default function AdminProjectPage() {
   return (
@@ -11,11 +10,9 @@ export default function AdminProjectPage() {
         
         {/* Main Content */}
         <main className="flex-1">
-          <Banner />
-          <div className="p-6">
-          <div className="mb-6">
+          <div className="border-b border-gray-200 bg-white px-6 py-4">
             <h1 className="text-2xl font-bold text-gray-900">Project & Task Management</h1>
-            <p className="text-gray-600">Admin access to comprehensive project and task management</p>
+            <p className="text-gray-600 mt-1">Admin access to comprehensive project and task management</p>
             <div className="mt-2 flex items-center space-x-2">
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                 ADMIN
@@ -26,6 +23,7 @@ export default function AdminProjectPage() {
               <span className="text-sm text-gray-500">Full Access</span>
             </div>
           </div>
+          <div className="p-6">
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Enhanced TMS Dashboard */}
