@@ -1,0 +1,712 @@
+import { PrismaClient, $Enums } from '@prisma/client';
+import { Request } from 'express';
+
+const prisma = new PrismaClient();
+
+// Type aliases for easier use
+type AttendanceStatus = $Enums.AttendanceStatus;
+type RegularizationType = $Enums.RegularizationType;
+type RequestStatus = $Enums.RequestStatus;
+type AuditAction = $Enums.AuditAction;
+
+const { AttendanceStatus, RegularizationType, RequestStatus, AuditAction } = $Enums;
+
+interface CheckInData {
+  employeeId: number;
+  location?: {
+    latitude: number;
+    longitude: number;
+    address?: string;
+  };
+  deviceInfo?: {
+    userAgent: string;
+    ipAddress: string;
+    deviceType: string;
+  };
+}
+
+interface CheckOutData {
+  employeeId: number;
+  location?: {
+    latitude: number;
+    longitude: number;
+    address?: string;
+  };
+  deviceInfo?: {
+    userAgent: string;
+    ipAddress: string;
+    deviceType: string;
+  };
+}
+
+interface RegularizationRequestData {
+  employeeId: number;
+  attendanceId: number;
+  requestType: RegularizationType;
+  reason: string;
+  proposedCheckIn?: Date;
+  proposedCheckOut?: Date;
+  proposedStatus?: AttendanceStatus;
+}
+
+interface AttendanceCorrectionData {
+  attendanceId: number;
+  checkIn?: Date;
+  checkOut?: Date;
+  status?: AttendanceStatus;
+  reason: string;
+  correctedBy: number;
+}
+
+class AttendanceService {
+  // Personal Attendance Methods
+  async checkIn(data: CheckInData, req: Request) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Check if already checked in today
+    const existingAttendance = await prisma.attendance.findUnique({
+      where: {
+        employeeId_date: {
+          employeeId: data.employeeId,
+          date: today
+        }
+      }
+    });
+
+    if (existingAttendance && existingAttendance.checkIn) {
+      throw new Error('Already checked in today');
+    }
+
+    const checkInTime = new Date();
+    
+    // Determine status based on policy (simplified logic)
+    const status = this.determineAttendanceStatus(checkInTime, 'checkin');
+
+    const attendance = await prisma.attendance.upsert({
+      where: {
+        employeeId_date: {
+          employeeId: data.employeeId,
+          date: today
+        }
+      },
+      update: {
+        checkIn: checkInTime,
+        status,
+        location: data.location,
+        deviceInfo: data.deviceInfo,
+        updatedAt: new Date()
+      },
+      create: {
+        employeeId: data.employeeId,
+        companyId: await this.getEmployeeCompanyId(data.employeeId),
+        departmentId: await this.getEmployeeDepartmentId(data.employeeId),
+        date: today,
+        checkIn: checkInTime,
+        status,
+        location: data.location,
+        deviceInfo: data.deviceInfo
+      }
+    });
+
+    // Create audit entry
+    await this.createAuditEntry({
+      attendanceId: attendance.id,
+      action: AuditAction.CHECK_IN,
+      performedBy: data.employeeId,
+      ipAddress: req.ip,
+      userAgent: req.get('User-Agent'),
+      newValues: { checkIn: checkInTime, status },
+      reason: 'Employee check-in'
+    });
+
+    return attendance;
+  }
+
+  async checkOut(data: CheckOutData, req: Request) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const attendance = await prisma.attendance.findUnique({
+      where: {
+        employeeId_date: {
+          employeeId: data.employeeId,
+          date: today
+        }
+      }
+    });
+
+    if (!attendance || !attendance.checkIn) {
+      throw new Error('Must check in before checking out');
+    }
+
+    if (attendance.checkOut) {
+      throw new Error('Already checked out today');
+    }
+
+    const checkOutTime = new Date();
+    const workHours = this.calculateWorkHours(attendance.checkIn, checkOutTime);
+    const overtime = this.calculateOvertime(workHours);
+
+    const updatedAttendance = await prisma.attendance.update({
+      where: { id: attendance.id },
+      data: {
+        checkOut: checkOutTime,
+        workHours,
+        overtime,
+        location: data.location,
+        deviceInfo: data.deviceInfo,
+        updatedAt: new Date()
+      }
+    });
+
+    // Create audit entry
+    await this.createAuditEntry({
+      attendanceId: attendance.id,
+      action: AuditAction.CHECK_OUT,
+      performedBy: data.employeeId,
+      ipAddress: req.ip,
+      userAgent: req.get('User-Agent'),
+      oldValues: { checkOut: null },
+      newValues: { checkOut: checkOutTime, workHours, overtime },
+      reason: 'Employee check-out'
+    });
+
+    return updatedAttendance;
+  }
+
+  async getPersonalAttendanceHistory(employeeId: number, startDate?: Date, endDate?: Date) {
+    const whereClause: any = { employeeId };
+    
+    if (startDate || endDate) {
+      whereClause.date = {};
+      if (startDate) whereClause.date.gte = startDate;
+      if (endDate) whereClause.date.lte = endDate;
+    }
+
+    return await prisma.attendance.findMany({
+      where: whereClause,
+      orderBy: { date: 'desc' },
+      include: {
+        regularizationRequests: {
+          include: {
+            approver: {
+              select: { name: true }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  async submitRegularizationRequest(data: RegularizationRequestData, req: Request) {
+    // Check if employee is trying to self-approve (separation of duties)
+    const attendance = await prisma.attendance.findUnique({
+      where: { id: data.attendanceId },
+      include: { employee: true }
+    });
+
+    if (!attendance) {
+      throw new Error('Attendance record not found');
+    }
+
+    const request = await prisma.regularizationRequest.create({
+      data: {
+        employeeId: data.employeeId,
+        attendanceId: data.attendanceId,
+        requestType: data.requestType,
+        reason: data.reason,
+        proposedCheckIn: data.proposedCheckIn,
+        proposedCheckOut: data.proposedCheckOut,
+        proposedStatus: data.proposedStatus,
+        status: RequestStatus.PENDING
+      }
+    });
+
+    // Create audit entry
+    await this.createRegularizationAuditEntry({
+      requestId: request.id,
+      action: AuditAction.CREATE,
+      performedBy: data.employeeId,
+      ipAddress: req.ip,
+      userAgent: req.get('User-Agent'),
+      newValues: data,
+      reason: 'Regularization request submitted'
+    });
+
+    return request;
+  }
+
+  // Employee Management Methods
+  async getAllEmployeeAttendance(date?: Date, departmentId?: number) {
+    const targetDate = date || new Date();
+    targetDate.setHours(0, 0, 0, 0);
+
+    const whereClause: any = { date: targetDate };
+    if (departmentId) {
+      whereClause.departmentId = departmentId;
+    }
+
+    return await prisma.attendance.findMany({
+      where: whereClause,
+      include: {
+        employee: {
+          select: {
+            id: true,
+            name: true,
+            employeeCode: true,
+            designation: true
+          }
+        },
+        department: {
+          select: {
+            name: true
+          }
+        }
+      },
+      orderBy: [
+        { status: 'asc' },
+        { checkIn: 'asc' }
+      ]
+    });
+  }
+
+  async performManualAttendanceCorrection(data: AttendanceCorrectionData, req: Request) {
+    const attendance = await prisma.attendance.findUnique({
+      where: { id: data.attendanceId }
+    });
+
+    if (!attendance) {
+      throw new Error('Attendance record not found');
+    }
+
+    if (attendance.isLocked) {
+      throw new Error('Cannot modify locked attendance record');
+    }
+
+    const oldValues = {
+      checkIn: attendance.checkIn,
+      checkOut: attendance.checkOut,
+      status: attendance.status
+    };
+
+    const updatedAttendance = await prisma.attendance.update({
+      where: { id: data.attendanceId },
+      data: {
+        checkIn: data.checkIn || attendance.checkIn,
+        checkOut: data.checkOut || attendance.checkOut,
+        status: data.status || attendance.status,
+        isManuallyEdited: true,
+        editReason: data.reason,
+        editedBy: data.correctedBy,
+        editedAt: new Date(),
+        workHours: data.checkIn && data.checkOut ? 
+          this.calculateWorkHours(data.checkIn, data.checkOut) : 
+          attendance.workHours
+      }
+    });
+
+    // Create audit entry
+    await this.createAuditEntry({
+      attendanceId: data.attendanceId,
+      action: AuditAction.UPDATE,
+      performedBy: data.correctedBy,
+      ipAddress: req.ip,
+      userAgent: req.get('User-Agent'),
+      oldValues,
+      newValues: {
+        checkIn: data.checkIn,
+        checkOut: data.checkOut,
+        status: data.status
+      },
+      reason: data.reason
+    });
+
+    return updatedAttendance;
+  }
+
+  async getPendingRegularizationRequests(approverId?: number) {
+    const whereClause: any = { status: RequestStatus.PENDING };
+    
+    // If approverId is provided, filter by department or reporting structure
+    if (approverId) {
+      // Add logic to filter based on approval hierarchy
+    }
+
+    return await prisma.regularizationRequest.findMany({
+      where: whereClause,
+      include: {
+        employee: {
+          select: {
+            id: true,
+            name: true,
+            employeeCode: true,
+            designation: true
+          }
+        },
+        attendance: {
+          select: {
+            date: true,
+            checkIn: true,
+            checkOut: true,
+            status: true
+          }
+        }
+      },
+      orderBy: { submittedAt: 'asc' }
+    });
+  }
+
+  async approveRegularizationRequest(requestId: string, approverId: number, req: Request) {
+    const request = await prisma.regularizationRequest.findUnique({
+      where: { id: requestId },
+      include: { employee: true, attendance: true }
+    });
+
+    if (!request) {
+      throw new Error('Regularization request not found');
+    }
+
+    // Prevent self-approval (separation of duties)
+    if (request.employeeId === approverId) {
+      throw new Error('Cannot approve your own regularization request');
+    }
+
+    if (request.status !== RequestStatus.PENDING) {
+      throw new Error('Request is not in pending status');
+    }
+
+    // Update the request
+    const updatedRequest = await prisma.regularizationRequest.update({
+      where: { id: requestId },
+      data: {
+        status: RequestStatus.APPROVED,
+        approvedBy: approverId,
+        approvedAt: new Date()
+      }
+    });
+
+    // Apply the changes to the attendance record
+    await prisma.attendance.update({
+      where: { id: request.attendanceId },
+      data: {
+        checkIn: request.proposedCheckIn || request.attendance.checkIn,
+        checkOut: request.proposedCheckOut || request.attendance.checkOut,
+        status: request.proposedStatus || request.attendance.status,
+        requiresApproval: false,
+        approvedBy: approverId,
+        approvedAt: new Date()
+      }
+    });
+
+    // Create audit entry
+    await this.createRegularizationAuditEntry({
+      requestId,
+      action: AuditAction.APPROVE,
+      performedBy: approverId,
+      ipAddress: req.ip,
+      userAgent: req.get('User-Agent'),
+      oldValues: { status: RequestStatus.PENDING },
+      newValues: { status: RequestStatus.APPROVED, approvedBy: approverId },
+      reason: 'Regularization request approved'
+    });
+
+    return updatedRequest;
+  }
+
+  async rejectRegularizationRequest(requestId: string, approverId: number, rejectionReason: string, req: Request) {
+    const request = await prisma.regularizationRequest.findUnique({
+      where: { id: requestId },
+      include: { employee: true }
+    });
+
+    if (!request) {
+      throw new Error('Regularization request not found');
+    }
+
+    // Prevent self-rejection (separation of duties)
+    if (request.employeeId === approverId) {
+      throw new Error('Cannot reject your own regularization request');
+    }
+
+    if (request.status !== RequestStatus.PENDING) {
+      throw new Error('Request is not in pending status');
+    }
+
+    const updatedRequest = await prisma.regularizationRequest.update({
+      where: { id: requestId },
+      data: {
+        status: RequestStatus.REJECTED,
+        approvedBy: approverId,
+        approvedAt: new Date(),
+        rejectionReason
+      }
+    });
+
+    // Create audit entry
+    await this.createRegularizationAuditEntry({
+      requestId,
+      action: AuditAction.REJECT,
+      performedBy: approverId,
+      ipAddress: req.ip,
+      userAgent: req.get('User-Agent'),
+      oldValues: { status: RequestStatus.PENDING },
+      newValues: { status: RequestStatus.REJECTED, rejectionReason },
+      reason: rejectionReason
+    });
+
+    return updatedRequest;
+  }
+
+  // Reporting Methods
+  async generateDailyAttendanceReport(date: Date, departmentId?: number) {
+    const whereClause: any = { date };
+    if (departmentId) {
+      whereClause.departmentId = departmentId;
+    }
+
+    const attendances = await prisma.attendance.findMany({
+      where: whereClause,
+      include: {
+        employee: {
+          select: {
+            id: true,
+            name: true,
+            employeeCode: true,
+            designation: true
+          }
+        },
+        department: {
+          select: {
+            name: true
+          }
+        }
+      }
+    });
+
+    const summary = {
+      totalEmployees: attendances.length,
+      present: attendances.filter(a => a.status === AttendanceStatus.PRESENT).length,
+      absent: attendances.filter(a => a.status === AttendanceStatus.ABSENT).length,
+      late: attendances.filter(a => a.status === AttendanceStatus.LATE).length,
+      earlyDeparture: attendances.filter(a => a.status === AttendanceStatus.EARLY_DEPARTURE).length,
+      totalWorkHours: attendances.reduce((sum, a) => sum + (a.workHours || 0), 0),
+      totalOvertime: attendances.reduce((sum, a) => sum + (a.overtime || 0), 0)
+    };
+
+    return {
+      date,
+      summary,
+      attendances
+    };
+  }
+
+  async generateMonthlyAttendanceReport(year: number, month: number, departmentId?: number) {
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0);
+
+    const whereClause: any = {
+      date: {
+        gte: startDate,
+        lte: endDate
+      }
+    };
+
+    if (departmentId) {
+      whereClause.departmentId = departmentId;
+    }
+
+    const attendances = await prisma.attendance.findMany({
+      where: whereClause,
+      include: {
+        employee: {
+          select: {
+            id: true,
+            name: true,
+            employeeCode: true,
+            designation: true
+          }
+        }
+      }
+    });
+
+    // Group by employee
+    const employeeAttendance = attendances.reduce((acc, attendance) => {
+      const empId = attendance.employeeId;
+      if (!acc[empId]) {
+        acc[empId] = {
+          employee: attendance.employee,
+          totalDays: 0,
+          presentDays: 0,
+          absentDays: 0,
+          lateDays: 0,
+          totalWorkHours: 0,
+          totalOvertime: 0,
+          attendances: []
+        };
+      }
+
+      acc[empId].totalDays++;
+      acc[empId].attendances.push(attendance);
+      
+      if (attendance.status === AttendanceStatus.PRESENT) acc[empId].presentDays++;
+      if (attendance.status === AttendanceStatus.ABSENT) acc[empId].absentDays++;
+      if (attendance.status === AttendanceStatus.LATE) acc[empId].lateDays++;
+      
+      acc[empId].totalWorkHours += attendance.workHours || 0;
+      acc[empId].totalOvertime += attendance.overtime || 0;
+
+      return acc;
+    }, {} as any);
+
+    return {
+      period: { year, month },
+      employeeAttendance: Object.values(employeeAttendance)
+    };
+  }
+
+  // Audit Methods
+  async getAuditTrail(attendanceId?: number, employeeId?: number, startDate?: Date, endDate?: Date) {
+    const whereClause: any = {};
+    
+    if (attendanceId) {
+      whereClause.attendanceId = attendanceId;
+    }
+    
+    if (employeeId) {
+      whereClause.attendance = {
+        employeeId
+      };
+    }
+
+    if (startDate || endDate) {
+      whereClause.performedAt = {};
+      if (startDate) whereClause.performedAt.gte = startDate;
+      if (endDate) whereClause.performedAt.lte = endDate;
+    }
+
+    return await prisma.attendanceAuditEntry.findMany({
+      where: whereClause,
+      include: {
+        performer: {
+          select: {
+            id: true,
+            name: true,
+            employeeCode: true
+          }
+        },
+        attendance: {
+          include: {
+            employee: {
+              select: {
+                id: true,
+                name: true,
+                employeeCode: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: { performedAt: 'desc' }
+    });
+  }
+
+  // Helper Methods
+  private determineAttendanceStatus(checkInTime: Date, type: 'checkin' | 'checkout'): AttendanceStatus {
+    // Simplified logic - in real implementation, this would check against policies
+    const hour = checkInTime.getHours();
+    const minute = checkInTime.getMinutes();
+    
+    if (type === 'checkin') {
+      if (hour > 9 || (hour === 9 && minute > 15)) {
+        return AttendanceStatus.LATE;
+      }
+      return AttendanceStatus.PRESENT;
+    }
+    
+    return AttendanceStatus.PRESENT;
+  }
+
+  private calculateWorkHours(checkIn: Date, checkOut: Date): number {
+    const diffMs = checkOut.getTime() - checkIn.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
+    return Math.round(diffHours * 100) / 100; // Round to 2 decimal places
+  }
+
+  private calculateOvertime(workHours: number): number {
+    const standardHours = 8;
+    return workHours > standardHours ? workHours - standardHours : 0;
+  }
+
+  private async getEmployeeCompanyId(employeeId: number): Promise<number> {
+    const employee = await prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { companyId: true }
+    });
+    return employee?.companyId || 1;
+  }
+
+  private async getEmployeeDepartmentId(employeeId: number): Promise<number> {
+    const employee = await prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { departmentId: true }
+    });
+    return employee?.departmentId || 1;
+  }
+
+  private async createAuditEntry(data: {
+    attendanceId: number;
+    action: AuditAction;
+    performedBy: number;
+    ipAddress?: string;
+    userAgent?: string;
+    oldValues?: any;
+    newValues?: any;
+    reason?: string;
+    sessionId?: string;
+  }) {
+    return await prisma.attendanceAuditEntry.create({
+      data: {
+        attendanceId: data.attendanceId,
+        action: data.action,
+        performedBy: data.performedBy,
+        ipAddress: data.ipAddress,
+        userAgent: data.userAgent,
+        oldValues: data.oldValues,
+        newValues: data.newValues,
+        reason: data.reason,
+        sessionId: data.sessionId,
+        isImmutable: true
+      }
+    });
+  }
+
+  private async createRegularizationAuditEntry(data: {
+    requestId: string;
+    action: AuditAction;
+    performedBy: number;
+    ipAddress?: string;
+    userAgent?: string;
+    oldValues?: any;
+    newValues?: any;
+    reason?: string;
+    sessionId?: string;
+  }) {
+    return await prisma.regularizationAuditEntry.create({
+      data: {
+        requestId: data.requestId,
+        action: data.action,
+        performedBy: data.performedBy,
+        ipAddress: data.ipAddress,
+        userAgent: data.userAgent,
+        oldValues: data.oldValues,
+        newValues: data.newValues,
+        reason: data.reason,
+        sessionId: data.sessionId,
+        isImmutable: true
+      }
+    });
+  }
+}
+
+export const attendanceService = new AttendanceService();

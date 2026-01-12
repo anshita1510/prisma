@@ -49,7 +49,7 @@ export function TaskCard({ task, onEdit, onDelete, onView, onStatusChange }: Tas
           {task.title}
         </CardTitle>
         <DropdownMenu>
-          <DropdownMenuTrigger>
+          <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
               <MoreHorizontal className="h-4 w-4" />
             </Button>

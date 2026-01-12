@@ -42,10 +42,15 @@ async function main(): Promise<void> {
     update: {},
     create: {
       email: 'superadmin@tikr.com',
+      firstName: 'Super',
+      lastName: 'Admin',
+      phone: '+1234567890',
+      designation: 'DIRECTOR',
       password: passwordHash,
       role: Role.SUPER_ADMIN,
+      status: 'ACTIVE',
+      isActive: true,
       companyId: company.id
-      // isActive: true,
     },
   })
 
@@ -72,9 +77,46 @@ async function main(): Promise<void> {
     },
   })
 
+  // 7️⃣ Create ADMIN + MANAGER User for testing
+  const adminManagerUser = await prisma.user.upsert({
+    where: { email: 'admin@tikr.com' },
+    update: {},
+    create: {
+      email: 'admin@tikr.com',
+      firstName: 'Admin',
+      lastName: 'Manager',
+      phone: '+1234567891',
+      designation: 'MANAGER',
+      password: passwordHash,
+      role: Role.ADMIN,
+      status: 'ACTIVE',
+      isActive: true,
+      companyId: company.id
+    },
+  })
+
+  // 8️⃣ Create Employee profile for Admin Manager
+  const adminManagerEmployee = await prisma.employee.upsert({
+    where: { userId: adminManagerUser.id },
+    update: {},
+    create: {
+      userId: adminManagerUser.id,
+      companyId: company.id,
+      departmentId: itDepartment.id,
+      name: 'Admin Manager',
+      designation: Designation.MANAGER,
+      employeeCode: 'EMP-0002',
+      isActive: true,
+    },
+  })
+
   console.log('✅ Seeding completed successfully')
   console.log('👤 SUPER ADMIN LOGIN:')
   console.log('📧 Email: superadmin@tikr.com')
+  console.log('🔑 Password: Admin@123')
+  console.log('')
+  console.log('👤 ADMIN MANAGER LOGIN:')
+  console.log('📧 Email: admin@tikr.com')
   console.log('🔑 Password: Admin@123')
 }
 

@@ -495,4 +495,31 @@ export class EnhancedProjectService {
       }
     };
   }
+
+  async getAccessibleProjects(employeeId: number, companyId: number) {
+    // Get user's accessible projects for global stats
+    const accessInfo = await this.permissionService.getAccessibleProjects(employeeId);
+
+    const where: any = { companyId };
+
+    // Apply access restrictions
+    if (!accessInfo.canViewAll) {
+      where.OR = [
+        { ownerId: employeeId },
+        { id: { in: accessInfo.projectIds } }
+      ];
+    }
+
+    return this.prisma.project.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        budget: true,
+        actualCost: true,
+        isActive: true
+      }
+    });
+  }
 }

@@ -1,107 +1,67 @@
 // src/routes/attendance.routes.ts
 import { Router } from 'express';
-import { AttendanceController } from '../../controller/attendance/attendance.controller';
-import { validateBody, validateQuery } from '../../../middlewares/validation.middleware';
-import { authenticate } from '../../../middlewares/auth.middleware';
-import { 
-  CheckInSchema, 
-  CheckOutSchema, 
-  MarkAttendanceSchema,
-  GetCalendarQuerySchema
-} from '../../dto/attendance/attendance.dto';
+import { attendanceController } from '../../controller/attendance/attendance.controller';
+import { authenticateToken } from '../../../middlewares/auth.middleware';
+import { authorizeRoles } from '../../../middlewares/role.middleware';
 
 const router = Router();
-const attendanceController = new AttendanceController();
 
-// Routes for current user (authenticated)
-router.post(
-  '/my-check-in', 
-  authenticate,
-  (req, res) => attendanceController.myCheckIn(req, res)
+// Apply authentication middleware to all routes
+router.use(authenticateToken);
+
+// Personal Attendance Routes (All authenticated users)
+router.post('/checkin', attendanceController.checkIn);
+router.post('/checkout', attendanceController.checkOut);
+router.get('/history/:employeeId', attendanceController.getPersonalAttendanceHistory);
+router.post('/regularization-request', attendanceController.submitRegularizationRequest);
+
+// Employee Management Routes (Admin and Manager only)
+router.get('/employees', 
+  authorizeRoles(['SUPER_ADMIN', 'ADMIN', 'MANAGER']), 
+  attendanceController.getAllEmployeeAttendance
 );
 
-router.post(
-  '/my-check-out', 
-  authenticate,
-  (req, res) => attendanceController.myCheckOut(req, res)
+router.post('/correction', 
+  authorizeRoles(['SUPER_ADMIN', 'ADMIN', 'MANAGER']), 
+  attendanceController.performManualAttendanceCorrection
 );
 
-router.get(
-  '/my-stats',
-  authenticate,
-  (req, res) => attendanceController.getMyStats(req, res)
+router.get('/requests/pending', 
+  authorizeRoles(['SUPER_ADMIN', 'ADMIN', 'MANAGER']), 
+  attendanceController.getPendingRegularizationRequests
 );
 
-router.get(
-  '/my-logs',
-  authenticate,
-  (req, res) => attendanceController.getMyLogs(req, res)
+router.put('/requests/:requestId/approve', 
+  authorizeRoles(['SUPER_ADMIN', 'ADMIN', 'MANAGER']), 
+  attendanceController.approveRegularizationRequest
 );
 
-router.get(
-  '/my-team-stats',
-  authenticate,
-  (req, res) => attendanceController.getMyTeamStats(req, res)
+router.put('/requests/:requestId/reject', 
+  authorizeRoles(['SUPER_ADMIN', 'ADMIN', 'MANAGER']), 
+  attendanceController.rejectRegularizationRequest
 );
 
-router.get(
-  '/my-today',
-  authenticate,
-  (req, res) => attendanceController.getMyTodayAttendance(req, res)
+// Reporting Routes (Admin and Manager only)
+router.get('/reports/daily', 
+  authorizeRoles(['SUPER_ADMIN', 'ADMIN', 'MANAGER']), 
+  attendanceController.generateDailyAttendanceReport
 );
 
-// Admin routes (with specific employee IDs)
-// Check in
-router.post(
-  '/check-in', 
-  validateBody(CheckInSchema),
-  (req, res) => attendanceController.checkIn(req, res)
+router.get('/reports/monthly', 
+  authorizeRoles(['SUPER_ADMIN', 'ADMIN', 'MANAGER']), 
+  attendanceController.generateMonthlyAttendanceReport
 );
 
-// Check out
-router.post(
-  '/check-out', 
-  validateBody(CheckOutSchema),
-  (req, res) => attendanceController.checkOut(req, res)
+// Audit Routes (Admin only)
+router.get('/audit/trail', 
+  authorizeRoles(['SUPER_ADMIN', 'ADMIN']), 
+  attendanceController.getAuditTrail
 );
 
-// Get attendance stats for employee
-router.get(
-  '/stats/:employeeId',
-  (req, res) => attendanceController.getStats(req, res)
-);
-
-// Get attendance logs for employee
-router.get(
-  '/logs/:employeeId',
-  (req, res) => attendanceController.getLogs(req, res)
-);
-
-// Get team attendance stats
-router.get(
-  '/team-stats/:departmentId',
-  (req, res) => attendanceController.getTeamStats(req, res)
-);
-
-// Get today's attendance
-router.get(
-  '/today/:employeeId',
-  (req, res) => attendanceController.getTodayAttendance(req, res)
-);
-
-// Get attendance calendar
-router.get(
-  '/calendar/:employeeId',
-  validateQuery(GetCalendarQuerySchema),
-  (req, res) => attendanceController.getCalendar(req, res)
-);
-
-// Mark attendance (admin only)
-// TODO: Add authentication & authorization middleware
-router.post(
-  '/mark',
-  validateBody(MarkAttendanceSchema),
-  (req, res) => attendanceController.markAttendance(req, res)
+// Dashboard Routes (Admin and Manager only)
+router.get('/dashboard/stats', 
+  authorizeRoles(['SUPER_ADMIN', 'ADMIN', 'MANAGER']), 
+  attendanceController.getAttendanceDashboardStats
 );
 
 export default router;

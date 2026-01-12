@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,184 +9,180 @@ import { EnhancedTaskCard } from '@/components/enhanced/EnhancedTaskCard';
 import { 
   FolderOpen, 
   CheckSquare, 
-  Clock, 
   AlertCircle, 
-  TrendingUp,
-  Plus,
-  Calendar,
   Users,
-  BarChart3,
-  Bell,
-  Settings,
+  Plus,
   Search
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
-// Mock data - In real implementation, this would come from API calls
-const mockDashboardData = {
+// Demo data for admin with manager designation
+const demoData = {
   user: {
     id: 1,
-    name: 'John Doe',
-    role: 'MANAGER',
-    designation: 'TECH_LEAD',
+    name: 'Admin Manager',
+    role: 'ADMIN',
+    designation: 'MANAGER',
     avatar: '/api/placeholder/32/32'
   },
   stats: {
-    totalProjects: 12,
-    activeProjects: 8,
-    totalTasks: 156,
-    myTasks: 23,
-    completedTasks: 89,
-    overdueTasks: 7,
-    teamMembers: 24,
-    notifications: 5
+    totalProjects: 15,
+    activeProjects: 12,
+    totalTasks: 89,
+    myTasks: 8,
+    completedTasks: 67,
+    overdueTasks: 3,
+    teamMembers: 32,
+    notifications: 7
   },
-  recentProjects: [
+  projects: [
     {
       id: 1,
-      name: 'Mobile App Development',
-      description: 'Cross-platform mobile application for customer engagement',
+      name: 'E-Commerce Platform',
+      description: 'Complete e-commerce solution with payment integration and inventory management',
       code: 'PROJ-001',
       status: 'ACTIVE' as const,
       startDate: '2024-01-01',
-      endDate: '2024-06-30',
-      budget: 150000,
-      actualCost: 89000,
-      progressPercentage: 75,
-      owner: { id: 1, name: 'John Doe', designation: 'TECH_LEAD' },
+      endDate: '2024-08-30',
+      budget: 250000,
+      actualCost: 180000,
+      progressPercentage: 85,
+      owner: { id: 1, name: 'Admin Manager', designation: 'MANAGER' },
       department: { id: 1, name: 'Engineering' },
       members: [
-        { id: 2, name: 'Jane Smith', designation: 'SOFTWARE_ENGINEER' },
-        { id: 3, name: 'Mike Johnson', designation: 'SENIOR_ENGINEER' }
+        { id: 2, name: 'Sarah Johnson', designation: 'TECH_LEAD' },
+        { id: 3, name: 'Mike Chen', designation: 'SENIOR_ENGINEER' },
+        { id: 4, name: 'Lisa Wang', designation: 'SOFTWARE_ENGINEER' }
       ],
       milestones: [
         { id: 1, name: 'MVP Release', dueDate: '2024-03-15', isCompleted: true },
-        { id: 2, name: 'Beta Testing', dueDate: '2024-05-01', isCompleted: false }
+        { id: 2, name: 'Beta Testing', dueDate: '2024-06-01', isCompleted: true },
+        { id: 3, name: 'Production Launch', dueDate: '2024-08-15', isCompleted: false }
       ],
-      _count: { tasks: 24, milestones: 3 },
+      _count: { tasks: 34, milestones: 3 },
       createdAt: '2024-01-01',
       updatedAt: '2024-01-15'
     },
     {
       id: 2,
-      name: 'Website Redesign',
-      description: 'Complete overhaul of company website with modern UI/UX',
+      name: 'Mobile App Development',
+      description: 'Cross-platform mobile application for iOS and Android',
       code: 'PROJ-002',
       status: 'ACTIVE' as const,
-      startDate: '2023-11-01',
-      endDate: '2024-02-28',
-      budget: 75000,
-      actualCost: 68000,
-      progressPercentage: 90,
-      owner: { id: 4, name: 'Sarah Wilson', designation: 'MANAGER' },
-      department: { id: 2, name: 'Design' },
+      startDate: '2024-02-01',
+      endDate: '2024-09-30',
+      budget: 180000,
+      actualCost: 95000,
+      progressPercentage: 60,
+      owner: { id: 2, name: 'Sarah Johnson', designation: 'TECH_LEAD' },
+      department: { id: 1, name: 'Engineering' },
       members: [
-        { id: 5, name: 'Alex Brown', designation: 'SOFTWARE_ENGINEER' }
+        { id: 1, name: 'Admin Manager', designation: 'MANAGER' },
+        { id: 5, name: 'Alex Rodriguez', designation: 'SOFTWARE_ENGINEER' }
       ],
       milestones: [
-        { id: 3, name: 'Design Phase', dueDate: '2023-12-15', isCompleted: true },
-        { id: 4, name: 'Development', dueDate: '2024-02-01', isCompleted: true }
+        { id: 4, name: 'UI/UX Design', dueDate: '2024-03-30', isCompleted: true },
+        { id: 5, name: 'Core Features', dueDate: '2024-07-15', isCompleted: false }
       ],
-      _count: { tasks: 18, milestones: 2 },
-      createdAt: '2023-11-01',
+      _count: { tasks: 28, milestones: 2 },
+      createdAt: '2024-02-01',
       updatedAt: '2024-01-10'
+    },
+    {
+      id: 3,
+      name: 'Data Analytics Dashboard',
+      description: 'Business intelligence dashboard with real-time analytics and reporting',
+      code: 'PROJ-003',
+      status: 'PLANNING' as const,
+      startDate: '2024-03-01',
+      endDate: '2024-10-30',
+      budget: 120000,
+      actualCost: 25000,
+      progressPercentage: 15,
+      owner: { id: 1, name: 'Admin Manager', designation: 'MANAGER' },
+      department: { id: 2, name: 'Data Science' },
+      members: [
+        { id: 6, name: 'David Kim', designation: 'SENIOR_ENGINEER' },
+        { id: 7, name: 'Emma Thompson', designation: 'SOFTWARE_ENGINEER' }
+      ],
+      milestones: [
+        { id: 6, name: 'Requirements Analysis', dueDate: '2024-03-30', isCompleted: false }
+      ],
+      _count: { tasks: 12, milestones: 1 },
+      createdAt: '2024-03-01',
+      updatedAt: '2024-03-05'
     }
   ],
-  myTasks: [
+  tasks: [
     {
       id: 1,
-      title: 'Implement User Authentication',
-      description: 'Set up JWT-based authentication system with role management',
+      title: 'Implement Payment Gateway Integration',
+      description: 'Integrate Stripe and PayPal payment systems with proper error handling',
       code: 'TASK-001',
       status: 'IN_PROGRESS' as const,
       priority: 'HIGH' as const,
       dueDate: '2024-01-25',
       startDate: '2024-01-15',
-      estimatedHours: 16,
-      actualHours: 8,
-      progressPercentage: 60,
-      assignedTo: { id: 1, name: 'John Doe', designation: 'TECH_LEAD' },
-      createdBy: { id: 4, name: 'Sarah Wilson', designation: 'MANAGER' },
-      project: { id: 1, name: 'Mobile App Development' },
-      milestone: { id: 1, name: 'MVP Release' },
+      estimatedHours: 24,
+      actualHours: 16,
+      progressPercentage: 75,
+      assignedTo: { id: 3, name: 'Mike Chen', designation: 'SENIOR_ENGINEER' },
+      createdBy: { id: 1, name: 'Admin Manager', designation: 'MANAGER' },
+      project: { id: 1, name: 'E-Commerce Platform' },
+      milestone: { id: 2, name: 'Beta Testing' },
       subTasks: [
-        { id: 11, title: 'Setup JWT library', status: 'COMPLETED' },
-        { id: 12, title: 'Create login endpoint', status: 'IN_PROGRESS' }
+        { id: 11, title: 'Setup Stripe SDK', status: 'COMPLETED' },
+        { id: 12, title: 'Implement PayPal integration', status: 'IN_PROGRESS' }
       ],
       dependencies: [],
-      _count: { comments: 3, timeEntries: 5, attachments: 2 },
+      _count: { comments: 5, timeEntries: 8, attachments: 3 },
       createdAt: '2024-01-10',
-      updatedAt: '2024-01-15'
+      updatedAt: '2024-01-20'
     },
     {
       id: 2,
-      title: 'Database Schema Design',
-      description: 'Design and implement the core database schema for user management',
+      title: 'Design User Authentication Flow',
+      description: 'Create wireframes and user flow for login, registration, and password reset',
       code: 'TASK-002',
       status: 'TODO' as const,
       priority: 'MEDIUM' as const,
-      dueDate: '2024-01-30',
-      estimatedHours: 12,
+      dueDate: '2024-02-15',
+      estimatedHours: 16,
       actualHours: 0,
       progressPercentage: 0,
-      assignedTo: { id: 1, name: 'John Doe', designation: 'TECH_LEAD' },
-      createdBy: { id: 1, name: 'John Doe', designation: 'TECH_LEAD' },
-      project: { id: 1, name: 'Mobile App Development' },
+      assignedTo: { id: 4, name: 'Lisa Wang', designation: 'SOFTWARE_ENGINEER' },
+      createdBy: { id: 1, name: 'Admin Manager', designation: 'MANAGER' },
+      project: { id: 2, name: 'Mobile App Development' },
       subTasks: [],
-      dependencies: [
-        { predecessorTask: { id: 1, title: 'Implement User Authentication', status: 'IN_PROGRESS' } }
-      ],
-      _count: { comments: 1, timeEntries: 0, attachments: 0 },
+      dependencies: [],
+      _count: { comments: 2, timeEntries: 0, attachments: 1 },
       createdAt: '2024-01-12',
       updatedAt: '2024-01-12'
-    }
-  ],
-  notifications: [
-    {
-      id: 1,
-      title: 'Task Assigned',
-      message: 'You have been assigned a new task: "API Integration Testing"',
-      type: 'TASK_ASSIGNED',
-      isRead: false,
-      createdAt: '2024-01-15T10:30:00Z'
-    },
-    {
-      id: 2,
-      title: 'Deadline Reminder',
-      message: 'Task "Implement User Authentication" is due tomorrow',
-      type: 'DEADLINE_REMINDER',
-      isRead: false,
-      createdAt: '2024-01-15T09:00:00Z'
     }
   ]
 };
 
-export default function EnhancedDashboard() {
+export default function DemoPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
-  const [dashboardData, setDashboardData] = useState(mockDashboardData);
-
-  // In real implementation, these would be API calls
-  useEffect(() => {
-    // loadDashboardData();
-  }, []);
 
   const handleProjectView = (project: any) => {
-    console.log('View project:', project);
-    // Navigate to project details
+    alert(`Viewing project: ${project.name}`);
+  };
+
+  const handleProjectEdit = (project: any) => {
+    alert(`Editing project: ${project.name}`);
   };
 
   const handleTaskView = (task: any) => {
-    console.log('View task:', task);
-    // Navigate to task details
+    alert(`Viewing task: ${task.title}`);
   };
 
   const handleTaskStatusChange = (task: any, status: string) => {
-    console.log('Change task status:', task.id, status);
-    // Update task status via API
+    alert(`Changing task "${task.title}" status to: ${status}`);
   };
 
-  const filteredTasks = dashboardData.myTasks.filter(task => {
+  const filteredTasks = demoData.tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = activeFilter === 'all' || task.status === activeFilter;
     return matchesSearch && matchesFilter;
@@ -200,31 +196,19 @@ export default function EnhancedDashboard() {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-                <p className="text-gray-600">Welcome back, {dashboardData.user.name}</p>
+                <h1 className="text-2xl font-bold text-gray-900">Enhanced TMS Demo</h1>
+                <p className="text-gray-600">Welcome back, {demoData.user.name} ({demoData.user.role} - {demoData.user.designation})</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Button variant="ghost" size="sm">
-                  <Bell className="h-4 w-4" />
-                  {dashboardData.stats.notifications > 0 && (
-                    <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
-                      {dashboardData.stats.notifications}
-                    </Badge>
-                  )}
-                </Button>
-              </div>
-              <Button variant="ghost" size="sm">
-                <Settings className="h-4 w-4" />
-              </Button>
+              <Badge className="bg-green-100 text-green-800">Demo Mode</Badge>
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                  {dashboardData.user.name.charAt(0)}
+                  {demoData.user.name.charAt(0)}
                 </div>
                 <div className="hidden md:block">
-                  <p className="text-sm font-medium">{dashboardData.user.name}</p>
-                  <p className="text-xs text-gray-500">{dashboardData.user.designation}</p>
+                  <p className="text-sm font-medium">{demoData.user.name}</p>
+                  <p className="text-xs text-gray-500">{demoData.user.designation}</p>
                 </div>
               </div>
             </div>
@@ -241,9 +225,9 @@ export default function EnhancedDashboard() {
               <FolderOpen className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{dashboardData.stats.activeProjects}</div>
+              <div className="text-2xl font-bold">{demoData.stats.activeProjects}</div>
               <p className="text-xs text-muted-foreground">
-                {dashboardData.stats.totalProjects} total projects
+                {demoData.stats.totalProjects} total projects
               </p>
             </CardContent>
           </Card>
@@ -254,9 +238,9 @@ export default function EnhancedDashboard() {
               <CheckSquare className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{dashboardData.stats.myTasks}</div>
+              <div className="text-2xl font-bold">{demoData.stats.myTasks}</div>
               <p className="text-xs text-muted-foreground">
-                {dashboardData.stats.completedTasks} completed
+                {demoData.stats.completedTasks} completed
               </p>
             </CardContent>
           </Card>
@@ -267,7 +251,7 @@ export default function EnhancedDashboard() {
               <AlertCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{dashboardData.stats.overdueTasks}</div>
+              <div className="text-2xl font-bold text-red-600">{demoData.stats.overdueTasks}</div>
               <p className="text-xs text-muted-foreground">
                 Need attention
               </p>
@@ -280,7 +264,7 @@ export default function EnhancedDashboard() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{dashboardData.stats.teamMembers}</div>
+              <div className="text-2xl font-bold">{demoData.stats.teamMembers}</div>
               <p className="text-xs text-muted-foreground">
                 Active members
               </p>
@@ -289,29 +273,30 @@ export default function EnhancedDashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Recent Projects */}
+          {/* Projects */}
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold">Recent Projects</h2>
+              <h2 className="text-xl font-semibold">Projects (Admin Access)</h2>
               <Button variant="outline" size="sm">
                 <Plus className="h-4 w-4 mr-2" />
                 New Project
               </Button>
             </div>
             <div className="space-y-6">
-              {dashboardData.recentProjects.map((project) => (
+              {demoData.projects.map((project) => (
                 <EnhancedProjectCard
                   key={project.id}
                   project={project}
                   onView={handleProjectView}
-                  userRole={dashboardData.user.role}
-                  userDesignation={dashboardData.user.designation}
+                  onEdit={handleProjectEdit}
+                  userRole={demoData.user.role}
+                  userDesignation={demoData.user.designation}
                 />
               ))}
             </div>
           </div>
 
-          {/* My Tasks */}
+          {/* Tasks */}
           <div>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold">My Tasks</h2>
@@ -354,8 +339,8 @@ export default function EnhancedDashboard() {
                   task={task}
                   onView={handleTaskView}
                   onStatusChange={handleTaskStatusChange}
-                  userRole={dashboardData.user.role}
-                  currentUserId={dashboardData.user.id}
+                  userRole={demoData.user.role}
+                  currentUserId={demoData.user.id}
                 />
               ))}
               {filteredTasks.length === 0 && (
@@ -367,32 +352,27 @@ export default function EnhancedDashboard() {
           </div>
         </div>
 
-        {/* Recent Notifications */}
-        {dashboardData.notifications.length > 0 && (
-          <div className="mt-8">
-            <h2 className="text-xl font-semibold mb-6">Recent Notifications</h2>
-            <div className="space-y-3">
-              {dashboardData.notifications.slice(0, 3).map((notification) => (
-                <Card key={notification.id} className={`${!notification.isRead ? 'border-l-4 border-l-blue-500' : ''}`}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-medium">{notification.title}</h4>
-                        <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
-                        <p className="text-xs text-gray-400 mt-2">
-                          {new Date(notification.createdAt).toLocaleString()}
-                        </p>
-                      </div>
-                      {!notification.isRead && (
-                        <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Demo Notice */}
+        <div className="mt-8">
+          <Card className="border-blue-200 bg-blue-50">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold text-blue-900 mb-2">Demo Mode Active</h3>
+              <p className="text-blue-800 mb-4">
+                This is a demonstration of the Enhanced Task Management System. As an ADMIN with MANAGER designation, you have full access to:
+              </p>
+              <ul className="list-disc list-inside text-blue-800 space-y-1">
+                <li>Create and manage all projects</li>
+                <li>Assign tasks to team members</li>
+                <li>View project budgets and progress</li>
+                <li>Manage project milestones</li>
+                <li>Access all team projects and tasks</li>
+              </ul>
+              <p className="text-blue-800 mt-4">
+                To access the full system with backend integration, please contact your system administrator for login credentials.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

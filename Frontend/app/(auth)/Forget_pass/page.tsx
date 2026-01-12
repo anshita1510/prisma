@@ -3,6 +3,7 @@
 import { useState, FormEvent, JSX } from "react";
 import { useRouter } from "next/navigation";
 import { forgotPasswordAPI } from "../../../lib/api";
+import { AlertCircle, CheckCircle, ArrowLeft, Mail } from "lucide-react";
 
 export default function ForgotPasswordPage(): JSX.Element {
   const router = useRouter();
@@ -41,7 +42,7 @@ export default function ForgotPasswordPage(): JSX.Element {
       <div className="flex flex-1 flex-col justify-center px-8 py-12 sm:px-12 lg:flex-none lg:w-1/2 xl:w-[40%]">
         <div className="mx-auto w-full max-w-sm">
           <div className="mb-10">
-            <h1 className="text-4xl font-black tracking-tight text-green-600">Tikr.</h1>
+            <h1 className="text-4xl font-black tracking-tight text-blue-600">Tikr.</h1>
             <h2 className="mt-6 text-2xl font-bold leading-9 tracking-tight text-gray-900">
               Forgot Password
             </h2>
@@ -51,38 +52,49 @@ export default function ForgotPasswordPage(): JSX.Element {
           </div>
 
           {error && (
-            <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 animate-shake">
-              {error}
+            <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 border border-red-200">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" />
+                {error}
+              </div>
             </div>
           )}
 
           {success && (
-            <div className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-600">
-              {success}
+            <div className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-600 border border-green-200">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                {success}
+              </div>
             </div>
           )}
 
           <form className="space-y-5" onSubmit={handleForgotPassword}>
             <div>
-              <label className="block text-sm font-semibold text-gray-700">Email Address</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all outline-none"
-                placeholder="name@company.com"
-              />
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
+                  placeholder="Enter your email address"
+                  disabled={loading}
+                />
+              </div>
             </div>
-
 
             <button
               type="submit"
-              disabled={loading}
-              className="group relative flex w-full justify-center rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-70 transition-all active:scale-[0.98]"
+              disabled={loading || !email.trim()}
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 rounded-xl font-medium transition-all disabled:opacity-70 active:scale-[0.98]"
             >
               {loading ? (
-                <span className="flex items-center gap-2">
+                <span className="flex items-center justify-center gap-2">
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                   Sending OTP...
                 </span>
@@ -95,8 +107,9 @@ export default function ForgotPasswordPage(): JSX.Element {
               <button
                 type="button"
                 onClick={() => router.push("/login")}
-                className="text-sm text-green-600 hover:text-green-700 font-medium"
+                className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-500 font-medium transition-colors"
               >
+                <ArrowLeft className="w-4 h-4" />
                 Back to Login
               </button>
             </div>
@@ -111,13 +124,23 @@ export default function ForgotPasswordPage(): JSX.Element {
           src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=2070"
           alt="Office Background"
         />
-        <div className="absolute inset-0 bg-green-900/40 backdrop-blur-[2px] flex flex-col justify-end p-20 text-white">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/80 via-purple-800/60 to-transparent backdrop-blur-[2px] flex flex-col justify-end p-20 text-white">
           <blockquote className="space-y-2">
             <p className="text-3xl font-medium">
-              "Tikr has completely transformed how our team tracks productivity and stays organized."
+              "Secure password recovery with Tikr's advanced authentication system."
             </p>
-            <footer className="text-lg opacity-80">— The Management Team</footer>
+            <footer className="text-lg opacity-80">— The Security Team</footer>
           </blockquote>
+          
+          <div className="mt-8 p-4 bg-white/10 backdrop-blur-md rounded-lg border border-white/20">
+            <h3 className="text-lg font-semibold mb-2">Password Recovery</h3>
+            <ul className="text-sm space-y-1 opacity-90">
+              <li>• Secure OTP-based verification</li>
+              <li>• Email-based password reset</li>
+              <li>• Quick and easy process</li>
+              <li>• Account security maintained</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Project, CreateProjectData, UpdateProjectData } from '../types/project';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5004/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5004';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -25,37 +25,37 @@ export const projectService = {
     ownerId?: number;
     isActive?: boolean;
   }) {
-    const response = await api.get('/projects', { params });
+    const response = await api.get('/api/projects', { params });
     return response.data;
   },
 
   // Get project by ID
   async getProjectById(id: number) {
-    const response = await api.get(`/projects/${id}`);
+    const response = await api.get(`/api/projects/${id}`);
     return response.data;
   },
 
   // Create new project
   async createProject(data: CreateProjectData) {
-    const response = await api.post('/projects', data);
+    const response = await api.post('/api/projects', data);
     return response.data;
   },
 
   // Update project
   async updateProject(id: number, data: UpdateProjectData) {
-    const response = await api.put(`/projects/${id}`, data);
+    const response = await api.put(`/api/projects/${id}`, data);
     return response.data;
   },
 
   // Delete project
   async deleteProject(id: number) {
-    const response = await api.delete(`/projects/${id}`);
+    const response = await api.delete(`/api/projects/${id}`);
     return response.data;
   },
 
   // Get project members
   async getProjectMembers(id: number) {
-    const response = await api.get(`/projects/${id}/members`);
+    const response = await api.get(`/api/projects/${id}/members`);
     return response.data;
   }
 };

@@ -12,6 +12,7 @@ router.use(authenticateToken);
 router.post('/', projectController.createProject);
 router.get('/', projectController.getProjects);
 router.get('/templates', projectController.getProjectTemplates);
+router.get('/stats', projectController.getGlobalProjectStats); // Global stats endpoint
 router.get('/:id', projectController.getProjectById);
 router.put('/:id', projectController.updateProject);
 router.delete('/:id', projectController.deleteProject);

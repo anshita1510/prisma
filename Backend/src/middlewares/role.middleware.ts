@@ -1,11 +1,32 @@
-import { Request, Response, NextFunction } from "express";
-import { Role } from "@prisma/client";
+import { Request, Response, NextFunction } from 'express';
+import { Role } from '@prisma/client';
 
-export const requireRole = (...roles: Role[]) => {
+export const authorizeRoles = (allowedRoles: Role[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user || !roles.includes(req.user.role)) {
-      return res.status(403).json({ error: "Forbidden" });
+    const user = req.user;
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
     }
+
+    if (!allowedRoles.includes(user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Insufficient permissions.'
+      });
+    }
+
     next();
   };
+};
+
+export const requireRole = (role: Role) => {
+  return authorizeRoles([role]);
+};
+
+export const requireAnyRole = (...roles: Role[]) => {
+  return authorizeRoles(roles);
 };
