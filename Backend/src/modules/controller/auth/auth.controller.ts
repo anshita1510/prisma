@@ -66,27 +66,75 @@ export class UserController {
 
   }
 
+  /* ================= DEBUG TEST ENDPOINT ================= */
+  async debugTest(req: Request, res: Response) {
+    try {
+      console.log('=== DEBUG TEST ENDPOINT ===');
+      console.log('Request headers:', req.headers);
+      console.log('Request user:', req.user);
+      console.log('Request body:', req.body);
+      
+      return res.json({
+        message: 'Debug test successful',
+        user: req.user,
+        headers: req.headers,
+        body: req.body
+      });
+    } catch (error: any) {
+      console.log('❌ Debug test error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
   /* ================= INVITE EMPLOYEE ================= */
   async inviteEmployee(req: Request, res: Response) {
     try {
+      console.log('=== INVITE EMPLOYEE DEBUG ===');
+      console.log('Request body:', JSON.stringify(req.body, null, 2));
+      console.log('Request user:', req.user);
+      console.log('Request headers:', req.headers.authorization);
+
       if (!req.user) {
+        console.log('❌ No user in request');
         return res.status(401).json({ error: "Unauthorized" });
       }
 
       if (!isAdminRole(req.user.role)) {
+        console.log('❌ User role not admin:', req.user.role);
         return res.status(403).json({ error: "Forbidden: Admin access required" });
       }
 
       const { email, firstName, lastName, phone, designation, role, employeeCode } = req.body;
 
+      console.log('Extracted fields:', {
+        email,
+        firstName,
+        lastName,
+        phone,
+        designation,
+        role,
+        employeeCode
+      });
+
       if (!email || !firstName || !lastName || !phone || !designation || !role) {
+        console.log('❌ Missing required fields:', {
+          email: !!email,
+          firstName: !!firstName,
+          lastName: !!lastName,
+          phone: !!phone,
+          designation: !!designation,
+          role: !!role
+        });
         return res.status(400).json({ error: "All fields are required" });
       }
 
       // Validate role is a valid enum value (safe check)
       if (!Object.values(Role).includes(role as Role)) {
+        console.log('❌ Invalid role:', role, 'Valid roles:', Object.values(Role));
         return res.status(400).json({ error: "Invalid role" });
       }
+
+      console.log('✅ All validations passed, calling usecase...');
 
       await inviteEmployeeUsecase.execute(req.user.role, {
         email,
@@ -97,6 +145,8 @@ export class UserController {
         role: role as Role,
         employeeCode,
       });
+      
+      console.log('✅ Usecase executed successfully');
       console.log('Auth is here: ', req.body.authorization);
       console.log("REQ.USER 👉", req.user);
 
@@ -104,6 +154,8 @@ export class UserController {
         message: "Invitation email sent successfully",
       });
     } catch (error: any) {
+      console.log('❌ Error in inviteEmployee:', error.message);
+      console.log('❌ Full error:', error);
       return res.status(400).json({ error: error.message });
     }
   }

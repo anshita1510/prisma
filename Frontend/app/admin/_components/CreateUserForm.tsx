@@ -1,14 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '../../../components/ui/alert';
-import { Loader2, UserPlus, Mail, Phone, User, Briefcase, Shield, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2, UserPlus, Mail, Phone, User, Briefcase, Shield, CheckCircle, AlertCircle, LogIn } from 'lucide-react';
 import { userService, CreateUserData } from '@/app/services/userService';
+import { authService } from '@/app/services/authService';
 
 const ROLES = [
   { value: 'EMPLOYEE', label: 'Employee', description: 'Basic user with limited access' },
@@ -41,6 +42,95 @@ export default function CreateUserForm() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Check authentication on component mount
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('token');
+      const user = localStorage.getItem('user');
+      
+      if (token && user) {
+        try {
+          const parsedUser = JSON.parse(user);
+          setCurrentUser(parsedUser);
+          setIsAuthenticated(['ADMIN', 'SUPER_ADMIN'].includes(parsedUser.role));
+        } catch (error) {
+          console.error('Error parsing user data:', error);
+          setIsAuthenticated(false);
+        }
+      } else {
+        setIsAuthenticated(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  // Quick login for demo purposes
+  const handleQuickLogin = async () => {
+    setLoading(true);
+    try {
+      const result = await authService.quickAdminLogin();
+      if (result.success) {
+        setCurrentUser(result.user);
+        setIsAuthenticated(true);
+        setMessage({ 
+          type: 'success', 
+          text: 'Successfully logged in as admin!' 
+        });
+        
+        // Test the debug endpoint
+        await testDebugEndpoint();
+      } else {
+        // Try demo session as fallback
+        const demoResult = authService.createDemoSession();
+        setCurrentUser(demoResult.user);
+        setIsAuthenticated(true);
+        setMessage({ 
+          type: 'success', 
+          text: 'Demo admin session created!' 
+        });
+        
+        // Test the debug endpoint
+        await testDebugEndpoint();
+      }
+    } catch (error) {
+      console.error('Quick login failed:', error);
+      setMessage({ 
+        type: 'error', 
+        text: 'Quick login failed. Please try manual login.' 
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Test debug endpoint
+  const testDebugEndpoint = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5004/api/users/debug-test', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      console.log('Debug endpoint response:', data);
+      
+      if (response.ok) {
+        console.log('✅ Authentication working correctly');
+      } else {
+        console.log('❌ Authentication failed:', data);
+      }
+    } catch (error) {
+      console.error('Debug endpoint error:', error);
+    }
+  };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -123,6 +213,34 @@ export default function CreateUserForm() {
     setMessage(null);
 
     try {
+      // Check if user is authenticated
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setMessage({ 
+          type: 'error', 
+          text: 'You must be logged in to create users. Please log in first.' 
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Check user role
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        if (!['ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
+          setMessage({ 
+            type: 'error', 
+            text: 'You do not have permission to create users. Admin access required.' 
+          });
+          setLoading(false);
+          return;
+        }
+      }
+
+      console.log('Creating user with data:', formData);
+      console.log('Auth token present:', !!token);
+      
       const result = await userService.createUser(formData);
       
       if (result.success) {
@@ -148,11 +266,33 @@ export default function CreateUserForm() {
           text: result.message || 'Failed to create user. Please try again.' 
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Form submission error:', error);
+      
+      // More detailed error handling
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+      
+      if (error.response) {
+        // Server responded with error status
+        const status = error.response.status;
+        const serverMessage = error.response.data?.error || error.response.data?.message;
+        
+        if (status === 401) {
+          errorMessage = 'Authentication failed. Please log in again.';
+        } else if (status === 403) {
+          errorMessage = 'You do not have permission to perform this action.';
+        } else if (status === 400) {
+          errorMessage = serverMessage || 'Invalid request data. Please check your input.';
+        } else if (serverMessage) {
+          errorMessage = serverMessage;
+        }
+      } else if (error.request) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      }
+      
       setMessage({ 
         type: 'error', 
-        text: 'An unexpected error occurred. Please try again.' 
+        text: errorMessage
       });
     } finally {
       setLoading(false);
@@ -175,7 +315,46 @@ export default function CreateUserForm() {
 
   return (
     <div className="max-w-2xl mx-auto p-6">
-      <Card className="shadow-lg">
+      {/* Authentication Check */}
+      {!isAuthenticated && (
+        <Card className="shadow-lg mb-6 border-orange-200 bg-orange-50">
+          <CardHeader>
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="w-6 h-6 text-orange-600" />
+              <CardTitle className="text-xl font-bold text-orange-800">Authentication Required</CardTitle>
+            </div>
+            <CardDescription className="text-orange-700">
+              You need to be logged in as an admin to create users.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <p className="text-sm text-orange-700">
+                Current status: {currentUser ? `Logged in as ${currentUser.name} (${currentUser.role})` : 'Not logged in'}
+              </p>
+              <Button 
+                onClick={handleQuickLogin}
+                disabled={loading}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Logging in...
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Quick Admin Login
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card className={`shadow-lg ${!isAuthenticated ? 'opacity-50 pointer-events-none' : ''}`}>
         <CardHeader className="space-y-1">
           <div className="flex items-center space-x-2">
             <UserPlus className="w-6 h-6 text-blue-600" />

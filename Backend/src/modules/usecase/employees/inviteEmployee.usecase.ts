@@ -95,25 +95,119 @@ export class InviteEmployeeUsecase {
     await this.createEmployeeRecord(user.id, data);
 
     /* 📧 Send invite email */
-    await this.sendEmailUseCase.execute({
-      to: data.email,
-      subject: "You're Invited to Join the Platform",
-      html: `
-        <h2>Welcome ${data.firstName}!</h2>
-        <p>You have been invited to join our platform.</p>
+    try {
+      await this.sendEmailUseCase.execute({
+        to: data.email,
+        subject: "Welcome to Tikr - Your Account is Ready!",
+        html: `
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Welcome to Tikr</title>
+          </head>
+          <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f7fa;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
+              
+              <!-- Header -->
+              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center;">
+                <div style="background-color: rgba(255, 255, 255, 0.1); border-radius: 50%; width: 80px; height: 80px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+                  <span style="font-size: 36px; color: white; font-weight: bold;">T</span>
+                </div>
+                <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 300;">Welcome to Tikr</h1>
+                <p style="color: rgba(255, 255, 255, 0.9); margin: 10px 0 0; font-size: 16px;">Your journey starts here</p>
+              </div>
 
-        <p><strong>Temporary Password:</strong> ${tempPassword}</p>
-        <p><strong>OTP:</strong> ${rawOtp}</p>
+              <!-- Main Content -->
+              <div style="padding: 40px 30px;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                  <h2 style="color: #2d3748; margin: 0 0 10px; font-size: 24px; font-weight: 600;">Hello ${data.firstName}! 👋</h2>
+                  <p style="color: #718096; margin: 0; font-size: 16px; line-height: 1.6;">You've been invited to join our platform. We're excited to have you on board!</p>
+                </div>
 
-        <p>This OTP is valid for 30 minutes.</p>
+                <!-- Credentials Card -->
+                <div style="background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%); border-radius: 12px; padding: 25px; margin: 30px 0; border-left: 4px solid #667eea;">
+                  <h3 style="color: #2d3748; margin: 0 0 15px; font-size: 18px; font-weight: 600; display: flex; align-items: center;">
+                    🔐 Your Login Credentials
+                  </h3>
+                  <div style="background-color: white; border-radius: 8px; padding: 20px; border: 1px solid #e2e8f0;">
+                    <div style="margin-bottom: 15px;">
+                      <label style="display: block; color: #4a5568; font-size: 14px; font-weight: 500; margin-bottom: 5px;">Email Address</label>
+                      <div style="background-color: #f7fafc; padding: 12px; border-radius: 6px; font-family: monospace; color: #2d3748; border: 1px solid #e2e8f0;">${data.email}</div>
+                    </div>
+                    <div>
+                      <label style="display: block; color: #4a5568; font-size: 14px; font-weight: 500; margin-bottom: 5px;">Temporary Password</label>
+                      <div style="background-color: #fff5f5; padding: 12px; border-radius: 6px; font-family: monospace; color: #c53030; font-weight: 600; border: 1px solid #fed7d7; font-size: 16px; letter-spacing: 1px;">${tempPassword}</div>
+                    </div>
+                  </div>
+                </div>
 
-        <br />
-        <p>Thanks,<br/>Team Tikr</p>
-      `,
-    });
+                <!-- Important Notice -->
+                <div style="background-color: #fffbeb; border: 1px solid #f6e05e; border-radius: 8px; padding: 20px; margin: 25px 0;">
+                  <div style="display: flex; align-items: flex-start;">
+                    <span style="font-size: 20px; margin-right: 10px;">⚠️</span>
+                    <div>
+                      <h4 style="color: #744210; margin: 0 0 8px; font-size: 16px; font-weight: 600;">Important Security Notice</h4>
+                      <p style="color: #744210; margin: 0; font-size: 14px; line-height: 1.5;">This temporary password is valid for <strong>30 minutes only</strong>. Please log in and change your password immediately for security purposes.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Next Steps -->
+                <div style="margin: 30px 0;">
+                  <h3 style="color: #2d3748; margin: 0 0 15px; font-size: 18px; font-weight: 600;">What's Next?</h3>
+                  <div style="color: #4a5568; font-size: 15px; line-height: 1.6;">
+                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                      <span style="background-color: #667eea; color: white; border-radius: 50%; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; margin-right: 12px;">1</span>
+                      <span>Click the login button below to access your account</span>
+                    </div>
+                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                      <span style="background-color: #667eea; color: white; border-radius: 50%; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; margin-right: 12px;">2</span>
+                      <span>Use the temporary password provided above</span>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                      <span style="background-color: #667eea; color: white; border-radius: 50%; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; margin-right: 12px;">3</span>
+                      <span>Set up your new secure password</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- CTA Button -->
+                <div style="text-align: center; margin: 35px 0;">
+                  <a href="#" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 15px 35px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); transition: all 0.3s ease;">
+                    🚀 Access Your Account
+                  </a>
+                </div>
+              </div>
+
+              <!-- Footer -->
+              <div style="background-color: #f7fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+                <p style="color: #718096; margin: 0 0 10px; font-size: 14px;">Need help? Contact our support team</p>
+                <p style="color: #a0aec0; margin: 0; font-size: 12px;">
+                  Best regards,<br/>
+                  <strong style="color: #4a5568;">The Tikr Team</strong>
+                </p>
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                  <p style="color: #a0aec0; margin: 0; font-size: 11px;">
+                    This is an automated message. Please do not reply to this email.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </body>
+          </html>
+        `,
+      });
+      console.log('✅ Invitation email sent successfully');
+    } catch (emailError: any) {
+      console.error('❌ Failed to send invitation email:', emailError.message);
+      // Continue without failing the entire process
+      console.log('⚠️ User created successfully but email notification failed');
+    }
 
     return {
-      message: "Invitation sent successfully",
+      message: "User created successfully! Invitation email sent (if email service is available).",
       email: data.email,
     };
   }

@@ -23,7 +23,7 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ 
   children, 
   showSidebar = true, 
-  showTopNav = true 
+  showTopNav = true
 }: DashboardLayoutProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);

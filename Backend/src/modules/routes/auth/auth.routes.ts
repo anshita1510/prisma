@@ -3,7 +3,7 @@ import { Router } from "express";
 import { UserController } from "../../controller/auth/auth.controller";
 import { inviteAuthMiddleware } from "../../../middlewares/inviteAuth.middleware";
 import { authenticate } from "../../../middlewares/auth.middleware";
-import { requireRole } from "../../../middlewares/role.middleware";
+import { requireRole, requireAnyRole } from "../../../middlewares/role.middleware";
 import { Role } from "@prisma/client";
 import {forgotPassword} from "../../controller/password/forget.password.controller"
 import { verifyOtp } from "../../controller/password/verify.password";
@@ -19,11 +19,18 @@ router.post("/google-login", controller.googleLogin);
 router.post("/microsoft-login", controller.microsoftLogin);
 router.post("/superAdmin", controller.createSuperAdmin);
 
+/* ---------------- DEBUG ---------------- */
+router.get(
+    "/debug-test",
+    authenticate,
+    controller.debugTest
+);
+
 /* ---------------- AUTHENTICATED USER ---------------- */
 router.post(
     "/register",
     authenticate,
-    requireRole(Role.ADMIN, Role.SUPER_ADMIN),
+    requireAnyRole(Role.ADMIN, Role.SUPER_ADMIN),
     controller.inviteEmployee
 );
 
@@ -43,7 +50,7 @@ router.get(
 router.get(
     "/",
     authenticate,
-    requireRole(Role.ADMIN, Role.SUPER_ADMIN),
+    requireAnyRole(Role.ADMIN, Role.SUPER_ADMIN),
     controller.getAllUsers
 );
 

@@ -40,7 +40,7 @@ export default function AdminProjectPage() {
                 <li>• Real-time analytics and reporting</li>
               </ul>
               <a 
-                href="/enhanced-tms/dashboard" 
+                href="/enhanced-tms/projects" 
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
               >
                 Access Enhanced TMS

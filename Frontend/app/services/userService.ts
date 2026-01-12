@@ -44,14 +44,27 @@ export const userService = {
   // Create/Invite new user
   async createUser(userData: CreateUserData) {
     try {
+      console.log('=== FRONTEND DEBUG ===');
+      console.log('Sending user data:', JSON.stringify(userData, null, 2));
+      
+      const token = localStorage.getItem('token');
+      console.log('Token present:', !!token);
+      console.log('Token value:', token ? token.substring(0, 20) + '...' : 'null');
+      
       const response = await api.post('/api/users/register', userData);
+      console.log('✅ Success response:', response.data);
+      
       return {
         success: true,
         message: response.data.message,
         data: response.data
       };
     } catch (error: any) {
-      console.error('Create user error:', error);
+      console.error('❌ Create user error:', error);
+      console.error('❌ Error response:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
+      console.error('❌ Error headers:', error.response?.headers);
+      
       return {
         success: false,
         message: error.response?.data?.error || 'Failed to create user'
