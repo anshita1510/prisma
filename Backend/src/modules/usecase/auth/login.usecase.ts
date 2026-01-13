@@ -10,27 +10,34 @@ export class LoginUsecase {
   async execute(email: string, password: string) {
     const user = await this.userRepo.findByEmail(email);
 
-    if (!user || !user.password) {
+    if (!user) {
       throw new Error("Invalid email or password hello");
     }
 
-    if (user.status === Status.PENDING) {
-      throw new Error("Please set your password");
+    // Allow login with either permanent password or temporary password
+    let isValid = false;
+    if (user.password) {
+      isValid = await comparePassword(password, user.password);
+    } else if (user.tempPassword) {
+      isValid = await comparePassword(password, user.tempPassword);
+    }
+
+    if (!isValid) {
+      throw new Error("Invalid email or password wow");
     }
 
     if(!user.isActive){
-      throw new Error("Accoount disabled");
+      throw new Error("Account disabled");
     }
 
     if (user.status === Status.INACTIVE) {
       throw new Error("Account is inactive");
     }
 
-    const isValid = await comparePassword(password, user.password);
-    if (!isValid) {
-      throw new Error("Invalid email or password wow" );
-    }
+    return this.generateTokenForUser(user);
+  }
 
+  async generateTokenForUser(user: any) {
     const token = generateAuthToken({
       id: user.id,
       role: user.role,
@@ -58,7 +65,8 @@ export class LoginUsecase {
       phone: user.phone,
       designation: user.designation,
       status: user.status,
-      isActive: user.isActive
+      isActive: user.isActive,
+      authProvider: user.authProvider
     };
 
     return { 

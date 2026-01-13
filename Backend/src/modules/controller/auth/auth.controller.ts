@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import { prisma } from "../../../config/db";
-import { Role, Status } from "@prisma/client"; // Import both for clarity
+import { Role, Status, AuthProvider } from "@prisma/client"; // Import AuthProvider
 import "../../../types/express"; // Import express type extensions
 
 import { UserRepository } from "../../repository/auth/user.repository";
@@ -13,6 +13,7 @@ import { UpdatePasswordUsecase } from "../../usecase/auth/updatePassword.usecase
 import { CreateSuperAdminUsecase } from "../../usecase/super_admin/create.superAdmin.usecase";
 import { SendEmailUseCase } from "../../usecase/email/sendEmail.usecase";
 import { NodemailerService } from "../../repository/email/nodemailer.service";
+import { OAuthService, GoogleUserInfo, MicrosoftUserInfo } from "../../../shared/utils/oauth";
 
 /* -------------------------------------------------------------------------- */
 /*                               INITIALIZATION                               */
@@ -65,27 +66,75 @@ export class UserController {
 
   }
 
+  /* ================= DEBUG TEST ENDPOINT ================= */
+  async debugTest(req: Request, res: Response) {
+    try {
+      console.log('=== DEBUG TEST ENDPOINT ===');
+      console.log('Request headers:', req.headers);
+      console.log('Request user:', req.user);
+      console.log('Request body:', req.body);
+      
+      return res.json({
+        message: 'Debug test successful',
+        user: req.user,
+        headers: req.headers,
+        body: req.body
+      });
+    } catch (error: any) {
+      console.log('❌ Debug test error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
   /* ================= INVITE EMPLOYEE ================= */
   async inviteEmployee(req: Request, res: Response) {
     try {
+      console.log('=== INVITE EMPLOYEE DEBUG ===');
+      console.log('Request body:', JSON.stringify(req.body, null, 2));
+      console.log('Request user:', req.user);
+      console.log('Request headers:', req.headers.authorization);
+
       if (!req.user) {
+        console.log('❌ No user in request');
         return res.status(401).json({ error: "Unauthorized" });
       }
 
       if (!isAdminRole(req.user.role)) {
+        console.log('❌ User role not admin:', req.user.role);
         return res.status(403).json({ error: "Forbidden: Admin access required" });
       }
 
-      const { email, firstName, lastName, phone, designation, role } = req.body;
+      const { email, firstName, lastName, phone, designation, role, employeeCode } = req.body;
+
+      console.log('Extracted fields:', {
+        email,
+        firstName,
+        lastName,
+        phone,
+        designation,
+        role,
+        employeeCode
+      });
 
       if (!email || !firstName || !lastName || !phone || !designation || !role) {
+        console.log('❌ Missing required fields:', {
+          email: !!email,
+          firstName: !!firstName,
+          lastName: !!lastName,
+          phone: !!phone,
+          designation: !!designation,
+          role: !!role
+        });
         return res.status(400).json({ error: "All fields are required" });
       }
 
       // Validate role is a valid enum value (safe check)
       if (!Object.values(Role).includes(role as Role)) {
+        console.log('❌ Invalid role:', role, 'Valid roles:', Object.values(Role));
         return res.status(400).json({ error: "Invalid role" });
       }
+
+      console.log('✅ All validations passed, calling usecase...');
 
       await inviteEmployeeUsecase.execute(req.user.role, {
         email,
@@ -94,7 +143,10 @@ export class UserController {
         phone,
         designation,
         role: role as Role,
+        employeeCode,
       });
+      
+      console.log('✅ Usecase executed successfully');
       console.log('Auth is here: ', req.body.authorization);
       console.log("REQ.USER 👉", req.user);
 
@@ -102,6 +154,8 @@ export class UserController {
         message: "Invitation email sent successfully",
       });
     } catch (error: any) {
+      console.log('❌ Error in inviteEmployee:', error.message);
+      console.log('❌ Full error:', error);
       return res.status(400).json({ error: error.message });
     }
   }
@@ -118,7 +172,7 @@ export class UserController {
     }
   }
 
-  /* ================= UPDATE PASSWORD (SELF OR SUPER_ADMIN) ================= */
+  /* ================= FORGET PASSWORD (SELF OR SUPER_ADMIN) ================= */
   async updatePassword(req: Request, res: Response) {
     try {
       if (!req.user) return res.status(401).json({ error: "Unauthorized" });
@@ -205,7 +259,66 @@ export class UserController {
     }
   }
 
-  /* ================= GET CURRENT USER PROFILE ================= */
+  /* ================= GET ALL USERS (ADMIN ONLY) ================= */
+  async getAllUsers(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      if (!isAdminRole(req.user.role)) {
+        return res.status(403).json({ error: "Forbidden: Admin access required" });
+      }
+
+      // Get all users with their employee information
+      const users = await prisma.user.findMany({
+        include: {
+          employee: true
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+
+      // Format users for frontend
+      const formattedUsers = users.map(user => {
+        const firstName = user.firstName || '';
+        const lastName = user.lastName || '';
+        
+        // Create name, avoiding duplicates and handling empty values
+        let name = firstName;
+        if (lastName && lastName !== firstName) {
+          name = `${firstName} ${lastName}`;
+        }
+        name = name.trim() || 'User';
+
+        return {
+          id: user.id,
+          name,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          phone: user.phone,
+          designation: user.designation,
+          role: user.role,
+          status: user.status,
+          isActive: user.isActive,
+          employeeCode: user.employee?.employeeCode || null,
+          createdAt: user.createdAt.toISOString(),
+          updatedAt: user.updatedAt.toISOString()
+        };
+      });
+
+      return res.json({
+        success: true,
+        users: formattedUsers,
+        count: formattedUsers.length
+      });
+    } catch (error: any) {
+      console.error('Get all users error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  }
   async getCurrentUser(req: Request, res: Response) {
     try {
       if (!req.user) {
@@ -249,6 +362,207 @@ export class UserController {
       return res.status(500).json({ error: error.message });
     }
   }
+  /* ================= CHECK USER AUTH PROVIDER ================= */
+  async checkUser(req: Request, res: Response) {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+
+      // Check if user exists
+      const user = await prisma.user.findUnique({
+        where: { email: email.toLowerCase() },
+        select: {
+          id: true,
+          email: true,
+          authProvider: true,
+          status: true,
+          isActive: true
+        }
+      });
+
+      if (!user) {
+        return res.json({ provider: "NEW_USER" });
+      }
+
+      // Return the auth provider
+      return res.json({ 
+        provider: user.authProvider,
+        userExists: true,
+        isActive: user.isActive,
+        status: user.status
+      });
+
+    } catch (error: any) {
+      console.error('Check user error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  /* ================= GOOGLE OAUTH LOGIN ================= */
+  async googleLogin(req: Request, res: Response) {
+    try {
+      const { googleToken, email } = req.body;
+
+      if (!googleToken || !email) {
+        return res.status(400).json({ error: "Google token and email are required" });
+      }
+
+      // Verify Google token and get user info
+      let googleUser: GoogleUserInfo;
+      try {
+        googleUser = await OAuthService.verifyGoogleToken(googleToken);
+      } catch (error) {
+        // For development, we'll allow mock tokens
+        if (googleToken.startsWith('mock_google_token_')) {
+          googleUser = {
+            id: 'mock_google_id',
+            email: email.toLowerCase(),
+            name: 'Google User',
+            given_name: 'Google',
+            family_name: 'User'
+          };
+        } else {
+          return res.status(400).json({ error: "Invalid Google token" });
+        }
+      }
+
+      // Verify email matches
+      if (googleUser.email.toLowerCase() !== email.toLowerCase()) {
+        return res.status(400).json({ error: "Email mismatch" });
+      }
+
+      let user = await prisma.user.findUnique({
+        where: { email: email.toLowerCase() }
+      });
+
+      if (!user) {
+        // Create new user with Google auth
+        user = await prisma.user.create({
+          data: {
+            email: email.toLowerCase(),
+            firstName: googleUser.given_name || "Google",
+            lastName: googleUser.family_name || "User",
+            phone: "",
+            designation: "Employee",
+            role: Role.EMPLOYEE,
+            authProvider: AuthProvider.GOOGLE,
+            googleId: googleUser.id,
+            status: Status.ACTIVE,
+            isActive: true
+          }
+        });
+      } else {
+        // Update existing user to Google auth if not already
+        if (user.authProvider !== AuthProvider.GOOGLE) {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              authProvider: AuthProvider.GOOGLE,
+              googleId: googleUser.id,
+              status: Status.ACTIVE,
+              isActive: true
+            }
+          });
+        }
+      }
+
+      // Generate JWT token
+      const usecase = new LoginUsecase(userRepo);
+      const result = await usecase.generateTokenForUser(user);
+      
+      return res.json(result);
+
+    } catch (error: any) {
+      console.error('Google login error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  /* ================= MICROSOFT OAUTH LOGIN ================= */
+  async microsoftLogin(req: Request, res: Response) {
+    try {
+      const { microsoftToken, email } = req.body;
+
+      if (!microsoftToken || !email) {
+        return res.status(400).json({ error: "Microsoft token and email are required" });
+      }
+
+      // Verify Microsoft token and get user info
+      let microsoftUser: MicrosoftUserInfo;
+      try {
+        microsoftUser = await OAuthService.verifyMicrosoftToken(microsoftToken);
+      } catch (error) {
+        // For development, we'll allow mock tokens
+        if (microsoftToken.startsWith('mock_microsoft_token_')) {
+          microsoftUser = {
+            id: 'mock_microsoft_id',
+            mail: email.toLowerCase(),
+            displayName: 'Microsoft User',
+            givenName: 'Microsoft',
+            surname: 'User'
+          };
+        } else {
+          return res.status(400).json({ error: "Invalid Microsoft token" });
+        }
+      }
+
+      // Verify email matches
+      const userEmail = microsoftUser.mail?.toLowerCase() || email.toLowerCase();
+      if (userEmail !== email.toLowerCase()) {
+        return res.status(400).json({ error: "Email mismatch" });
+      }
+
+      let user = await prisma.user.findUnique({
+        where: { email: email.toLowerCase() }
+      });
+
+      if (!user) {
+        // Create new user with Microsoft auth
+        user = await prisma.user.create({
+          data: {
+            email: email.toLowerCase(),
+            firstName: microsoftUser.givenName || "Microsoft",
+            lastName: microsoftUser.surname || "User",
+            phone: "",
+            designation: "Employee",
+            role: Role.EMPLOYEE,
+            authProvider: AuthProvider.MICROSOFT,
+            microsoftId: microsoftUser.id,
+            status: Status.ACTIVE,
+            isActive: true
+          }
+        });
+      } else {
+        // Update existing user to Microsoft auth if not already
+        if (user.authProvider !== AuthProvider.MICROSOFT) {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              authProvider: AuthProvider.MICROSOFT,
+              microsoftId: microsoftUser.id,
+              status: Status.ACTIVE,
+              isActive: true
+            }
+          });
+        }
+      }
+
+      // Generate JWT token
+      const usecase = new LoginUsecase(userRepo);
+      const result = await usecase.generateTokenForUser(user);
+      
+      return res.json(result);
+
+    } catch (error: any) {
+      console.error('Microsoft login error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  /* ================= UPDATE USER CREDENTIALS ================= */
   async updateCredentials(req: Request, res: Response) {
     try {
       if (!req.user) return res.status(401).json({ error: "Unauthorized" });
@@ -271,6 +585,504 @@ export class UserController {
       });
     } catch (error: any) {
       return res.status(400).json({ error: error.message });
+    }
+  }
+
+  /* ================= API DOCUMENTATION ================= */
+  async getApiDocumentation(req: Request, res: Response) {
+    try {
+      const apiDocumentation = {
+        info: {
+          title: "Tikr API Documentation",
+          version: "1.0.0",
+          description: "Complete API documentation for Tikr Task Management System",
+          contact: {
+            name: "Tikr Development Team",
+            email: "dev@tikr.com"
+          }
+        },
+        baseUrl: process.env.API_BASE_URL || "http://localhost:3001",
+        authentication: {
+          type: "Bearer Token (JWT)",
+          description: "Include the JWT token in the Authorization header",
+          example: "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        },
+        endpoints: {
+          authentication: [
+            {
+              method: "POST",
+              path: "/api/users/login",
+              description: "User login authentication",
+              requiresAuth: false,
+              requestBody: {
+                email: "string (required)",
+                password: "string (required)"
+              },
+              responses: {
+                200: {
+                  description: "Login successful",
+                  example: {
+                    token: "jwt_token_here",
+                    user: {
+                      id: 1,
+                      name: "John Doe",
+                      email: "john@example.com",
+                      role: "ADMIN"
+                    }
+                  }
+                },
+                401: {
+                  description: "Invalid credentials",
+                  example: { error: "Invalid email or password" }
+                }
+              }
+            },
+            {
+              method: "POST",
+              path: "/api/users/superAdmin",
+              description: "Create super admin user",
+              requiresAuth: false,
+              requestBody: {
+                firstName: "string (required)",
+                lastName: "string (required)",
+                email: "string (required)",
+                phone: "string (required)",
+                designation: "string (required)"
+              },
+              responses: {
+                201: {
+                  description: "Super admin created successfully",
+                  example: {
+                    message: "Super Admin created successfully",
+                    user: { id: 1, email: "admin@example.com" }
+                  }
+                }
+              }
+            }
+          ],
+          userManagement: [
+            {
+              method: "POST",
+              path: "/api/users/register",
+              description: "Invite new employee (Admin only)",
+              requiresAuth: true,
+              roles: ["ADMIN", "SUPER_ADMIN"],
+              requestBody: {
+                email: "string (required)",
+                firstName: "string (required)",
+                lastName: "string (required)",
+                phone: "string (required)",
+                designation: "string (required)",
+                role: "enum: EMPLOYEE|MANAGER|ADMIN (required)",
+                employeeCode: "string (optional)"
+              },
+              responses: {
+                201: {
+                  description: "Invitation sent successfully",
+                  example: { message: "Invitation email sent successfully" }
+                },
+                403: {
+                  description: "Forbidden - Admin access required",
+                  example: { error: "Forbidden: Admin access required" }
+                }
+              }
+            },
+            {
+              method: "GET",
+              path: "/api/users/me",
+              description: "Get current user profile",
+              requiresAuth: true,
+              responses: {
+                200: {
+                  description: "User profile retrieved",
+                  example: {
+                    success: true,
+                    user: {
+                      id: 1,
+                      name: "John Doe",
+                      email: "john@example.com",
+                      role: "ADMIN",
+                      designation: "Manager"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              method: "GET",
+              path: "/api/users/",
+              description: "Get all users (Admin only)",
+              requiresAuth: true,
+              roles: ["ADMIN", "SUPER_ADMIN"],
+              responses: {
+                200: {
+                  description: "Users list retrieved",
+                  example: {
+                    success: true,
+                    users: [
+                      {
+                        id: 1,
+                        name: "John Doe",
+                        email: "john@example.com",
+                        role: "ADMIN",
+                        status: "ACTIVE"
+                      }
+                    ],
+                    count: 1
+                  }
+                }
+              }
+            }
+          ],
+          passwordManagement: [
+            {
+              method: "POST",
+              path: "/api/users/set-password",
+              description: "Set password from invite",
+              requiresAuth: false,
+              requestBody: {
+                email: "string (required)",
+                otp: "string (required)",
+                currentPassword: "string (required)",
+                newPassword: "string (required)"
+              },
+              responses: {
+                200: {
+                  description: "Password set successfully",
+                  example: { message: "Password set successfully. You can now log in." }
+                }
+              }
+            },
+            {
+              method: "POST",
+              path: "/api/users/forgot-password",
+              description: "Request password reset",
+              requiresAuth: false,
+              requestBody: {
+                email: "string (required)"
+              },
+              responses: {
+                200: {
+                  description: "Reset email sent",
+                  example: { message: "Password reset email sent" }
+                }
+              }
+            },
+            {
+              method: "POST",
+              path: "/api/users/reset-password",
+              description: "Reset password with OTP",
+              requiresAuth: false,
+              requestBody: {
+                email: "string (required)",
+                otp: "string (required)",
+                newPassword: "string (required)"
+              },
+              responses: {
+                200: {
+                  description: "Password reset successful",
+                  example: { message: "Password reset successfully" }
+                }
+              }
+            },
+            {
+              method: "POST",
+              path: "/api/users/resend-otp",
+              description: "Resend OTP for password setup",
+              requiresAuth: false,
+              requestBody: {
+                email: "string (required)"
+              },
+              responses: {
+                200: {
+                  description: "OTP resent successfully",
+                  example: { message: "New OTP sent successfully" }
+                }
+              }
+            }
+          ]
+        },
+        errorCodes: {
+          400: "Bad Request - Invalid input data",
+          401: "Unauthorized - Invalid or missing authentication",
+          403: "Forbidden - Insufficient permissions",
+          404: "Not Found - Resource not found",
+          500: "Internal Server Error - Server error occurred"
+        },
+        postmanCollection: {
+          downloadUrl: "/api/users/postman-collection",
+          description: "Download complete Postman collection with all endpoints"
+        }
+      };
+
+      return res.json(apiDocumentation);
+    } catch (error: any) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
+
+  /* ================= POSTMAN COLLECTION DOWNLOAD ================= */
+  async downloadPostmanCollection(req: Request, res: Response) {
+    try {
+      const baseUrl = process.env.API_BASE_URL || "http://localhost:3001";
+      
+      const postmanCollection = {
+        info: {
+          name: "Tikr API Collection",
+          description: "Complete API collection for Tikr Task Management System",
+          schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+        },
+        variable: [
+          {
+            key: "baseUrl",
+            value: baseUrl,
+            type: "string"
+          },
+          {
+            key: "token",
+            value: "",
+            type: "string"
+          }
+        ],
+        item: [
+          {
+            name: "Authentication",
+            item: [
+              {
+                name: "Login",
+                request: {
+                  method: "POST",
+                  header: [
+                    {
+                      key: "Content-Type",
+                      value: "application/json"
+                    }
+                  ],
+                  body: {
+                    mode: "raw",
+                    raw: JSON.stringify({
+                      email: "admin@example.com",
+                      password: "password123"
+                    }, null, 2)
+                  },
+                  url: {
+                    raw: "{{baseUrl}}/api/users/login",
+                    host: ["{{baseUrl}}"],
+                    path: ["api", "users", "login"]
+                  }
+                }
+              },
+              {
+                name: "Create Super Admin",
+                request: {
+                  method: "POST",
+                  header: [
+                    {
+                      key: "Content-Type",
+                      value: "application/json"
+                    }
+                  ],
+                  body: {
+                    mode: "raw",
+                    raw: JSON.stringify({
+                      firstName: "Super",
+                      lastName: "Admin",
+                      email: "admin@example.com",
+                      phone: "+1234567890",
+                      designation: "Super Administrator"
+                    }, null, 2)
+                  },
+                  url: {
+                    raw: "{{baseUrl}}/api/users/superAdmin",
+                    host: ["{{baseUrl}}"],
+                    path: ["api", "users", "superAdmin"]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            name: "User Management",
+            item: [
+              {
+                name: "Get Current User",
+                request: {
+                  method: "GET",
+                  header: [
+                    {
+                      key: "Authorization",
+                      value: "Bearer {{token}}"
+                    }
+                  ],
+                  url: {
+                    raw: "{{baseUrl}}/api/users/me",
+                    host: ["{{baseUrl}}"],
+                    path: ["api", "users", "me"]
+                  }
+                }
+              },
+              {
+                name: "Get All Users",
+                request: {
+                  method: "GET",
+                  header: [
+                    {
+                      key: "Authorization",
+                      value: "Bearer {{token}}"
+                    }
+                  ],
+                  url: {
+                    raw: "{{baseUrl}}/api/users/",
+                    host: ["{{baseUrl}}"],
+                    path: ["api", "users", ""]
+                  }
+                }
+              },
+              {
+                name: "Invite Employee",
+                request: {
+                  method: "POST",
+                  header: [
+                    {
+                      key: "Content-Type",
+                      value: "application/json"
+                    },
+                    {
+                      key: "Authorization",
+                      value: "Bearer {{token}}"
+                    }
+                  ],
+                  body: {
+                    mode: "raw",
+                    raw: JSON.stringify({
+                      email: "employee@example.com",
+                      firstName: "John",
+                      lastName: "Doe",
+                      phone: "+1234567890",
+                      designation: "Developer",
+                      role: "EMPLOYEE",
+                      employeeCode: "EMP001"
+                    }, null, 2)
+                  },
+                  url: {
+                    raw: "{{baseUrl}}/api/users/register",
+                    host: ["{{baseUrl}}"],
+                    path: ["api", "users", "register"]
+                  }
+                }
+              }
+            ]
+          },
+          {
+            name: "Password Management",
+            item: [
+              {
+                name: "Set Password",
+                request: {
+                  method: "POST",
+                  header: [
+                    {
+                      key: "Content-Type",
+                      value: "application/json"
+                    }
+                  ],
+                  body: {
+                    mode: "raw",
+                    raw: JSON.stringify({
+                      email: "user@example.com",
+                      otp: "123456",
+                      currentPassword: "temp_password",
+                      newPassword: "new_password123"
+                    }, null, 2)
+                  },
+                  url: {
+                    raw: "{{baseUrl}}/api/users/set-password",
+                    host: ["{{baseUrl}}"],
+                    path: ["api", "users", "set-password"]
+                  }
+                }
+              },
+              {
+                name: "Forgot Password",
+                request: {
+                  method: "POST",
+                  header: [
+                    {
+                      key: "Content-Type",
+                      value: "application/json"
+                    }
+                  ],
+                  body: {
+                    mode: "raw",
+                    raw: JSON.stringify({
+                      email: "user@example.com"
+                    }, null, 2)
+                  },
+                  url: {
+                    raw: "{{baseUrl}}/api/users/forgot-password",
+                    host: ["{{baseUrl}}"],
+                    path: ["api", "users", "forgot-password"]
+                  }
+                }
+              },
+              {
+                name: "Reset Password",
+                request: {
+                  method: "POST",
+                  header: [
+                    {
+                      key: "Content-Type",
+                      value: "application/json"
+                    }
+                  ],
+                  body: {
+                    mode: "raw",
+                    raw: JSON.stringify({
+                      email: "user@example.com",
+                      otp: "123456",
+                      newPassword: "new_password123"
+                    }, null, 2)
+                  },
+                  url: {
+                    raw: "{{baseUrl}}/api/users/reset-password",
+                    host: ["{{baseUrl}}"],
+                    path: ["api", "users", "reset-password"]
+                  }
+                }
+              },
+              {
+                name: "Resend OTP",
+                request: {
+                  method: "POST",
+                  header: [
+                    {
+                      key: "Content-Type",
+                      value: "application/json"
+                    }
+                  ],
+                  body: {
+                    mode: "raw",
+                    raw: JSON.stringify({
+                      email: "user@example.com"
+                    }, null, 2)
+                  },
+                  url: {
+                    raw: "{{baseUrl}}/api/users/resend-otp",
+                    host: ["{{baseUrl}}"],
+                    path: ["api", "users", "resend-otp"]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      };
+
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', 'attachment; filename="tikr-api-collection.json"');
+      return res.json(postmanCollection);
+    } catch (error: any) {
+      return res.status(500).json({ error: error.message });
     }
   }
 }

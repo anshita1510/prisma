@@ -27,7 +27,7 @@ const Sidebar = () => {
     { icon: Home, label: 'Dashboard', href: '/manager', active: true },
     { icon: Users, label: 'Team Management', href: '/manager/team' },
     { icon: Calendar, label: 'Attendance', href: '/manager/attendance' },
-    { icon: FileText, label: 'Leave Requests', href: '/manager/leave' },
+    { icon: FileText, label: 'Leave Management', href: '/manager/leave-management' },
     { icon: Settings, label: 'Settings', href: '/manager/settings' },
   ];
 

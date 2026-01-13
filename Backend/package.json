@@ -7,7 +7,9 @@
     "build": "tsc",
     "test": "echo \"Error: no testS specified\" && exit 1",
     "dev": "nodemon --exec 'ts-node src/server.ts'",
-    "start": "node src/server.ts"
+    "start": "node src/server.ts",
+    "prisma:migrate": "npx prisma migrate dev --name $migration_name",
+    "prisma:deploy": "npx prisma migrate deploy"
   },
   "keywords": [],
   "author": "",
@@ -22,6 +24,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "google-auth-library": "^10.5.0",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",

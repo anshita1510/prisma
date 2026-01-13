@@ -1,4 +1,3 @@
-// Shared Express type extensions
 import { Role } from '@prisma/client';
 
 declare global {
@@ -8,8 +7,9 @@ declare global {
         id: number;
         role: Role;
         email: string;
+        employeeId?: number;
+        companyId?: number;
       };
-      invitedUser?: any;
     }
   }
 }

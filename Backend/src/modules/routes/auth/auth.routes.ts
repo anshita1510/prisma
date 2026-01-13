@@ -3,7 +3,7 @@ import { Router } from "express";
 import { UserController } from "../../controller/auth/auth.controller";
 import { inviteAuthMiddleware } from "../../../middlewares/inviteAuth.middleware";
 import { authenticate } from "../../../middlewares/auth.middleware";
-import { requireRole } from "../../../middlewares/role.middleware";
+import { requireRole, requireAnyRole } from "../../../middlewares/role.middleware";
 import { Role } from "@prisma/client";
 import {forgotPassword} from "../../controller/password/forget.password.controller"
 import { verifyOtp } from "../../controller/password/verify.password";
@@ -14,13 +14,23 @@ const controller = new UserController();
 
 /* ---------------- AUTH ---------------- */
 router.post("/login", controller.login);
+router.post("/check-user", controller.checkUser);
+router.post("/google-login", controller.googleLogin);
+router.post("/microsoft-login", controller.microsoftLogin);
 router.post("/superAdmin", controller.createSuperAdmin);
+
+/* ---------------- DEBUG ---------------- */
+router.get(
+    "/debug-test",
+    authenticate,
+    controller.debugTest
+);
 
 /* ---------------- AUTHENTICATED USER ---------------- */
 router.post(
     "/register",
     authenticate,
-    requireRole(Role.ADMIN, Role.SUPER_ADMIN),
+    requireAnyRole(Role.ADMIN, Role.SUPER_ADMIN),
     controller.inviteEmployee
 );
 
@@ -35,6 +45,13 @@ router.get(
     "/me",
     authenticate,
     controller.getCurrentUser
+);
+
+router.get(
+    "/",
+    authenticate,
+    requireAnyRole(Role.ADMIN, Role.SUPER_ADMIN),
+    controller.getAllUsers
 );
 
 router.post(
@@ -70,5 +87,16 @@ router.post(
     "/reset-password",
     resetPassword
 )
+
+/* ---------------- API DOCUMENTATION ---------------- */
+router.get(
+    "/api-docs",
+    controller.getApiDocumentation
+);
+
+router.get(
+    "/postman-collection",
+    controller.downloadPostmanCollection
+);
 
 export default router;
