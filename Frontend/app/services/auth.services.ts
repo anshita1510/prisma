@@ -21,6 +21,12 @@ export interface AuthResponse {
     name: string;
     email: string;
     role: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    designation?: string;
+    status?: string;
+    isActive?: boolean;
   };
   message?: string;
 }
@@ -28,7 +34,7 @@ export interface AuthResponse {
 export const authService = {
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     try {
-      const response = await api.post<AuthResponse>('/auth/login', credentials);
+      const response = await api.post<AuthResponse>('/api/users/login', credentials);
       
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
@@ -43,7 +49,7 @@ export const authService = {
 
   register: async (data: RegisterData): Promise<AuthResponse> => {
     try {
-      const response = await api.post<AuthResponse>('/auth/register', data);
+      const response = await api.post<AuthResponse>('/api/users/register', data);
       return response.data;
     } catch (error: any) {
       throw error.response?.data || { message: 'Registration failed' };
@@ -59,7 +65,14 @@ export const authService = {
 
   getCurrentUser: async () => {
     try {
-      const response = await api.get('/auth/me');
+      const response = await api.get('/api/users/me');
+      
+      if (response.data.success && response.data.user) {
+        // Update localStorage with fresh user data
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        return response.data.user;
+      }
+      
       return response.data;
     } catch (error: any) {
       throw error.response?.data || { message: 'Failed to fetch user' };

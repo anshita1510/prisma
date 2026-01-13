@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import { prisma } from "../../../config/db";
 import { Role, Status } from "@prisma/client"; // Import both for clarity
+import "../../../types/express"; // Import express type extensions
 
 import { UserRepository } from "../../repository/auth/user.repository";
 import { InviteEmployeeUsecase } from "../../usecase/employees/inviteEmployee.usecase";
@@ -26,17 +27,7 @@ const inviteEmployeeUsecase = new InviteEmployeeUsecase(userRepo, sendEmailUseCa
 /*                         EXPRESS REQUEST AUGMENTATION                        */
 /* -------------------------------------------------------------------------- */
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        id: number;
-        role: Role;
-      };
-      invitedUser?: any; // You can tighten this later to User type
-    }
-  }
-}
+// Type declaration moved to Backend/src/types/express.d.ts to avoid conflicts
 
 /* -------------------------------------------------------------------------- */
 /*                            ROLE HELPER FUNCTION                            */
@@ -214,7 +205,50 @@ export class UserController {
     }
   }
 
-  /* ================= UPDATE USER CREDENTIALS (ADMIN ONLY) ================= */
+  /* ================= GET CURRENT USER PROFILE ================= */
+  async getCurrentUser(req: Request, res: Response) {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const user = await userRepo.findById(req.user.id);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Format user data for frontend
+      const firstName = user.firstName || '';
+      const lastName = user.lastName || '';
+      
+      // Create name, avoiding duplicates and handling empty values
+      let name = firstName;
+      if (lastName && lastName !== firstName) {
+        name = `${firstName} ${lastName}`;
+      }
+      name = name.trim() || 'User'; // Fallback to 'User' if both are empty
+
+      const formattedUser = {
+        id: user.id,
+        name,
+        email: user.email,
+        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone,
+        designation: user.designation,
+        status: user.status,
+        isActive: user.isActive
+      };
+
+      return res.json({
+        success: true,
+        user: formattedUser
+      });
+    } catch (error: any) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
   async updateCredentials(req: Request, res: Response) {
     try {
       if (!req.user) return res.status(401).json({ error: "Unauthorized" });

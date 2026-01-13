@@ -5,7 +5,7 @@ export const adminService = {
   // User Management
   getAllUsers: async () => {
     try {
-      const response = await api.get('/admin/users');
+      const response = await api.get('/api/users');
       return response.data;
     } catch (error: any) {
       throw error.response?.data || { message: 'Failed to fetch users' };
@@ -14,7 +14,7 @@ export const adminService = {
 
   createUser: async (userData: any) => {
     try {
-      const response = await api.post('/admin/users', userData);
+      const response = await api.post('/api/users/register', userData);
       return response.data;
     } catch (error: any) {
       throw error.response?.data || { message: 'Failed to create user' };
@@ -23,7 +23,7 @@ export const adminService = {
 
   updateUser: async (userId: string, userData: any) => {
     try {
-      const response = await api.put(`/admin/users/${userId}`, userData);
+      const response = await api.put(`/api/users/update/${userId}`, userData);
       return response.data;
     } catch (error: any) {
       throw error.response?.data || { message: 'Failed to update user' };
@@ -32,7 +32,7 @@ export const adminService = {
 
   deleteUser: async (userId: string) => {
     try {
-      const response = await api.delete(`/admin/users/${userId}`);
+      const response = await api.delete(`/api/users/${userId}`);
       return response.data;
     } catch (error: any) {
       throw error.response?.data || { message: 'Failed to delete user' };
@@ -42,7 +42,7 @@ export const adminService = {
   // Attendance Management
   getAllAttendance: async (filters?: { date?: string; userId?: string }) => {
     try {
-      const response = await api.get('/admin/attendance', { params: filters });
+      const response = await api.get('/api/attendance/logs', { params: filters });
       return response.data;
     } catch (error: any) {
       throw error.response?.data || { message: 'Failed to fetch attendance' };
@@ -52,7 +52,7 @@ export const adminService = {
   // Leave Management
   getPendingLeaves: async () => {
     try {
-      const response = await api.get('/admin/leaves/pending');
+      const response = await api.get('/api/leaves?status=PENDING');
       return response.data;
     } catch (error: any) {
       throw error.response?.data || { message: 'Failed to fetch pending leaves' };
@@ -61,7 +61,7 @@ export const adminService = {
 
   approveLeave: async (leaveId: string) => {
     try {
-      const response = await api.put(`/admin/leaves/${leaveId}/approve`);
+      const response = await api.patch(`/api/leaves/${leaveId}/status`, { status: 'APPROVED' });
       return response.data;
     } catch (error: any) {
       throw error.response?.data || { message: 'Failed to approve leave' };
@@ -70,7 +70,7 @@ export const adminService = {
 
   rejectLeave: async (leaveId: string, reason?: string) => {
     try {
-      const response = await api.put(`/admin/leaves/${leaveId}/reject`, { reason });
+      const response = await api.patch(`/api/leaves/${leaveId}/status`, { status: 'REJECTED', reason });
       return response.data;
     } catch (error: any) {
       throw error.response?.data || { message: 'Failed to reject leave' };

@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import authRoutes from './modules/routes/auth/auth.routes';
 import leaveRoutes from './modules/routes/leave/leave.routes';
+import attendanceRoutes from './modules/routes/attendance/attendance.routes';
+import { errorHandler } from './middlewares/validation.middleware';
 
 dotenv.config();
 
@@ -11,7 +13,7 @@ const PORT = process.env.PORT || 5004;
 
 // Middleware
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: ['http://localhost:3000', 'http://localhost:3001'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -23,6 +25,7 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/users', authRoutes);
 app.use('/api/leaves', leaveRoutes);
+app.use('/api/attendance', attendanceRoutes);
 
 // Test route
 app.get('/api/test', (req, res) => {
@@ -43,6 +46,28 @@ app.get('/api/debug/employees', async (req, res) => {
   }
 });
 
+app.get('/api/debug/users', async (req, res) => {
+  try {
+    const { PrismaClient } = require('@prisma/client');
+    const prisma = new PrismaClient();
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        status: true,
+        isActive: true,
+        password: true
+      }
+    });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
 app.get('/api/debug/departments', async (req, res) => {
   try {
     const { PrismaClient } = require('@prisma/client');
@@ -54,15 +79,14 @@ app.get('/api/debug/departments', async (req, res) => {
   }
 });
 
-// Error handling
-// app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-//   console.error(err.stack);
-//   res.status(500).json({
-//     success: false,
-//     message: 'Something went wrong!'
-//   });
-// });
 
+// Error handling middleware
+app.use(errorHandler);
+
+// Start server
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`🚀 Server is running on port ${PORT}`);
+  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
+
+export default app;

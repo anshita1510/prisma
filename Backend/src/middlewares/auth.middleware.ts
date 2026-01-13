@@ -1,11 +1,13 @@
 // Backend/src/modules/middlewares/auth.middleware.ts
 import { Request, Response, NextFunction } from 'express';
+import { Role } from '@prisma/client';
 import jwt from 'jsonwebtoken';
+import '../types/express'; // Import express type extensions
 
 interface JwtPayload {
-  userId: string;
+  id: number;
   email: string;
-  role: string;
+  role: Role;
 }
 
 export const authenticate = (req: Request, res: Response, next: NextFunction) => {
@@ -29,7 +31,11 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
     ) as JwtPayload;
 
     // Attach user info to request
-    (req as any).user = decoded;
+    req.user = {
+      id: decoded.id,
+      role: decoded.role,
+      email: decoded.email
+    };
 
     next();
   } catch (error) {
@@ -42,9 +48,9 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
 };
 
 // Role-based middleware
-export const authorize = (...roles: string[]) => {
+export const authorize = (...roles: Role[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const user = (req as any).user;
+    const user = req.user;
 
     if (!user || !roles.includes(user.role)) {
       return res.status(403).json({

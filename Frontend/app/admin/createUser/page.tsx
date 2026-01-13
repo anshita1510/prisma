@@ -1,5 +1,6 @@
 import React from 'react'
 import Sidebar from '../_components/Sidebar_A'
+import Create from "../_components/createu"
 
 export default function page() {
   return (
@@ -9,7 +10,10 @@ export default function page() {
 
       <Sidebar></Sidebar>
       {/* Main Content */}
-      <main className="flex-1 p-6">welcome dashboard</main>
+      <main className="flex-1 ">
+        <Create></Create>
+
+      </main>
     </div>
     </div>
   )

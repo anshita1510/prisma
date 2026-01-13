@@ -37,8 +37,34 @@ export class LoginUsecase {
       email: user.email,
     });
 
-    const { password: _, ...safeUser } = user;
+    // Format user data for frontend
+    const firstName = user.firstName || '';
+    const lastName = user.lastName || '';
+    
+    // Create name, avoiding duplicates and handling empty values
+    let name = firstName;
+    if (lastName && lastName !== firstName) {
+      name = `${firstName} ${lastName}`;
+    }
+    name = name.trim() || 'User'; // Fallback to 'User' if both are empty
 
-    return { user: safeUser, token };
+    const formattedUser = {
+      id: user.id,
+      name,
+      email: user.email,
+      role: user.role,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phone: user.phone,
+      designation: user.designation,
+      status: user.status,
+      isActive: user.isActive
+    };
+
+    return { 
+      success: true,
+      user: formattedUser, 
+      token 
+    };
   }
 }
