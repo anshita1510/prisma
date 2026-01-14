@@ -64,6 +64,11 @@ export class InviteEmployeeUsecase {
     const hashedOtp = await bcrypt.hash(rawOtp, 10);
     const otpExpiry = new Date(Date.now() + 30 * 60 * 1000);
 
+    console.log('🔐 GENERATED CREDENTIALS FOR:', data.email);
+    console.log('   OTP:', rawOtp);
+    console.log('   Temp Password:', tempPassword);
+    console.log('   OTP Expiry:', otpExpiry);
+
     /* 🧑 CREATE USER (FULLY FILLED ✅) */
     const user = await this.userRepo.create({
       email: data.email,
@@ -135,6 +140,10 @@ export class InviteEmployeeUsecase {
                     <div style="margin-bottom: 15px;">
                       <label style="display: block; color: #4a5568; font-size: 14px; font-weight: 500; margin-bottom: 5px;">Email Address</label>
                       <div style="background-color: #f7fafc; padding: 12px; border-radius: 6px; font-family: monospace; color: #2d3748; border: 1px solid #e2e8f0;">${data.email}</div>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                      <label style="display: block; color: #4a5568; font-size: 14px; font-weight: 500; margin-bottom: 5px;">OTP (One-Time Password)</label>
+                      <div style="background-color: #fff5f5; padding: 12px; border-radius: 6px; font-family: monospace; color: #c53030; font-weight: 600; border: 1px solid #fed7d7; font-size: 18px; letter-spacing: 2px;">${rawOtp}</div>
                     </div>
                     <div>
                       <label style="display: block; color: #4a5568; font-size: 14px; font-weight: 500; margin-bottom: 5px;">Temporary Password</label>
