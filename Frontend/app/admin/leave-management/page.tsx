@@ -63,14 +63,9 @@ export default function AdminLeaveManagement() {
     try {
       setLoading(true);
       setError('');
-      
-      // Use getApprovableLeaves to get only leaves that the current user can approve
-      // based on their DESIGNATION (not role)
-      console.log('📋 Loading approvable leaves based on designation...');
-      const response = await leaveService.getApprovableLeaves();
+      const response = await leaveService.getAllLeaves();
       
       if (response.success && response.leaves) {
-        console.log('✅ Loaded approvable leaves:', response.leaves.length);
         setLeaves(response.leaves);
       } else {
         setError('Failed to load leaves: ' + (response.error || 'Unknown error'));
@@ -267,7 +262,7 @@ export default function AdminLeaveManagement() {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Leave Management</h1>
-              <p className="text-gray-600 mt-1">Review and manage leave applications based on your designation</p>
+              <p className="text-gray-600 mt-1">Review and manage employee leave applications</p>
             </div>
             <div className="flex items-center gap-3">
               {user && (
@@ -345,10 +340,10 @@ export default function AdminLeaveManagement() {
                     Leave Applications
                   </CardTitle>
                   <CardDescription>
-                    {activeTab === 'all' && 'Leave applications you can approve based on your designation'}
-                    {activeTab === 'pending' && 'Pending leave applications awaiting your approval'}
-                    {activeTab === 'approved' && 'Leave applications you have approved'}
-                    {activeTab === 'rejected' && 'Leave applications you have rejected'}
+                    {activeTab === 'all' && 'All employee leave applications'}
+                    {activeTab === 'pending' && 'Leave applications awaiting your review'}
+                    {activeTab === 'approved' && 'Approved leave applications'}
+                    {activeTab === 'rejected' && 'Rejected leave applications'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

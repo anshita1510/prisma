@@ -45,8 +45,9 @@ export class LeaveApprovalService {
     if (leave.employeeId === approverId) {
       console.log('🔴 Cannot approve own leave:', {
         leaveEmployeeId: leave.employeeId,
+        leaveEmployeeName: leave.employee.name,
+        leaveEmployeeDesignation: leave.employee.designation,
         approverId: approverId,
-        leaveApplicant: leave.employee.name,
         leaveId: leaveId
       });
       return {
@@ -66,7 +67,11 @@ export class LeaveApprovalService {
     // Get approver's designation
     const approver = await prisma.employee.findUnique({
       where: { id: approverId },
-      select: { designation: true }
+      select: { 
+        designation: true,
+        name: true,
+        employeeCode: true
+      }
     });
 
     if (!approver) {
@@ -80,8 +85,17 @@ export class LeaveApprovalService {
     const approverDesignation = approver.designation;
 
     console.log('📋 Designation-based approval check:', {
-      applicantDesignation,
-      approverDesignation
+      applicant: {
+        id: leave.employeeId,
+        name: leave.employee.name,
+        designation: applicantDesignation
+      },
+      approver: {
+        id: approverId,
+        name: approver.name,
+        designation: approverDesignation,
+        role: approverRole
+      }
     });
 
     // DESIGNATION-BASED APPROVAL LOGIC ONLY
@@ -103,25 +117,30 @@ export class LeaveApprovalService {
 
     // 2. MANAGER designation leaves
     if (applicantDesignation === Designation.MANAGER) {
-      // Managers can ONLY be approved by HR or DIRECTOR
-      if (approverDesignation === Designation.HR || approverDesignation === Designation.DIRECTOR) {
+      // Managers can be approved by HR, MANAGER, or DIRECTOR
+      if (approverDesignation === Designation.HR || 
+          approverDesignation === Designation.MANAGER || 
+          approverDesignation === Designation.DIRECTOR) {
         return { canApprove: true };
       }
       return {
         canApprove: false,
-        reason: 'Only HR or Director (by designation) can approve manager leave requests'
+        reason: 'Only HR, Manager, or Director (by designation) can approve manager leave requests'
       };
     }
 
     // 3. HR designation leaves
     if (applicantDesignation === Designation.HR) {
-      // HR can only be approved by DIRECTOR or CEO (SUPER_ADMIN role)
-      if (approverDesignation === Designation.DIRECTOR || approverRole === 'SUPER_ADMIN') {
+      // HR can be approved by MANAGER, HR, DIRECTOR or CEO (SUPER_ADMIN role)
+      if (approverDesignation === Designation.MANAGER || 
+          approverDesignation === Designation.HR || 
+          approverDesignation === Designation.DIRECTOR || 
+          approverRole === 'SUPER_ADMIN') {
         return { canApprove: true };
       }
       return {
         canApprove: false,
-        reason: 'Only Director or CEO can approve HR leave requests'
+        reason: 'Only Manager, HR, Director or CEO can approve HR leave requests'
       };
     }
 
@@ -176,19 +195,19 @@ export class LeaveApprovalService {
 
     // Filter based on approver designation ONLY
     if (approverDesignation === Designation.MANAGER) {
-      // Managers (by designation) can approve junior employee designation leaves
+      // Managers can approve junior employees, HR, and other Managers
       whereClause.employee = {
         ...whereClause.employee,
         designation: {
-          in: [Designation.INTERN, Designation.SOFTWARE_ENGINEER, Designation.SENIOR_ENGINEER, Designation.TECH_LEAD]
+          in: [Designation.INTERN, Designation.SOFTWARE_ENGINEER, Designation.SENIOR_ENGINEER, Designation.TECH_LEAD, Designation.HR, Designation.MANAGER]
         }
       };
     } else if (approverDesignation === Designation.HR) {
-      // HR (by designation) can approve all employee and manager designation leaves
+      // HR can approve junior employees, Managers, and other HR
       whereClause.employee = {
         ...whereClause.employee,
         designation: {
-          in: [Designation.INTERN, Designation.SOFTWARE_ENGINEER, Designation.SENIOR_ENGINEER, Designation.TECH_LEAD, Designation.MANAGER]
+          in: [Designation.INTERN, Designation.SOFTWARE_ENGINEER, Designation.SENIOR_ENGINEER, Designation.TECH_LEAD, Designation.MANAGER, Designation.HR]
         }
       };
     } else if (approverDesignation === Designation.DIRECTOR) {

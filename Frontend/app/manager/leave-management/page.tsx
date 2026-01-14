@@ -63,14 +63,9 @@ export default function ManagerLeaveManagement() {
     try {
       setLoading(true);
       setError('');
-      
-      // Use getApprovableLeaves to get only leaves that the current user can approve
-      // based on their DESIGNATION (not role)
-      console.log('📋 Loading approvable leaves based on designation...');
-      const response = await leaveService.getApprovableLeaves();
+      const response = await leaveService.getAllLeaves();
       
       if (response.success && response.leaves) {
-        console.log('✅ Loaded approvable leaves:', response.leaves.length);
         setLeaves(response.leaves);
       } else {
         setError('Failed to load leaves: ' + (response.error || 'Unknown error'));
