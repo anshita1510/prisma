@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
 import authRoutes from './modules/routes/auth/auth.routes';
 import leaveRoutes from './modules/routes/leave/leave.routes';
 import attendanceRoutes from './modules/routes/attendance/attendance.routes';
@@ -12,7 +13,11 @@ import notificationRoutes from './modules/routes/notification.routes';
 import newProjectRoutes from './modules/routes/project/project.routes';
 import employeeRoutes from './modules/routes/employee.routes';
 import { errorHandler } from './middlewares/validation.middleware';
+<<<<<<< HEAD
 import { scheduleAutoCheckout } from './cron/autoCheckout.cron';
+=======
+import { swaggerSpec } from './config/swagger';
+>>>>>>> origin/main
 
 dotenv.config();
 
@@ -30,6 +35,12 @@ app.use(cors({
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Swagger Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Keka Clone API Documentation'
+}));
 
 // Routes
 app.use('/api/users', authRoutes);
