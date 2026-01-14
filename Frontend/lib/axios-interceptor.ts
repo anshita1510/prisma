@@ -32,12 +32,20 @@ axiosInstance.interceptors.response.use(
     return response;
   },
   (error: AxiosError<any>) => {
+    console.log('🚨 Axios interceptor error:', {
+      status: error.response?.status,
+      url: error.config?.url,
+      errorCode: error.response?.data?.code
+    });
+
     // Handle 401 Unauthorized errors
     if (error.response?.status === 401) {
       const errorCode = error.response.data?.code;
 
       // Token expired or invalid
       if (errorCode === 'TOKEN_EXPIRED' || errorCode === 'INVALID_TOKEN' || errorCode === 'NO_TOKEN') {
+        console.log('❌ Token invalid - clearing storage');
+        
         // Clear auth data
         localStorage.removeItem('token');
         localStorage.removeItem('user');

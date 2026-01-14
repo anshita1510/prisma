@@ -34,11 +34,18 @@ api.interceptors.response.use(
       const status = error.response.status;
       
       if (status === 401) {
-        // Unauthorized - clear auth and redirect to login
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        console.log('🚨 401 Error detected');
+        console.log('🚨 URL:', error.config?.url);
+        console.log('🚨 Current path:', typeof window !== 'undefined' ? window.location.pathname : 'unknown');
+        
+        // Only clear token if we're not already on login page
+        // This prevents clearing token during page initialization
         if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
-          window.location.href = '/login';
+          console.log('❌ Clearing token due to 401 error');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+          window.location.href = '/login?session=expired';
         }
       } else if (status === 403) {
         // Forbidden - user doesn't have permission

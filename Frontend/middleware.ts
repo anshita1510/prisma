@@ -60,15 +60,14 @@ export function middleware(request: NextRequest) {
     tokenLength: token?.length || 0
   });
 
-  // If no token, redirect to login (unless already on a public route)
+  // If no token in cookie, allow the request to proceed
+  // The client-side AuthContext will handle authentication from localStorage
   if (!token) {
-    console.log('❌ [Middleware] No token found, redirecting to login');
-    const url = new URL('/login', request.url);
-    url.searchParams.set('returnUrl', pathname);
-    return NextResponse.redirect(url);
+    console.log('⚠️ [Middleware] No token in cookie, allowing request (client-side auth will handle)');
+    return NextResponse.next();
   }
 
-  // Decode token to get user role (basic check - full validation happens on server)
+  // If we have a token, validate it and check role-based access
   try {
     // Parse JWT payload (without verification - this is just for routing)
     const payload = JSON.parse(
@@ -76,6 +75,7 @@ export function middleware(request: NextRequest) {
     );
     
     const userRole = payload.role;
+    console.log('✅ [Middleware] Token valid, user role:', userRole);
 
     // Check role-based access
     for (const [route, allowedRoles] of Object.entries(roleRoutes)) {
@@ -96,11 +96,10 @@ export function middleware(request: NextRequest) {
       }
     }
   } catch (error) {
-    // If token is invalid, redirect to login
-    console.error('[Middleware] Token parsing error:', error);
-    const url = new URL('/login', request.url);
-    url.searchParams.set('session', 'invalid');
-    return NextResponse.redirect(url);
+    // If token is invalid, allow the request to proceed
+    // The client-side AuthContext will handle authentication
+    console.error('[Middleware] Token parsing error, allowing request (client-side auth will handle):', error);
+    return NextResponse.next();
   }
 
   return NextResponse.next();

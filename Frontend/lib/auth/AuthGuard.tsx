@@ -38,6 +38,7 @@ export function AuthGuard({ children, allowedRoles, requireAuth = true }: AuthGu
 
       // Wait for initial loading
       if (isLoading) {
+        console.log('⏳ [AuthGuard] Waiting for auth initialization...');
         return;
       }
 
@@ -47,27 +48,20 @@ export function AuthGuard({ children, allowedRoles, requireAuth = true }: AuthGu
         return;
       }
 
-      // Check if user is authenticated
+      // Check if user is authenticated (from localStorage)
       if (!isAuthenticated) {
-        console.log('🔒 Not authenticated, redirecting to login');
+        console.log('🔒 [AuthGuard] Not authenticated, redirecting to login');
         const returnUrl = encodeURIComponent(pathname);
         router.push(`/login?returnUrl=${returnUrl}`);
         return;
       }
 
-      // Verify token with backend
-      const isValid = await checkAuth();
-      if (!isValid) {
-        console.log('🔒 Token invalid, redirecting to login');
-        const returnUrl = encodeURIComponent(pathname);
-        router.push(`/login?session=expired&returnUrl=${returnUrl}`);
-        return;
-      }
+      console.log('✅ [AuthGuard] User authenticated from localStorage');
 
       // Check role-based access
       if (allowedRoles && allowedRoles.length > 0) {
         if (!user || !allowedRoles.includes(user.role)) {
-          console.log('🚫 Insufficient permissions');
+          console.log('🚫 [AuthGuard] Insufficient permissions');
           setDenialReason(`This page requires ${allowedRoles.join(' or ')} role. You have ${user?.role || 'no'} role.`);
           setAccessDenied(true);
           setIsChecking(false);
@@ -75,11 +69,12 @@ export function AuthGuard({ children, allowedRoles, requireAuth = true }: AuthGu
         }
       }
 
+      console.log('✅ [AuthGuard] Access granted');
       setIsChecking(false);
     };
 
     verifyAuth();
-  }, [isAuthenticated, isLoading, user, pathname, allowedRoles, requireAuth, router, checkAuth]);
+  }, [isAuthenticated, isLoading, user, pathname, allowedRoles, requireAuth, router]);
 
   // Show loading state
   if (isLoading || isChecking) {
