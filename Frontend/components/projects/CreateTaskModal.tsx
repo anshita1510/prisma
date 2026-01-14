@@ -45,6 +45,11 @@ export function CreateTaskModal({ isOpen, onClose, onSuccess, projectId, project
   const [error, setError] = useState<string>('');
   const [user, setUser] = useState<any>(null);
   const [showPreview, setShowPreview] = useState(false);
+  
+  // Editable fields in preview mode
+  const [editablePriority, setEditablePriority] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'>('MEDIUM');
+  const [editableEstimatedHours, setEditableEstimatedHours] = useState<number>(4);
+  const [editableUrgencyScore, setEditableUrgencyScore] = useState<number>(50);
 
   useEffect(() => {
     if (isOpen) {
@@ -110,6 +115,9 @@ export function CreateTaskModal({ isOpen, onClose, onSuccess, projectId, project
       });
 
       setGeneratedTask(generated);
+      setEditablePriority(generated.priority);
+      setEditableEstimatedHours(generated.estimatedHours || 4);
+      setEditableUrgencyScore(generated.metadata.urgencyScore);
       setShowPreview(true);
       console.log('✅ Task preview generated:', generated);
     } catch (error) {
@@ -159,12 +167,12 @@ export function CreateTaskModal({ isOpen, onClose, onSuccess, projectId, project
         title: generatedTask.title,
         description: generatedTask.description,
         projectId: projectId,
-        priority: generatedTask.priority,
+        priority: editablePriority, // Use editable value
         status: backendStatus,
         assignedToId: generatedTask.assignedToId,
         dueDate: generatedTask.dueDate,
         startDate: generatedTask.startDate,
-        estimatedHours: generatedTask.estimatedHours,
+        estimatedHours: editableEstimatedHours, // Use editable value
         createdById: createdById,
       };
 
@@ -270,28 +278,75 @@ export function CreateTaskModal({ isOpen, onClose, onSuccess, projectId, project
 
               {/* Key Metrics */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {/* Priority - Editable */}
                 <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
-                  <p className="text-xs text-purple-600 font-medium">Priority</p>
-                  <Badge className={getPriorityColor(generatedTask.priority)}>
-                    {generatedTask.priority}
-                  </Badge>
+                  <Label htmlFor="priority-edit" className="text-xs text-purple-600 font-medium mb-2 block">
+                    Priority
+                  </Label>
+                  <Select
+                    value={editablePriority}
+                    onValueChange={(value) => setEditablePriority(value as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT')}
+                  >
+                    <SelectTrigger id="priority-edit" className="h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="LOW">
+                        <Badge className="bg-green-100 text-green-800">LOW</Badge>
+                      </SelectItem>
+                      <SelectItem value="MEDIUM">
+                        <Badge className="bg-yellow-100 text-yellow-800">MEDIUM</Badge>
+                      </SelectItem>
+                      <SelectItem value="HIGH">
+                        <Badge className="bg-orange-100 text-orange-800">HIGH</Badge>
+                      </SelectItem>
+                      <SelectItem value="URGENT">
+                        <Badge className="bg-red-100 text-red-800">URGENT</Badge>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
+                {/* Estimated Hours - Editable */}
                 <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-                  <p className="text-xs text-green-600 font-medium">Estimated Hours</p>
-                  <p className="text-lg font-bold text-green-900">{generatedTask.estimatedHours}h</p>
+                  <Label htmlFor="hours-edit" className="text-xs text-green-600 font-medium mb-2 block">
+                    Estimated Hours
+                  </Label>
+                  <Input
+                    id="hours-edit"
+                    type="number"
+                    min="0.5"
+                    max="200"
+                    step="0.5"
+                    value={editableEstimatedHours}
+                    onChange={(e) => setEditableEstimatedHours(parseFloat(e.target.value) || 0)}
+                    className="h-8 text-sm font-bold text-green-900"
+                  />
                 </div>
 
+                {/* Days Until Due - Read Only */}
                 <div className="bg-orange-50 rounded-lg p-3 border border-orange-200">
                   <p className="text-xs text-orange-600 font-medium">Days Until Due</p>
                   <p className="text-lg font-bold text-orange-900">{generatedTask.metadata.daysUntilDue}</p>
                 </div>
 
+                {/* Urgency Score - Editable */}
                 <div className="bg-red-50 rounded-lg p-3 border border-red-200">
-                  <p className="text-xs text-red-600 font-medium">Urgency Score</p>
+                  <Label htmlFor="urgency-edit" className="text-xs text-red-600 font-medium mb-2 block">
+                    Urgency Score
+                  </Label>
                   <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-red-600" />
-                    <p className="text-lg font-bold text-red-900">{generatedTask.metadata.urgencyScore}</p>
+                    <Input
+                      id="urgency-edit"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="5"
+                      value={editableUrgencyScore}
+                      onChange={(e) => setEditableUrgencyScore(parseInt(e.target.value) || 0)}
+                      className="h-8 text-sm font-bold text-red-900 w-20"
+                    />
                   </div>
                 </div>
               </div>

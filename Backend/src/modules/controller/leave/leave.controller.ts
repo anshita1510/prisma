@@ -1,13 +1,20 @@
 import { Request, Response } from "express";
 import { PrismaClient, LeaveStatus } from "@prisma/client";
 import "../../../types/express"; // Import express type extensions
+import { LeaveNotificationService } from "../../services/leave-notification.service";
+import { LeaveApprovalService } from "../../services/leave-approval.service";
 
 const prisma = new PrismaClient();
+const notificationService = new LeaveNotificationService();
+const approvalService = new LeaveApprovalService();
 
 export const createLeave = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ error: "Unauthorized" });
+      return res.status(401).json({ 
+        success: false,
+        error: "Unauthorized" 
+      });
     }
 
     const { type, reason, startDate, endDate } = req.body;
@@ -15,6 +22,7 @@ export const createLeave = async (req: Request, res: Response) => {
     // Validate required fields
     if (!type || !startDate || !endDate) {
       return res.status(400).json({ 
+        success: false,
         error: "Missing required fields: type, startDate, endDate" 
       });
     }
@@ -22,11 +30,15 @@ export const createLeave = async (req: Request, res: Response) => {
     // Get user's employee record
     const employee = await prisma.employee.findFirst({
       where: { userId: req.user.id },
-      include: { department: true }
+      include: { 
+        department: true,
+        user: true
+      }
     });
 
     if (!employee) {
       return res.status(400).json({ 
+        success: false,
         error: "Employee record not found. Please contact admin." 
       });
     }
@@ -34,18 +46,39 @@ export const createLeave = async (req: Request, res: Response) => {
     // Validate dates
     const start = new Date(startDate);
     const end = new Date(endDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     
     if (end < start) {
       return res.status(400).json({ 
+        success: false,
         error: "End date cannot be before start date" 
       });
     }
 
-    if (start < new Date()) {
+    if (start < today) {
       return res.status(400).json({ 
+        success: false,
         error: "Start date cannot be in the past" 
       });
     }
+
+    // Check for overlapping leaves
+    const hasOverlap = await approvalService.checkOverlappingLeaves(
+      employee.id,
+      start,
+      end
+    );
+
+    if (hasOverlap) {
+      return res.status(400).json({
+        success: false,
+        error: "You already have a leave request for overlapping dates"
+      });
+    }
+
+    // Calculate leave days
+    const leaveDays = approvalService.calculateLeaveDays(start, end);
 
     const leave = await prisma.leave.create({
       data: {
@@ -65,9 +98,18 @@ export const createLeave = async (req: Request, res: Response) => {
       }
     });
 
+    // Send notifications to appropriate recipients
+    await notificationService.sendLeaveApplicationNotification(
+      leave.id,
+      employee.id,
+      req.user.role,
+      employee.companyId,
+      employee.departmentId
+    );
+
     res.status(201).json({
       success: true,
-      message: "Leave application submitted successfully",
+      message: "Leave application submitted successfully. Notifications sent to approvers.",
       leave: {
         id: leave.id,
         type: leave.type,
@@ -75,8 +117,9 @@ export const createLeave = async (req: Request, res: Response) => {
         startDate: leave.startDate,
         endDate: leave.endDate,
         status: leave.status,
+        leaveDays,
         employee: {
-          name: `${leave.employee.user.firstName} ${leave.employee.user.lastName}`,
+          name: leave.employee.name,
           employeeCode: leave.employee.employeeCode
         },
         department: leave.department.name,
@@ -86,6 +129,7 @@ export const createLeave = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Create leave error:", error);
     res.status(500).json({ 
+      success: false,
       error: "Failed to create leave application",
       details: error instanceof Error ? error.message : "Unknown error"
     });
@@ -268,29 +312,54 @@ export const getLeaveById = async (req: Request, res: Response) => {
 export const updateLeaveStatus = async (req: Request, res: Response) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ error: "Unauthorized" });
+      return res.status(401).json({ 
+        success: false,
+        error: "Unauthorized" 
+      });
     }
 
-    // Only admins and managers can update leave status
-    if (!['ADMIN', 'SUPER_ADMIN', 'MANAGER'].includes(req.user.role)) {
-      return res.status(403).json({ error: "Access denied" });
-    }
-
-    const { status } = req.body;
+    const { status, rejectionReason } = req.body;
+    
     if (!Object.values(LeaveStatus).includes(status)) {
-      return res.status(400).json({ error: "Invalid status" });
+      return res.status(400).json({ 
+        success: false,
+        error: "Invalid status" 
+      });
     }
 
     // Get approver's employee record
     const approverEmployee = await prisma.employee.findFirst({
-      where: { userId: req.user.id }
+      where: { userId: req.user.id },
+      include: { user: true }
     });
 
+    if (!approverEmployee) {
+      return res.status(400).json({
+        success: false,
+        error: "Approver employee record not found"
+      });
+    }
+
+    // Check if user can approve this leave
+    const permission = await approvalService.canApproveLeave(
+      approverEmployee.id,
+      req.user.role,
+      Number(req.params.id)
+    );
+
+    if (!permission.canApprove) {
+      return res.status(403).json({
+        success: false,
+        error: permission.reason || "You don't have permission to approve this leave"
+      });
+    }
+
+    // Update leave status
     const leave = await prisma.leave.update({
       where: { id: Number(req.params.id) },
       data: { 
         status, 
-        approvedById: approverEmployee?.id 
+        approvedById: approverEmployee.id 
       },
       include: {
         employee: {
@@ -303,6 +372,14 @@ export const updateLeaveStatus = async (req: Request, res: Response) => {
       }
     });
 
+    // Send notification to applicant
+    const approverName = approverEmployee.name;
+    await notificationService.sendLeaveStatusNotification(
+      leave.id,
+      status,
+      approverName
+    );
+
     const formattedLeave = {
       id: leave.id,
       type: leave.type,
@@ -311,24 +388,28 @@ export const updateLeaveStatus = async (req: Request, res: Response) => {
       endDate: leave.endDate,
       status: leave.status,
       employee: {
-        name: `${leave.employee.user.firstName} ${leave.employee.user.lastName}`,
-        employeeCode: leave.employee.employeeCode
+        name: leave.employee.name,
+        employeeCode: leave.employee.employeeCode,
+        role: leave.employee.user.role
       },
       department: leave.department.name,
-      approvedBy: leave.approvedBy ? 
-        `${leave.approvedBy.user.firstName} ${leave.approvedBy.user.lastName}` : null,
+      approvedBy: leave.approvedBy ? leave.approvedBy.name : null,
       createdAt: leave.createdAt,
       updatedAt: leave.updatedAt
     };
 
     res.json({
       success: true,
-      message: "Leave status updated successfully",
+      message: `Leave request ${status.toLowerCase()} successfully. Notification sent to applicant.`,
       leave: formattedLeave
     });
   } catch (error) {
     console.error("Update leave status error:", error);
-    res.status(500).json({ error: "Failed to update leave status" });
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to update leave status",
+      details: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 };
 
@@ -378,5 +459,257 @@ export const deleteLeave = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Delete leave error:", error);
     res.status(500).json({ error: "Failed to delete leave" });
+  }
+};
+
+/**
+ * Get leaves that the current user can approve
+ */
+export const getApprovableLeaves = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ 
+        success: false,
+        error: "Unauthorized" 
+      });
+    }
+
+    // Get approver's employee record
+    const approverEmployee = await prisma.employee.findFirst({
+      where: { userId: req.user.id }
+    });
+
+    if (!approverEmployee) {
+      return res.status(400).json({
+        success: false,
+        error: "Employee record not found"
+      });
+    }
+
+    const leaves = await approvalService.getApprovableLeaves(
+      approverEmployee.id,
+      req.user.role,
+      approverEmployee.companyId
+    );
+
+    res.json({
+      success: true,
+      leaves,
+      count: leaves.length
+    });
+  } catch (error) {
+    console.error("Get approvable leaves error:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to fetch approvable leaves",
+      details: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+};
+
+/**
+ * Get leave statistics for the current user
+ */
+export const getLeaveStatistics = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ 
+        success: false,
+        error: "Unauthorized" 
+      });
+    }
+
+    const employee = await prisma.employee.findFirst({
+      where: { userId: req.user.id }
+    });
+
+    if (!employee) {
+      return res.status(400).json({
+        success: false,
+        error: "Employee record not found"
+      });
+    }
+
+    const stats = await approvalService.getLeaveStatistics(
+      employee.id,
+      employee.companyId
+    );
+
+    res.json({
+      success: true,
+      statistics: stats
+    });
+  } catch (error) {
+    console.error("Get leave statistics error:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to fetch leave statistics",
+      details: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+};
+
+/**
+ * Get leave notifications for the current user
+ */
+export const getLeaveNotifications = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ 
+        success: false,
+        error: "Unauthorized" 
+      });
+    }
+
+    const employee = await prisma.employee.findFirst({
+      where: { userId: req.user.id }
+    });
+
+    if (!employee) {
+      return res.status(400).json({
+        success: false,
+        error: "Employee record not found"
+      });
+    }
+
+    const notifications = await prisma.notificationRecipient.findMany({
+      where: {
+        recipientId: employee.id,
+        notification: {
+          referenceType: 'leave'
+        }
+      },
+      include: {
+        notification: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: 50
+    });
+
+    const formattedNotifications = notifications.map(nr => ({
+      id: nr.id,
+      notificationId: nr.notificationId,
+      title: nr.notification.title,
+      message: nr.notification.message,
+      type: nr.notification.type,
+      referenceId: nr.notification.referenceId,
+      metadata: nr.notification.metadata,
+      isRead: nr.isRead,
+      readAt: nr.readAt,
+      createdAt: nr.notification.createdAt
+    }));
+
+    const unreadCount = await notificationService.getUnreadLeaveNotificationsCount(
+      employee.id
+    );
+
+    res.json({
+      success: true,
+      notifications: formattedNotifications,
+      unreadCount
+    });
+  } catch (error) {
+    console.error("Get leave notifications error:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to fetch leave notifications",
+      details: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+};
+
+/**
+ * Mark leave notifications as read
+ */
+export const markLeaveNotificationsRead = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ 
+        success: false,
+        error: "Unauthorized" 
+      });
+    }
+
+    const { notificationIds } = req.body;
+
+    if (!Array.isArray(notificationIds) || notificationIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "notificationIds must be a non-empty array"
+      });
+    }
+
+    const employee = await prisma.employee.findFirst({
+      where: { userId: req.user.id }
+    });
+
+    if (!employee) {
+      return res.status(400).json({
+        success: false,
+        error: "Employee record not found"
+      });
+    }
+
+    await notificationService.markLeaveNotificationsAsRead(
+      employee.id,
+      notificationIds
+    );
+
+    res.json({
+      success: true,
+      message: "Notifications marked as read"
+    });
+  } catch (error) {
+    console.error("Mark notifications read error:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to mark notifications as read",
+      details: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+};
+
+/**
+ * Check if user can approve a specific leave
+ */
+export const checkApprovalPermission = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ 
+        success: false,
+        error: "Unauthorized" 
+      });
+    }
+
+    const employee = await prisma.employee.findFirst({
+      where: { userId: req.user.id }
+    });
+
+    if (!employee) {
+      return res.status(400).json({
+        success: false,
+        error: "Employee record not found"
+      });
+    }
+
+    const permission = await approvalService.canApproveLeave(
+      employee.id,
+      req.user.role,
+      Number(req.params.id)
+    );
+
+    res.json({
+      success: true,
+      permission
+    });
+  } catch (error) {
+    console.error("Check approval permission error:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to check approval permission",
+      details: error instanceof Error ? error.message : "Unknown error"
+    });
   }
 };

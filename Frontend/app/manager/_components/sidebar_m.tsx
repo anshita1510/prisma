@@ -12,14 +12,14 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { authService } from '../../services/authService';
 
 const Sidebar = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const router = useRouter();
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    authService.logout();
     router.push('/login');
   };
 

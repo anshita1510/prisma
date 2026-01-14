@@ -31,7 +31,6 @@ const NAV_ITEMS = [
   { id: 'create-user', name: 'Create User', icon: UserPlus, href: '/admin/createUser' },
   // Enhanced TMS Items
   { id: 'enhanced-projects', name: 'Enhanced Projects', icon: FolderOpen, href: '/enhanced-tms/projects' },
-  { id: 'enhanced-tasks', name: 'Enhanced Tasks', icon: CheckSquare, href: '/enhanced-tms/tasks' },
   { id: 'enhanced-calendar', name: 'Enhanced Calendar', icon: Calendar, href: '/enhanced-tms/calendar' },
   { id: 'enhanced-team', name: 'Enhanced Team', icon: Users, href: '/enhanced-tms/team' },
 ];

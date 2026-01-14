@@ -39,6 +39,10 @@ export const authService = {
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
+        
+        // Set cookie for middleware with 30-day expiration
+        const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
+        document.cookie = `token=${response.data.token}; path=/; max-age=${thirtyDaysInSeconds}; SameSite=Lax`;
       }
       
       return response.data;
@@ -60,6 +64,10 @@ export const authService = {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('resetEmail'); // Clear any password reset data
+    
+    // Clear cookie
+    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    
     window.location.href = '/';
   },
 

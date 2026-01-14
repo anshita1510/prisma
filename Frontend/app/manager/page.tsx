@@ -1,10 +1,14 @@
+'use client';
+
 import React from "react";
 import Sidebar from "./_components/sidebar_m";
 import Banner from "./_components/Banner";
+import { AuthGuard } from "@/lib/auth/AuthGuard";
 
 export default function ManagerDashboard() {
   return (
-    <div className="min-h-screen flex bg-gray-50">
+    <AuthGuard allowedRoles={['MANAGER', 'ADMIN', 'SUPER_ADMIN']}>
+      <div className="min-h-screen flex bg-gray-50">
       
       {/* SIDEBAR */}
       <aside
@@ -83,5 +87,6 @@ export default function ManagerDashboard() {
         </div>
       </main>
     </div>
+    </AuthGuard>
   );
 }

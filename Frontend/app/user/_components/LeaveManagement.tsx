@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Users, AlertCircle, Plus, ChevronDown } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calendar, Users, AlertCircle, Plus, ChevronDown } from 'lucide-react';
 import { leaveService, LeaveRequest } from '../../services/leave.service';
-import { authService } from '../../services/auth.services';
 
 interface LeaveBalance {
   type: string;
@@ -19,14 +18,9 @@ export default function LeaveManagement() {
   const [leaveBalances, setLeaveBalances] = useState<LeaveBalance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [showApplyModal, setShowApplyModal] = useState(false);
 
   useEffect(() => {
-    // Get current user
-    const user = authService.getStoredUser();
-    setCurrentUser(user);
-    
-    // Load data
     loadLeaveData();
   }, []);
 
@@ -34,43 +28,47 @@ export default function LeaveManagement() {
     try {
       setLoading(true);
       
-      // Load pending requests
-      const pending = await leaveService.getPendingLeaves();
-      setPendingRequests(pending);
+      // Load my leaves (for user, this shows their own leaves)
+      const myLeavesRes = await leaveService.getMyLeaves();
+      if (myLeavesRes.success && myLeavesRes.leaves) {
+        // Filter only pending requests for the pending section
+        const pending = myLeavesRes.leaves.filter(leave => leave.status === 'PENDING');
+        setPendingRequests(pending as LeaveRequest[]);
+      }
 
       // Load leave statistics for current user
-      const user = authService.getStoredUser();
-      if (user?.id) {
-        const stats = await leaveService.getLeaveStats(user.id);
+      const statsRes = await leaveService.getLeaveStatistics();
+      if (statsRes.success && statsRes.statistics) {
+        const stats = statsRes.statistics;
         
         // Convert stats to balance format
         const balances: LeaveBalance[] = [
           {
             type: 'Casual Leave',
-            available: stats.casual.total - stats.casual.consumed,
-            consumed: stats.casual.consumed,
-            total: stats.casual.total,
+            available: 12 - stats.byType.CASUAL,
+            consumed: stats.byType.CASUAL,
+            total: 12,
             color: 'bg-purple-500'
           },
           {
             type: 'Sick Leave',
-            available: stats.sick.total - stats.sick.consumed,
-            consumed: stats.sick.consumed,
-            total: stats.sick.total,
+            available: 12 - stats.byType.SICK,
+            consumed: stats.byType.SICK,
+            total: 12,
             color: 'bg-green-500'
           },
           {
             type: 'Earned Leave',
-            available: stats.earned.total - stats.earned.consumed,
-            consumed: stats.earned.consumed,
-            total: stats.earned.total,
+            available: 15 - stats.byType.EARNED,
+            consumed: stats.byType.EARNED,
+            total: 15,
             color: 'bg-red-500'
           },
           {
             type: 'Unpaid Leave',
-            available: stats.unpaid.total - stats.unpaid.consumed,
-            consumed: stats.unpaid.consumed,
-            total: stats.unpaid.total,
+            available: 0,
+            consumed: stats.byType.UNPAID,
+            total: 0,
             color: 'bg-gray-400'
           }
         ];
@@ -87,19 +85,14 @@ export default function LeaveManagement() {
 
   const handleApproveLeave = async (leaveId: number) => {
     try {
-      const user = authService.getStoredUser();
-      if (!user?.id) {
-        setError('User not authenticated');
-        return;
+      const result = await leaveService.updateLeaveStatus(leaveId, 'APPROVED');
+      
+      if (result.success) {
+        // Reload data
+        await loadLeaveData();
+      } else {
+        setError(result.error || 'Failed to approve leave');
       }
-
-      await leaveService.updateLeaveStatus(leaveId, {
-        status: 'APPROVED',
-        approvedById: user.id
-      });
-
-      // Reload data
-      await loadLeaveData();
     } catch (err: any) {
       setError(err.message || 'Failed to approve leave');
     }
@@ -107,19 +100,14 @@ export default function LeaveManagement() {
 
   const handleRejectLeave = async (leaveId: number) => {
     try {
-      const user = authService.getStoredUser();
-      if (!user?.id) {
-        setError('User not authenticated');
-        return;
+      const result = await leaveService.updateLeaveStatus(leaveId, 'REJECTED');
+      
+      if (result.success) {
+        // Reload data
+        await loadLeaveData();
+      } else {
+        setError(result.error || 'Failed to reject leave');
       }
-
-      await leaveService.updateLeaveStatus(leaveId, {
-        status: 'REJECTED',
-        approvedById: user.id
-      });
-
-      // Reload data
-      await loadLeaveData();
     } catch (err: any) {
       setError(err.message || 'Failed to reject leave');
     }
@@ -232,7 +220,10 @@ export default function LeaveManagement() {
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">Pending leave requests</h2>
-            <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2">
+            <button 
+              onClick={() => setShowApplyModal(true)}
+              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+            >
               <Plus className="w-4 h-4" />
               Request Leave
             </button>
@@ -309,7 +300,7 @@ export default function LeaveManagement() {
               <span className="text-sm text-gray-500">ℹ️</span>
             </div>
             <div className="flex justify-between items-end h-32">
-              {weeklyPattern.map((day, index) => (
+              {weeklyPattern.map((day) => (
                 <div key={day} className="flex flex-col items-center">
                   <div 
                     className="w-6 bg-gray-200 rounded-t mb-2"
@@ -339,7 +330,7 @@ export default function LeaveManagement() {
               <span className="text-sm text-gray-500">ℹ️</span>
             </div>
             <div className="flex justify-between items-end h-32">
-              {months.map((month, index) => (
+              {months.map((month) => (
                 <div key={month} className="flex flex-col items-center">
                   <div 
                     className="w-3 bg-blue-200 rounded-t mb-2"
@@ -358,8 +349,8 @@ export default function LeaveManagement() {
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Leave Balances</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {leaveBalances.map((balance, index) => (
-            <div key={index} className="bg-white rounded-lg shadow-sm p-6">
+          {leaveBalances.map((balance) => (
+            <div key={balance.type} className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-medium text-gray-900">{balance.type}</h3>
                 <button className="text-blue-600 text-sm hover:underline">View details</button>
@@ -403,6 +394,133 @@ export default function LeaveManagement() {
             <p className="text-gray-500">No Leave History to show.</p>
           </div>
         </div>
+      </div>
+
+      {/* Apply Leave Modal */}
+      {showApplyModal && (
+        <ApplyLeaveModal
+          onClose={() => setShowApplyModal(false)}
+          onSuccess={() => {
+            setShowApplyModal(false);
+            loadLeaveData();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// Apply Leave Modal Component
+function ApplyLeaveModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const [formData, setFormData] = useState({
+    type: 'CASUAL' as 'CASUAL' | 'SICK' | 'EARNED' | 'UNPAID',
+    startDate: '',
+    endDate: '',
+    reason: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
+
+    try {
+      const result = await leaveService.applyLeave(formData);
+      if (result.success) {
+        onSuccess();
+      } else {
+        setError(result.error || 'Failed to apply for leave');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to apply for leave');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <h2 className="text-2xl font-bold mb-4">Apply for Leave</h2>
+        
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <span className="text-sm text-red-800">{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Leave Type</label>
+            <select
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              required
+            >
+              <option value="CASUAL">Casual Leave</option>
+              <option value="SICK">Sick Leave</option>
+              <option value="EARNED">Earned Leave</option>
+              <option value="UNPAID">Unpaid Leave</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+            <input
+              type="date"
+              value={formData.startDate}
+              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              required
+              min={new Date().toISOString().split('T')[0]}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+            <input
+              type="date"
+              value={formData.endDate}
+              onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              required
+              min={formData.startDate || new Date().toISOString().split('T')[0]}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Reason (Optional)</label>
+            <textarea
+              value={formData.reason}
+              onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none resize-none"
+              rows={3}
+              placeholder="Enter reason for leave..."
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              disabled={submitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors"
+              disabled={submitting}
+            >
+              {submitting ? 'Submitting...' : 'Submit'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

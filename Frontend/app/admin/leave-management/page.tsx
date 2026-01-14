@@ -16,7 +16,8 @@ import {
   CheckCircle, 
   XCircle, 
   AlertCircle,
-  Users
+  Users,
+  Plus
 } from 'lucide-react';
 import { leaveService, Leave } from '@/app/services/leave.service';
 import { authService } from '@/app/services/authService';
@@ -34,6 +35,7 @@ export default function AdminLeaveManagement() {
   const [actionLoading, setActionLoading] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [showApplyModal, setShowApplyModal] = useState(false);
 
   useEffect(() => {
     const currentUser = authService.getStoredUser();
@@ -137,6 +139,13 @@ export default function AdminLeaveManagement() {
       setError('');
       setSuccess('');
 
+      // Get the current user's ID for approvedById
+      const currentUser = authService.getStoredUser();
+      if (!currentUser?.id) {
+        setError('User information not found. Please log in again.');
+        return;
+      }
+
       console.log('🟢 Calling leaveService.updateLeaveStatus...');
       const response = await leaveService.updateLeaveStatus(leaveId, 'APPROVED');
       console.log('🟢 Response received:', response);
@@ -182,8 +191,15 @@ export default function AdminLeaveManagement() {
       setError('');
       setSuccess('');
 
+      // Get the current user's ID for approvedById
+      const currentUser = authService.getStoredUser();
+      if (!currentUser?.id) {
+        setError('User information not found. Please log in again.');
+        return;
+      }
+
       console.log('🔴 Calling leaveService.updateLeaveStatus...');
-      const response = await leaveService.updateLeaveStatus(leaveId, 'REJECTED');
+      const response = await leaveService.updateLeaveStatus(leaveId, 'REJECTED', rejectionReason);
       console.log('🔴 Response received:', response);
       
       if (response.success) {
@@ -248,11 +264,20 @@ export default function AdminLeaveManagement() {
               <h1 className="text-2xl font-bold text-gray-900">Leave Management</h1>
               <p className="text-gray-600 mt-1">Review and manage employee leave applications</p>
             </div>
-            {user && (
-              <div className="text-sm text-gray-600">
-                Logged in as: <span className="font-medium">{user.name}</span> ({formatRole(user.role)})
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {user && (
+                <div className="text-sm text-gray-600">
+                  Logged in as: <span className="font-medium">{user.name}</span> ({formatRole(user.role)})
+                </div>
+              )}
+              <Button
+                onClick={() => setShowApplyModal(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Apply for Leave
+              </Button>
+            </div>
           </div>
         </div>
         
@@ -475,6 +500,18 @@ export default function AdminLeaveManagement() {
         </div>
       </main>
 
+      {/* Apply Leave Modal */}
+      {showApplyModal && (
+        <ApplyLeaveModal
+          onClose={() => setShowApplyModal(false)}
+          onSuccess={() => {
+            setShowApplyModal(false);
+            setSuccess('Leave application submitted successfully!');
+            loadAllLeaves();
+          }}
+        />
+      )}
+
       {/* Reject Leave Dialog */}
       <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
         <DialogContent>
@@ -538,6 +575,122 @@ export default function AdminLeaveManagement() {
           )}
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+// Apply Leave Modal Component
+function ApplyLeaveModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const [formData, setFormData] = useState({
+    type: 'CASUAL' as 'CASUAL' | 'SICK' | 'EARNED' | 'UNPAID',
+    startDate: '',
+    endDate: '',
+    reason: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
+
+    try {
+      const result = await leaveService.applyLeave(formData);
+      if (result.success) {
+        onSuccess();
+      } else {
+        setError(result.error || 'Failed to apply for leave');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to apply for leave');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <h2 className="text-2xl font-bold mb-4">Apply for Leave</h2>
+        
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <span className="text-sm text-red-800">{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Leave Type</label>
+            <select
+              value={formData.type}
+              onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
+            >
+              <option value="CASUAL">Casual Leave</option>
+              <option value="SICK">Sick Leave</option>
+              <option value="EARNED">Earned Leave</option>
+              <option value="UNPAID">Unpaid Leave</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+            <input
+              type="date"
+              value={formData.startDate}
+              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
+              min={new Date().toISOString().split('T')[0]}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+            <input
+              type="date"
+              value={formData.endDate}
+              onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              required
+              min={formData.startDate || new Date().toISOString().split('T')[0]}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Reason (Optional)</label>
+            <textarea
+              value={formData.reason}
+              onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
+              rows={3}
+              placeholder="Enter reason for leave..."
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              disabled={submitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              disabled={submitting}
+            >
+              {submitting ? 'Submitting...' : 'Submit'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

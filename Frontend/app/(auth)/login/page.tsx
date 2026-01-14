@@ -225,6 +225,10 @@ export default function LoginPage(): JSX.Element {
       // Store session data
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
+      
+      // Set token as cookie for middleware with 30-day expiration
+      const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
+      document.cookie = `token=${token}; path=/; max-age=${thirtyDaysInSeconds}; SameSite=Lax`;
 
       // Route based on role
       const routes: Record<string, string> = {
@@ -235,7 +239,9 @@ export default function LoginPage(): JSX.Element {
       };
 
       const targetRoute = routes[user.role as keyof typeof routes];
-      router.push(targetRoute || "/dashboard");
+      
+      // Use window.location for hard navigation to bypass middleware issues
+      window.location.href = targetRoute || "/dashboard";
 
     } catch (err) {
       console.error("Login error:", err);
@@ -273,6 +279,10 @@ export default function LoginPage(): JSX.Element {
       const { token, user } = data;
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
+      
+      // Set token as cookie for middleware with 30-day expiration
+      const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
+      document.cookie = `token=${token}; path=/; max-age=${thirtyDaysInSeconds}; SameSite=Lax`;
 
       const routes: Record<string, string> = {
         SUPER_ADMIN: "/superAdmin",
@@ -319,6 +329,10 @@ export default function LoginPage(): JSX.Element {
       const { token, user } = data;
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
+      
+      // Set token as cookie for middleware with 30-day expiration
+      const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
+      document.cookie = `token=${token}; path=/; max-age=${thirtyDaysInSeconds}; SameSite=Lax`;
 
       const routes: Record<string, string> = {
         SUPER_ADMIN: "/superAdmin",
