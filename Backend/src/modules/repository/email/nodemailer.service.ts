@@ -20,25 +20,54 @@ export class NodemailerService implements EmailService {
   async sendEmail(data: SendEmailDTO): Promise<void> {
     try {
       console.log('📧 Attempting to send email to:', data.to);
+      console.log('📧 SMTP Configuration:', {
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT,
+        user: process.env.SMTP_USER ? '***configured***' : 'NOT SET',
+        pass: process.env.SMTP_PASS ? '***configured***' : 'NOT SET'
+      });
       
-      // Add timeout to prevent hanging
-      const emailPromise = this.transporter.sendMail({
-        from: process.env.SMTP_USER, // Use SMTP_USER as from address
+      // Verify transporter configuration
+      await this.transporter.verify();
+      console.log('✅ SMTP connection verified');
+      
+      const mailOptions = {
+        from: `"Tikr Team" <${process.env.SMTP_USER}>`,
         to: data.to,
         subject: data.subject,
         html: data.html,
+      };
+      
+      console.log('📧 Sending email with options:', {
+        from: mailOptions.from,
+        to: mailOptions.to,
+        subject: mailOptions.subject
       });
       
-      // Set a 10-second timeout for email sending
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Email timeout after 10 seconds')), 10000);
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log('✅ Email sent successfully:', {
+        messageId: result.messageId,
+        response: result.response,
+        to: data.to
       });
-      
-      await Promise.race([emailPromise, timeoutPromise]);
-      console.log('✅ Email sent successfully to:', data.to);
       
     } catch (error: any) {
-      console.error('❌ Email sending failed:', error.message);
+      console.error('❌ Email sending failed:', {
+        error: error.message,
+        code: error.code,
+        command: error.command,
+        to: data.to
+      });
+      
+      // Log specific SMTP errors
+      if (error.code === 'EAUTH') {
+        console.error('❌ SMTP Authentication failed - check credentials');
+      } else if (error.code === 'ECONNECTION') {
+        console.error('❌ SMTP Connection failed - check host/port');
+      } else if (error.code === 'ETIMEDOUT') {
+        console.error('❌ SMTP Timeout - check network connection');
+      }
+      
       // Don't throw the error - just log it so user creation can continue
       console.log('⚠️ Continuing without email notification...');
     }

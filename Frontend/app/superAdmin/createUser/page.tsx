@@ -1,5 +1,5 @@
 import Sidebar from "../_components/Sidebarr";
-
+import Create from "../../admin/_components/createu"
 
 export default function page() {
   return (
@@ -9,8 +9,8 @@ export default function page() {
     <Sidebar />
 
     {/* Main Content */}
-    <main className="flex-1 p-6">
-      welcome createuser 
+    <main className="flex-1 ">
+     <Create></Create>
     </main>
 
   </div>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API Connection</title>
+</head>
+<body>
+    <h1>API Connection Test</h1>
+    <button onclick="testConnection()">Test Connection</button>
+    <button onclick="testWithAuth()">Test With Auth</button>
+    <div id="result"></div>
+
+    <script>
+        async function testConnection() {
+            const result = document.getElementById('result');
+            result.innerHTML = 'Testing...';
+            
+            try {
+                console.log('Testing basic connection...');
+                const response = await fetch('http://localhost:5004/api/test', {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                console.log('Response:', response);
+                const data = await response.json();
+                console.log('Data:', data);
+                
+                result.innerHTML = `✅ Success: ${JSON.stringify(data)}`;
+            } catch (error) {
+                console.error('Error:', error);
+                result.innerHTML = `❌ Error: ${error.message}`;
+            }
+        }
+
+        async function testWithAuth() {
+            const result = document.getElementById('result');
+            result.innerHTML = 'Testing with auth...';
+            
+            try {
+                // First login
+                console.log('Logging in...');
+                const loginResponse = await fetch('http://localhost:5004/api/users/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'singladeepak519@gmail.com',
+                        password: 'password123'
+                    }),
+                    mode: 'cors'
+                });
+                
+                const loginData = await loginResponse.json();
+                console.log('Login response:', loginData);
+                
+                if (!loginData.success) {
+                    throw new Error('Login failed: ' + loginData.message);
+                }
+                
+                // Then test leaves endpoint
+                console.log('Testing leaves endpoint...');
+                const leavesResponse = await fetch('http://localhost:5004/api/leaves', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${loginData.token}`
+                    },
+                    mode: 'cors'
+                });
+                
+                const leavesData = await leavesResponse.json();
+                console.log('Leaves response:', leavesData);
+                
+                result.innerHTML = `✅ Auth Success: Found ${leavesData.leaves?.length || 0} leaves`;
+            } catch (error) {
+                console.error('Auth Error:', error);
+                result.innerHTML = `❌ Auth Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

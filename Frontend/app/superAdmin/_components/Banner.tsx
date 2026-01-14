@@ -1,6 +1,7 @@
 "use client"
 import React, { useEffect, useState } from 'react';
 import { authService } from '@/app/services/authService';
+import { formatRole } from '@/app/utils/roleFormatter';
 
 const App: React.FC = () => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -52,7 +53,7 @@ const App: React.FC = () => {
           {user && (
             <div className="mt-2 flex items-center space-x-3">
               <span className="bg-white/20 text-white px-2 py-1 rounded-md text-xs font-medium">
-                {user.role}
+                {formatRole(user.role)}
               </span>
               <span className="text-blue-50/60 text-xs">•</span>
               <span className="text-blue-50/80 text-xs">{user.designation || 'Super Administrator'}</span>

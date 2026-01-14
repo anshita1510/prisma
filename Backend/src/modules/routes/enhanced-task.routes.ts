@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { EnhancedTaskController } from '../controller/enhanced-task.controller';
-import { authenticateToken } from '../../middlewares/auth.middleware';
+import { authenticate } from '../../middlewares/auth.middleware';
 
 const router = Router();
 const taskController = new EnhancedTaskController();
 
 // All routes require authentication
-router.use(authenticateToken);
+router.use(authenticate);
 
 // Task CRUD routes
 router.post('/', taskController.createTask);

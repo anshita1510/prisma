@@ -63,6 +63,11 @@ export const authService = {
     return user ? JSON.parse(user) : null;
   },
 
+  // Get stored token
+  getToken() {
+    return localStorage.getItem('token');
+  },
+
   // Create demo admin session (for testing)
   createDemoSession() {
     const demoToken = 'demo-admin-token-' + Date.now();

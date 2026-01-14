@@ -203,15 +203,24 @@ export default function LoginPage(): JSX.Element {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+        },
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Login failed");
+      if (!res.ok) {
+        throw new Error(data.error || data.message || "Login failed");
+      }
 
-      // Extract token and user from response
+      // Extract token and user from response (backend returns {user, token})
       const { token, user } = data;
+
+      if (!token || !user) {
+        throw new Error("Invalid response format");
+      }
 
       // Store session data
       localStorage.setItem("token", token);
@@ -229,6 +238,7 @@ export default function LoginPage(): JSX.Element {
       router.push(targetRoute || "/dashboard");
 
     } catch (err) {
+      console.error("Login error:", err);
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setLoading(false);

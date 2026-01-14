@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { NotificationController } from '../controller/notification.controller';
-import { authenticateToken } from '../../middlewares/auth.middleware';
+import { authenticate } from '../../middlewares/auth.middleware';
 
 const router = Router();
 const notificationController = new NotificationController();
 
 // All routes require authentication
-router.use(authenticateToken);
+router.use(authenticate);
 
 // Notification CRUD routes
 router.post('/', notificationController.createNotification);

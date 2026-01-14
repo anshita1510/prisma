@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { authService } from '@/app/services/authService';
+import { formatRole } from '@/app/utils/roleFormatter';
 import {
   Home,
   User,
@@ -462,7 +463,7 @@ export default function NavigationSidebar() {
           </div>
           <div>
             <p className="font-medium text-sm">{user.name}</p>
-            <p className="text-xs text-gray-400">{user.role}</p>
+            <p className="text-xs text-gray-400">{formatRole(user.role)}</p>
           </div>
         </div>
       </div>

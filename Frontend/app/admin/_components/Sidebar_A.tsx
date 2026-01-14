@@ -25,7 +25,7 @@ import {
 const NAV_ITEMS = [
   { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, href: '/admin' }, 
   { id: 'attendance', name: 'Attendance', icon: UserCheck, href: '/admin/attendance' },       
-  { id: 'leave', name: 'Leave', icon: CalendarOff, href: '/admin/leave' },       
+  { id: 'leave', name: 'Leave Management', icon: CalendarOff, href: '/admin/leave' },       
   { id: 'project', name: 'Project', icon: Briefcase, href: '/admin/project' },
   { id: 'tasks', name: 'Tasks', icon: CheckSquare, href: '/admin/tasks' },            
   { id: 'create-user', name: 'Create User', icon: UserPlus, href: '/admin/createUser' },

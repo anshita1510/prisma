@@ -11,18 +11,12 @@ import {
   BarChart3, 
   CheckSquare, 
   Clock, 
-  Users, 
   TrendingUp, 
-  AlertCircle,
   Calendar,
   FolderOpen,
   Target,
   Activity,
-  Plus,
-  User,
   PlayCircle,
-  PauseCircle,
-  FileText,
   MessageSquare
 } from 'lucide-react';
 import { authService } from '@/app/services/authService';
@@ -259,7 +253,7 @@ export default function UserDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {recentActivity.map((activity, index) => (
+                  {recentActivity.map((activity) => (
                     <div 
                       key={activity.id} 
                       className="flex items-start space-x-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"

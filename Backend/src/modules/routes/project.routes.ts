@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { ProjectController } from '../controller/project.controller';
-import { authenticateToken } from '../../middlewares/auth.middleware';
+import { authenticate } from '../../middlewares/auth.middleware';
 
 const router = Router();
 const projectController = new ProjectController();
 
 // All routes require authentication
-router.use(authenticateToken);
+router.use(authenticate);
 
 // Project CRUD routes
 router.post('/', projectController.createProject);

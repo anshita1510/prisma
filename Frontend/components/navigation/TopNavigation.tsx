@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { authService } from '@/app/services/authService';
+import { formatRole } from '@/app/utils/roleFormatter';
 import {
   Clock,
   Calendar,
@@ -422,7 +423,7 @@ export default function TopNavigation() {
               </div>
               <div className="hidden sm:block">
                 <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                <p className="text-xs text-gray-500">{user.role}</p>
+                <p className="text-xs text-gray-500">{formatRole(user.role)}</p>
               </div>
             </div>
           </div>

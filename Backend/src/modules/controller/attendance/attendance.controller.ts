@@ -357,4 +357,5 @@ class AttendanceController {
   }
 }
 
+export { AttendanceController };
 export const attendanceController = new AttendanceController();
