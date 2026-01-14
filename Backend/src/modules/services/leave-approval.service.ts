@@ -76,41 +76,64 @@ export class LeaveApprovalService {
       };
     }
 
-    const applicantRole = leave.employee.user.role;
     const applicantDesignation = leave.employee.designation;
     const approverDesignation = approver.designation;
 
-    // Role-based and Designation-based approval logic
-    if (applicantRole === 'EMPLOYEE') {
-      // Employees can be approved by HR (designation) or Manager (designation)
-      if (approverDesignation === Designation.HR || approverDesignation === Designation.MANAGER) {
+    console.log('📋 Designation-based approval check:', {
+      applicantDesignation,
+      approverDesignation
+    });
+
+    // DESIGNATION-BASED APPROVAL LOGIC ONLY
+    
+    // 1. Junior designations (INTERN, SOFTWARE_ENGINEER, SENIOR_ENGINEER, TECH_LEAD)
+    if (applicantDesignation === Designation.INTERN || 
+        applicantDesignation === Designation.SOFTWARE_ENGINEER || 
+        applicantDesignation === Designation.SENIOR_ENGINEER || 
+        applicantDesignation === Designation.TECH_LEAD) {
+      // Junior employees can be approved by MANAGER or HR
+      if (approverDesignation === Designation.MANAGER || approverDesignation === Designation.HR) {
         return { canApprove: true };
       }
       return {
         canApprove: false,
-        reason: 'Only HR or Manager (by designation) can approve employee leave requests'
+        reason: 'Only Manager or HR (by designation) can approve employee leave requests'
       };
     }
 
-    if (applicantRole === 'MANAGER' || applicantDesignation === Designation.MANAGER) {
-      // Managers can ONLY be approved by HR (designation)
-      if (approverDesignation === Designation.HR) {
+    // 2. MANAGER designation leaves
+    if (applicantDesignation === Designation.MANAGER) {
+      // Managers can ONLY be approved by HR or DIRECTOR
+      if (approverDesignation === Designation.HR || approverDesignation === Designation.DIRECTOR) {
         return { canApprove: true };
       }
       return {
         canApprove: false,
-        reason: 'Only HR (by designation) can approve manager leave requests'
+        reason: 'Only HR or Director (by designation) can approve manager leave requests'
       };
     }
 
-    if (applicantRole === 'ADMIN' || applicantDesignation === Designation.HR) {
-      // HR can only be approved by CEO
+    // 3. HR designation leaves
+    if (applicantDesignation === Designation.HR) {
+      // HR can only be approved by DIRECTOR or CEO (SUPER_ADMIN role)
+      if (approverDesignation === Designation.DIRECTOR || approverRole === 'SUPER_ADMIN') {
+        return { canApprove: true };
+      }
+      return {
+        canApprove: false,
+        reason: 'Only Director or CEO can approve HR leave requests'
+      };
+    }
+
+    // 4. DIRECTOR designation leaves
+    if (applicantDesignation === Designation.DIRECTOR) {
+      // Directors can only be approved by CEO (SUPER_ADMIN role)
       if (approverRole === 'SUPER_ADMIN') {
         return { canApprove: true };
       }
       return {
         canApprove: false,
-        reason: 'Only CEO can approve HR leave requests'
+        reason: 'Only CEO can approve Director leave requests'
       };
     }
 
@@ -151,36 +174,41 @@ export class LeaveApprovalService {
       }
     };
 
-    // Filter based on approver designation
+    // Filter based on approver designation ONLY
     if (approverDesignation === Designation.MANAGER) {
-      // Managers (by designation) can approve only employee leaves
-      whereClause.employee.user = {
-        role: 'EMPLOYEE'
+      // Managers (by designation) can approve junior employee designation leaves
+      whereClause.employee = {
+        ...whereClause.employee,
+        designation: {
+          in: [Designation.INTERN, Designation.SOFTWARE_ENGINEER, Designation.SENIOR_ENGINEER, Designation.TECH_LEAD]
+        }
       };
     } else if (approverDesignation === Designation.HR) {
-      // HR (by designation) can approve employee and manager leaves
-      // This includes both role-based and designation-based managers
-      whereClause.OR = [
-        {
-          employee: {
-            user: {
-              role: {
-                in: ['EMPLOYEE', 'MANAGER']
-              }
-            }
-          }
-        },
-        {
-          employee: {
-            designation: Designation.MANAGER
-          }
+      // HR (by designation) can approve all employee and manager designation leaves
+      whereClause.employee = {
+        ...whereClause.employee,
+        designation: {
+          in: [Designation.INTERN, Designation.SOFTWARE_ENGINEER, Designation.SENIOR_ENGINEER, Designation.TECH_LEAD, Designation.MANAGER]
         }
-      ];
+      };
+    } else if (approverDesignation === Designation.DIRECTOR) {
+      // Directors can approve manager and HR designation leaves
+      whereClause.employee = {
+        ...whereClause.employee,
+        designation: {
+          in: [Designation.MANAGER, Designation.HR]
+        }
+      };
     } else if (approverRole === 'SUPER_ADMIN') {
-      // CEO can approve all leaves (employee, manager, HR)
-      // No additional filter needed
+      // CEO can approve all designation leaves
+      whereClause.employee = {
+        ...whereClause.employee,
+        designation: {
+          in: [Designation.INTERN, Designation.SOFTWARE_ENGINEER, Designation.SENIOR_ENGINEER, Designation.TECH_LEAD, Designation.MANAGER, Designation.HR, Designation.DIRECTOR]
+        }
+      };
     } else {
-      // Other designations cannot approve
+      // Other designations cannot approve any leaves
       return [];
     }
 
