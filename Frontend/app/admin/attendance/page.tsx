@@ -2,25 +2,30 @@
 
 import React from 'react';
 import Sidebar from '../_components/Sidebar_A';
-import AdminAttendanceContent from '../_components/AdminAttendanceContent';
+import { AttendancePage } from '../../user/attendance/pages/AttendancePage';
 
 export default function AdminAttendancePage() {
   return (
-    <div>
-      <div className="flex min-h-screen">
-        {/* Sidebar */}
-        <Sidebar />
+    <div className="min-h-screen bg-gray-50">
+      <Sidebar />
+      
+      {/* Main content with proper offset for sidebar - 64px (16 * 4) on desktop */}
+      <div className="lg:ml-16 min-h-screen pt-16 lg:pt-0">
+        {/* Page Header */}
+        <div className="border-b border-gray-200 bg-white px-4 sm:px-6 py-4 sticky top-0 z-10">
+          <h1 className="text-2xl font-bold text-gray-900">My Attendance</h1>
+          <p className="text-gray-600 mt-1">Track your attendance and work hours</p>
+          <div className="mt-2">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+              ADMIN
+            </span>
+          </div>
+        </div>
         
-        {/* Main Content */}
-        <main className="flex-1">
-          <div className="border-b border-gray-200 bg-white px-6 py-4">
-            <h1 className="text-2xl font-bold text-gray-900">Attendance Management</h1>
-            <p className="text-gray-600 mt-1">Monitor and manage employee attendance</p>
-          </div>
-          <div className="p-6">
-            <AdminAttendanceContent />
-          </div>
-        </main>
+        {/* Attendance Content - Same as Employee */}
+        <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+          <AttendancePage />
+        </div>
       </div>
     </div>
   );

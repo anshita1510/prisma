@@ -255,11 +255,14 @@ export default function AdminLeaveManagement() {
   const tabCounts = getTabCounts();
 
   return (
-    <div className="flex min-h-screen">
+    <div className="min-h-screen bg-gray-50">
       <Sidebar />
-      <main className="flex-1">
-        <div className="border-b border-gray-200 bg-white px-6 py-4">
-          <div className="flex justify-between items-center">
+      
+      {/* Main content with proper offset for sidebar - 64px (16 * 4) on desktop */}
+      <div className="lg:ml-16 min-h-screen pt-16 lg:pt-0">
+        {/* Page Header */}
+        <div className="border-b border-gray-200 bg-white px-4 sm:px-6 py-4 sticky top-0 z-10">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Leave Management</h1>
               <p className="text-gray-600 mt-1">Review and manage employee leave applications</p>
@@ -281,7 +284,8 @@ export default function AdminLeaveManagement() {
           </div>
         </div>
         
-        <div className="p-6">
+        {/* Leave Management Content */}
+        <div className="p-4 sm:p-6 max-w-7xl mx-auto">
           {error && (
             <Alert className="mb-4 border-red-200 bg-red-50">
               <AlertCircle className="h-4 w-4 text-red-600" />
@@ -498,7 +502,7 @@ export default function AdminLeaveManagement() {
             </TabsContent>
           </Tabs>
         </div>
-      </main>
+      </div>
 
       {/* Apply Leave Modal */}
       {showApplyModal && (

@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import authRoutes from './modules/routes/auth/auth.routes';
 import leaveRoutes from './modules/routes/leave/leave.routes';
-import attendanceRoutes from './modules/routes/attendance/attendance.routes';
+import attendanceRoutes from './modules/routes/attendance/attendance.routes'; // New attendance routes with my-logs endpoint
 import projectRoutes from './modules/routes/project.routes';
 import taskRoutes from './modules/routes/task.routes';
 import enhancedProjectRoutesV2 from './modules/routes/enhanced-project.routes';
@@ -13,11 +13,8 @@ import notificationRoutes from './modules/routes/notification.routes';
 import newProjectRoutes from './modules/routes/project/project.routes';
 import employeeRoutes from './modules/routes/employee.routes';
 import { errorHandler } from './middlewares/validation.middleware';
-<<<<<<< HEAD
 import { scheduleAutoCheckout } from './cron/autoCheckout.cron';
-=======
 import { swaggerSpec } from './config/swagger';
->>>>>>> origin/main
 
 dotenv.config();
 

@@ -19,9 +19,6 @@ const router = Router();
 // Apply authentication to all routes
 router.use(authenticate);
 
-<<<<<<< HEAD
-// Leave application routes
-=======
 /**
  * @swagger
  * /api/leaves:
@@ -81,7 +78,6 @@ router.use(authenticate);
  *       401:
  *         description: Unauthorized
  */
->>>>>>> origin/main
 router.post("/", createLeave);
 
 /**
@@ -114,20 +110,17 @@ router.post("/", createLeave);
  *         description: Unauthorized
  */
 router.get("/my-leaves", getMyLeaves);
-<<<<<<< HEAD
+
+// Statistics route
 router.get("/statistics", getLeaveStatistics);
 
 // Approval routes
 router.get("/approvable", getApprovableLeaves);
 router.get("/:id/can-approve", checkApprovalPermission);
-router.patch("/:id/status", updateLeaveStatus);
 
 // Notification routes
 router.get("/notifications", getLeaveNotifications);
 router.post("/notifications/mark-read", markLeaveNotificationsRead);
-
-// General routes
-=======
 
 /**
  * @swagger
@@ -160,7 +153,6 @@ router.post("/notifications/mark-read", markLeaveNotificationsRead);
  *       403:
  *         description: Access denied
  */
->>>>>>> origin/main
 router.get("/", getAllLeaves);
 
 /**
@@ -199,8 +191,6 @@ router.get("/", getAllLeaves);
  *         description: Leave not found
  */
 router.get("/:id", getLeaveById);
-<<<<<<< HEAD
-=======
 
 /**
  * @swagger
@@ -286,8 +276,6 @@ router.patch("/:id/status", updateLeaveStatus);
  *       404:
  *         description: Leave not found
  */
->>>>>>> origin/main
 router.delete("/:id", deleteLeave);
 
 export default router;
-

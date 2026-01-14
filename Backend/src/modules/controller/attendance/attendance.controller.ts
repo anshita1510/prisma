@@ -10,13 +10,24 @@ class AttendanceController {
   // Personal Attendance Endpoints
   async checkIn(req: Request, res: Response) {
     try {
-      const { employeeId } = req.body;
-      const location = req.body.location;
+      // Get employeeId from authenticated user or request body
+      const employeeId = req.user?.employeeId || req.body.employeeId;
+      
+      if (!employeeId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Employee ID is required'
+        });
+      }
+
+      const location = req.body.location || 'Office';
       const deviceInfo = {
         userAgent: req.get('User-Agent') || '',
         ipAddress: req.ip || '',
         deviceType: req.body.deviceType || 'web'
       };
+
+      console.log('📥 Check-in request:', { employeeId, location, deviceInfo });
 
       const attendance = await attendanceService.checkIn({
         employeeId,
@@ -30,6 +41,7 @@ class AttendanceController {
         data: attendance
       });
     } catch (error: any) {
+      console.error('❌ Check-in error:', error);
       res.status(400).json({
         success: false,
         message: error.message || 'Check-in failed'
@@ -39,13 +51,24 @@ class AttendanceController {
 
   async checkOut(req: Request, res: Response) {
     try {
-      const { employeeId } = req.body;
-      const location = req.body.location;
+      // Get employeeId from authenticated user or request body
+      const employeeId = req.user?.employeeId || req.body.employeeId;
+      
+      if (!employeeId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Employee ID is required'
+        });
+      }
+
+      const location = req.body.location || 'Office';
       const deviceInfo = {
         userAgent: req.get('User-Agent') || '',
         ipAddress: req.ip || '',
         deviceType: req.body.deviceType || 'web'
       };
+
+      console.log('📤 Check-out request:', { employeeId, location, deviceInfo });
 
       const attendance = await attendanceService.checkOut({
         employeeId,
@@ -59,6 +82,7 @@ class AttendanceController {
         data: attendance
       });
     } catch (error: any) {
+      console.error('❌ Check-out error:', error);
       res.status(400).json({
         success: false,
         message: error.message || 'Check-out failed'
@@ -68,20 +92,59 @@ class AttendanceController {
 
   async getPersonalAttendanceHistory(req: Request, res: Response) {
     try {
-      const { employeeId } = req.params;
+      // Get employeeId from params (for admin/manager) or from authenticated user
+      const employeeIdParam = req.params.employeeId;
+      const employeeId = employeeIdParam 
+        ? parseInt(employeeIdParam) 
+        : req.user?.employeeId;
+
+      if (!employeeId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Employee ID is required'
+        });
+      }
+
       const { startDate, endDate } = req.query;
 
-      const history = await attendanceService.getPersonalAttendanceHistory(
-        parseInt(employeeId),
-        startDate ? new Date(startDate as string) : undefined,
-        endDate ? new Date(endDate as string) : undefined
-      );
+      // Check if this is a request for today's attendance only
+      const isToday = req.path.includes('/my-today') || req.path.includes('/today');
+      
+      let history;
+      if (isToday) {
+        // Get only today's attendance
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        history = await attendanceService.getPersonalAttendanceHistory(
+          employeeId,
+          today,
+          tomorrow
+        );
+        
+        // Return single record or null
+        const todayRecord = history.length > 0 ? history[0] : null;
+        return res.status(200).json({
+          success: true,
+          data: todayRecord
+        });
+      } else {
+        // Get full history
+        history = await attendanceService.getPersonalAttendanceHistory(
+          employeeId,
+          startDate ? new Date(startDate as string) : undefined,
+          endDate ? new Date(endDate as string) : undefined
+        );
+      }
 
       res.status(200).json({
         success: true,
         data: history
       });
     } catch (error: any) {
+      console.error('❌ Get attendance history error:', error);
       res.status(500).json({
         success: false,
         message: error.message || 'Failed to fetch attendance history'

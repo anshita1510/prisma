@@ -365,6 +365,7 @@ model Attendance {
   // Enhanced fields for enterprise attendance
   location          Json?     // GeoLocation data
   deviceInfo        Json?     // Device information
+  timeSlots         Json?     // Array of check-in/check-out time slots for multiple entries
   workHours         Float?    // Calculated work hours
   overtime          Float?    // Overtime hours
   breakTime         Float?    // Break time in hours

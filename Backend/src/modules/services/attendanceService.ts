@@ -74,7 +74,7 @@ class AttendanceService {
       throw new Error('Employee not found');
     }
 
-    // Check if already checked in today
+    // Get existing attendance for today
     const existingAttendance = await prisma.attendance.findUnique({
       where: {
         employeeId_date: {
@@ -84,32 +84,64 @@ class AttendanceService {
       }
     });
 
-    if (existingAttendance && existingAttendance.checkIn) {
-      throw new Error('Already checked in today');
-    }
-
     const checkInTime = new Date();
     
-    // Determine status based on policy (simplified logic)
+    // Check if currently checked in (has check-in but no check-out)
+    if (existingAttendance) {
+      // Parse existing time slots
+      const timeSlots = (existingAttendance.timeSlots as any) || [];
+      
+      // Check if there's an open slot (checked in but not checked out)
+      const hasOpenSlot = timeSlots.some((slot: any) => slot.checkIn && !slot.checkOut);
+      
+      if (hasOpenSlot) {
+        throw new Error('Already checked in. Please check out first.');
+      }
+      
+      // Add new check-in slot
+      timeSlots.push({
+        checkIn: checkInTime.toISOString(),
+        checkOut: null
+      });
+      
+      // Determine status based on first check-in of the day
+      const firstCheckIn = timeSlots[0]?.checkIn ? new Date(timeSlots[0].checkIn) : checkInTime;
+      const status = this.determineAttendanceStatus(firstCheckIn, 'checkin');
+
+      console.log(`✅ Employee ${employee.name} (ID: ${data.employeeId}) checking in again at ${checkInTime.toISOString()}`);
+
+      const attendance = await prisma.attendance.update({
+        where: { id: existingAttendance.id },
+        data: {
+          timeSlots: timeSlots,
+          status,
+          location: data.location,
+          deviceInfo: data.deviceInfo,
+          updatedAt: new Date()
+        }
+      });
+
+      // Create audit entry
+      await this.createAuditEntry({
+        attendanceId: attendance.id,
+        action: AuditAction.CHECK_IN,
+        performedBy: data.employeeId,
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent'),
+        newValues: { checkIn: checkInTime, status, timeSlots },
+        reason: 'Employee check-in (multiple)'
+      });
+
+      return attendance;
+    }
+
+    // First check-in of the day
     const status = this.determineAttendanceStatus(checkInTime, 'checkin');
 
     console.log(`✅ Employee ${employee.name} (ID: ${data.employeeId}) checking in at ${checkInTime.toISOString()}`);
 
-    const attendance = await prisma.attendance.upsert({
-      where: {
-        employeeId_date: {
-          employeeId: data.employeeId,
-          date: today
-        }
-      },
-      update: {
-        checkIn: checkInTime,
-        status,
-        location: data.location,
-        deviceInfo: data.deviceInfo,
-        updatedAt: new Date()
-      },
-      create: {
+    const attendance = await prisma.attendance.create({
+      data: {
         employeeId: data.employeeId,
         companyId: employee.companyId,
         departmentId: employee.departmentId,
@@ -117,7 +149,11 @@ class AttendanceService {
         checkIn: checkInTime,
         status,
         location: data.location,
-        deviceInfo: data.deviceInfo
+        deviceInfo: data.deviceInfo,
+        timeSlots: [{
+          checkIn: checkInTime.toISOString(),
+          checkOut: null
+        }]
       }
     });
 
@@ -129,7 +165,7 @@ class AttendanceService {
       ipAddress: req.ip,
       userAgent: req.get('User-Agent'),
       newValues: { checkIn: checkInTime, status },
-      reason: 'Employee check-in'
+      reason: 'Employee check-in (first)'
     });
 
     return attendance;
@@ -151,31 +187,55 @@ class AttendanceService {
       }
     });
 
-    if (!attendance || !attendance.checkIn) {
-      throw new Error('Must check in before checking out');
-    }
-
-    if (attendance.checkOut) {
-      throw new Error('Already checked out today');
+    if (!attendance) {
+      throw new Error('No check-in found for today. Please check in first.');
     }
 
     const checkOutTime = new Date();
     
-    // Calculate work hours and overtime with 6:30 PM rule
-    const workHours = this.calculateWorkHours(attendance.checkIn, checkOutTime);
-    const overtime = this.calculateOvertime(workHours);
+    // Parse existing time slots
+    const timeSlots = (attendance.timeSlots as any) || [];
     
-    // Update status based on check-out time
-    const finalStatus = this.determineFinalAttendanceStatus(attendance.checkIn, checkOutTime);
+    // Find the last open slot (checked in but not checked out)
+    const openSlotIndex = timeSlots.findIndex((slot: any) => slot.checkIn && !slot.checkOut);
+    
+    if (openSlotIndex === -1) {
+      throw new Error('No active check-in found. Please check in first.');
+    }
+    
+    // Update the open slot with check-out time
+    timeSlots[openSlotIndex].checkOut = checkOutTime.toISOString();
+    
+    // Calculate total work hours from all completed slots
+    let totalWorkMinutes = 0;
+    timeSlots.forEach((slot: any) => {
+      if (slot.checkIn && slot.checkOut) {
+        const checkInDate = new Date(slot.checkIn);
+        const checkOutDate = new Date(slot.checkOut);
+        const diffMs = checkOutDate.getTime() - checkInDate.getTime();
+        const diffMinutes = diffMs / (1000 * 60);
+        totalWorkMinutes += diffMinutes;
+      }
+    });
+    
+    const totalWorkHours = totalWorkMinutes / 60;
+    const overtime = this.calculateOvertime(totalWorkHours);
+    
+    // Determine final status based on first check-in and last check-out
+    const firstCheckIn = new Date(timeSlots[0].checkIn);
+    const lastCheckOut = checkOutTime;
+    const finalStatus = this.determineFinalAttendanceStatus(firstCheckIn, lastCheckOut);
 
     console.log(`✅ Employee ${attendance.employee.name} (ID: ${data.employeeId}) checking out at ${checkOutTime.toISOString()}`);
-    console.log(`📊 Work Hours: ${workHours}h, Overtime: ${overtime}h, Status: ${finalStatus}`);
+    console.log(`📊 Total Work Hours: ${totalWorkHours.toFixed(2)}h, Overtime: ${overtime}h, Status: ${finalStatus}`);
+    console.log(`📋 Time Slots: ${timeSlots.length} entries`);
 
     const updatedAttendance = await prisma.attendance.update({
       where: { id: attendance.id },
       data: {
         checkOut: checkOutTime,
-        workHours,
+        timeSlots: timeSlots,
+        workHours: totalWorkHours,
         overtime,
         status: finalStatus,
         location: data.location,
@@ -192,7 +252,13 @@ class AttendanceService {
       ipAddress: req.ip,
       userAgent: req.get('User-Agent'),
       oldValues: { checkOut: null },
-      newValues: { checkOut: checkOutTime, workHours, overtime, status: finalStatus },
+      newValues: { 
+        checkOut: checkOutTime, 
+        workHours: totalWorkHours, 
+        overtime, 
+        status: finalStatus,
+        timeSlots 
+      },
       reason: 'Employee check-out'
     });
 

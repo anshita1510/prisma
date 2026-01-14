@@ -141,32 +141,36 @@ export default function ManageUsersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-screen bg-gray-50">
         <Sidebar />
-        <main style={{ marginLeft: '64px', width: 'calc(100% - 64px)', minHeight: '100vh' }}>
-          <div className="p-6">
+        <div className="lg:ml-16 min-h-screen pt-16 lg:pt-0">
+          <div className="p-4 sm:p-6 max-w-7xl mx-auto">
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
             </div>
           </div>
-        </main>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-50">
       <Sidebar />
-      <main style={{ marginLeft: '64px', width: 'calc(100% - 64px)', minHeight: '100vh' }}>
-        <div className="p-6">
-          <div className="space-y-6 animate-fade-in">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Manage Users</h1>
-                <p className="text-gray-600 mt-1">View and manage all users in your organization</p>
-              </div>
+      <div className="lg:ml-16 min-h-screen pt-16 lg:pt-0">
+        {/* Page Header */}
+        <div className="border-b border-gray-200 bg-white px-4 sm:px-6 py-4 sticky top-0 z-10">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Manage Users</h1>
+              <p className="text-gray-600 mt-1">View and manage all users in your organization</p>
             </div>
+          </div>
+        </div>
+        
+        {/* Manage Users Content */}
+        <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+          <div className="space-y-6 animate-fade-in">
 
             {/* Debug Info */}
             {debugInfo && (
@@ -352,7 +356,7 @@ export default function ManageUsersPage() {
             </Card>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

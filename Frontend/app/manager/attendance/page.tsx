@@ -1,10 +1,10 @@
 "use client";
 
 import React from 'react';
-import Sidebar from '../_components/sidebar_u';
-import { AttendancePage } from './pages/AttendancePage';
+import Sidebar from '../_components/sidebar_m';
+import { AttendancePage } from '../../user/attendance/pages/AttendancePage';
 
-export default function UserAttendancePage() {
+export default function ManagerAttendancePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar />
@@ -16,13 +16,13 @@ export default function UserAttendancePage() {
           <h1 className="text-2xl font-bold text-gray-900">My Attendance</h1>
           <p className="text-gray-600 mt-1">Track your attendance and work hours</p>
           <div className="mt-2">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              EMPLOYEE
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              MANAGER
             </span>
           </div>
         </div>
         
-        {/* Attendance Content */}
+        {/* Attendance Content - Same as Employee */}
         <div className="p-4 sm:p-6 max-w-7xl mx-auto">
           <AttendancePage />
         </div>

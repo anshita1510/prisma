@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import Sidebar from './_components/Sidebar_A';
-import Banner from "./_components/banner_A";
 import PageHeader from './_components/PageHeader';
 import { 
   BarChart3, 
@@ -19,10 +18,32 @@ import {
   FolderOpen,
   Target,
   Activity,
-  UserPlus
+  UserPlus,
+  PieChart as PieChartIcon
 } from 'lucide-react';
 import { authService } from '@/app/services/authService';
-import TestProjectCreation from './_components/TestProjectCreation';
+import { 
+  LineChart, 
+  Line, 
+  BarChart, 
+  Bar, 
+  PieChart, 
+  Pie, 
+  Cell, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer,
+  Area,
+  AreaChart,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar
+} from 'recharts';
 
 interface DashboardStats {
   totalEmployees: number;
@@ -81,6 +102,51 @@ export default function AdminDashboard() {
   
   const [loading, setLoading] = useState(false);
 
+  // Chart data
+  const attendanceTrendData = [
+    { month: 'Jan', present: 92, late: 5, absent: 3 },
+    { month: 'Feb', present: 88, late: 7, absent: 5 },
+    { month: 'Mar', present: 95, late: 3, absent: 2 },
+    { month: 'Apr', present: 90, late: 6, absent: 4 },
+    { month: 'May', present: 93, late: 4, absent: 3 },
+    { month: 'Jun', present: 96, late: 2, absent: 2 }
+  ];
+
+  const departmentPerformanceData = [
+    { department: 'Development', productivity: 85, quality: 90, efficiency: 88 },
+    { department: 'Design', productivity: 92, quality: 95, efficiency: 90 },
+    { department: 'QA', productivity: 78, quality: 85, efficiency: 80 },
+    { department: 'Marketing', productivity: 88, quality: 87, efficiency: 85 }
+  ];
+
+  const taskStatusData = [
+    { name: 'Completed', value: stats.completedTasks, color: '#10b981' },
+    { name: 'In Progress', value: 45, color: '#3b82f6' },
+    { name: 'Pending', value: 15, color: '#f59e0b' },
+    { name: 'Overdue', value: stats.overdueTasks, color: '#ef4444' }
+  ];
+
+  const projectProgressData = [
+    { project: 'E-commerce', progress: 75, tasks: 45, completed: 34 },
+    { project: 'Mobile App', progress: 60, tasks: 30, completed: 18 },
+    { project: 'Dashboard', progress: 90, tasks: 25, completed: 23 },
+    { project: 'API Gateway', progress: 45, tasks: 40, completed: 18 }
+  ];
+
+  const employeeProductivityData = [
+    { week: 'Week 1', avgHours: 42, avgTasks: 8 },
+    { week: 'Week 2', avgHours: 45, avgTasks: 10 },
+    { week: 'Week 3', avgHours: 43, avgTasks: 9 },
+    { week: 'Week 4', avgHours: 46, avgTasks: 11 }
+  ];
+
+  const leaveStatisticsData = [
+    { type: 'Sick Leave', count: 12, color: '#ef4444' },
+    { type: 'Casual Leave', count: 18, color: '#3b82f6' },
+    { type: 'Vacation', count: 25, color: '#10b981' },
+    { type: 'Other', count: 5, color: '#f59e0b' }
+  ];
+
   const getActivityIcon = (type: RecentActivity['type']) => {
     switch (type) {
       case 'user_created':
@@ -100,28 +166,26 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-screen bg-gray-50">
         <Sidebar />
-        <main style={{ marginLeft: '64px', width: 'calc(100% - 64px)', minHeight: '100vh' }}>
+        <div className="lg:ml-16 min-h-screen pt-16 lg:pt-0">
           <PageHeader title="Dashboard" subtitle="Admin dashboard overview" showBackButton={false} />
-          <div className="p-6">
+          <div className="p-4 sm:p-6 max-w-7xl mx-auto">
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
           </div>
-        </main>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gray-50">
       <Sidebar />
-      <main style={{ marginLeft: '64px', width: 'calc(100% - 64px)', minHeight: '100vh' }}>
+      <div className="lg:ml-16 min-h-screen pt-16 lg:pt-0">
         <PageHeader title="Dashboard" subtitle="Admin dashboard overview" showBackButton={false} />
-        <div className="p-6 space-y-8">
-          {/* Debug Test Component - Remove after fixing */}
-          <TestProjectCreation />
+        <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 max-w-7xl mx-auto">
           
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -176,6 +240,188 @@ export default function AdminDashboard() {
             </Card>
           </div>
 
+          {/* Charts Row 1 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Attendance Trend */}
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  Attendance Trends
+                </CardTitle>
+                <CardDescription>
+                  Monthly attendance statistics
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <AreaChart data={attendanceTrendData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Area type="monotone" dataKey="present" stackId="1" stroke="#10b981" fill="#10b981" />
+                    <Area type="monotone" dataKey="late" stackId="1" stroke="#f59e0b" fill="#f59e0b" />
+                    <Area type="monotone" dataKey="absent" stackId="1" stroke="#ef4444" fill="#ef4444" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Task Status Distribution */}
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <PieChartIcon className="h-5 w-5" />
+                  Task Status Distribution
+                </CardTitle>
+                <CardDescription>
+                  Current task breakdown
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={taskStatusData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {taskStatusData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Charts Row 2 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Department Performance Radar */}
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5" />
+                  Department Performance
+                </CardTitle>
+                <CardDescription>
+                  Performance metrics by department
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <RadarChart data={departmentPerformanceData}>
+                    <PolarGrid />
+                    <PolarAngleAxis dataKey="department" />
+                    <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                    <Radar name="Productivity" dataKey="productivity" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.6} />
+                    <Radar name="Quality" dataKey="quality" stroke="#10b981" fill="#10b981" fillOpacity={0.6} />
+                    <Radar name="Efficiency" dataKey="efficiency" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
+                    <Legend />
+                    <Tooltip />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Project Progress */}
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FolderOpen className="h-5 w-5" />
+                  Project Progress
+                </CardTitle>
+                <CardDescription>
+                  Active projects completion status
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={projectProgressData} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" domain={[0, 100]} />
+                    <YAxis dataKey="project" type="category" />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="progress" fill="#3b82f6" radius={[0, 8, 8, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Charts Row 3 */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Employee Productivity */}
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Employee Productivity
+                </CardTitle>
+                <CardDescription>
+                  Average hours and tasks per week
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={employeeProductivityData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="week" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="avgHours" stroke="#8b5cf6" strokeWidth={2} />
+                    <Line type="monotone" dataKey="avgTasks" stroke="#10b981" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Leave Statistics */}
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Leave Statistics
+                </CardTitle>
+                <CardDescription>
+                  Leave types distribution
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={leaveStatisticsData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={(entry: any) => `${entry.type}: ${entry.count}`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="count"
+                    >
+                      {leaveStatisticsData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Quick Actions */}
@@ -209,7 +455,7 @@ export default function AdminDashboard() {
                   </a>
                 </Button>
                 <Button className="w-full justify-start" variant="outline" asChild>
-                  <a href="/admin/leave">
+                  <a href="/admin/leave-management">
                     <Calendar className="mr-2 h-4 w-4" />
                     Manage Leaves
                   </a>
@@ -255,60 +501,8 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </div>
-
-          {/* Team Overview */}
-          <Card className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Team Overview
-              </CardTitle>
-              <CardDescription>
-                Current status of your team and departments
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="p-4 border rounded-lg space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium">Development Team</h4>
-                    <Badge variant="secondary">12 Members</Badge>
-                  </div>
-                  <Progress value={85} className="h-2" />
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>85% Attendance</span>
-                    <span>2 on leave</span>
-                  </div>
-                </div>
-                
-                <div className="p-4 border rounded-lg space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium">Design Team</h4>
-                    <Badge variant="secondary">6 Members</Badge>
-                  </div>
-                  <Progress value={92} className="h-2" />
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>92% Attendance</span>
-                    <span>1 on leave</span>
-                  </div>
-                </div>
-                
-                <div className="p-4 border rounded-lg space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium">QA Team</h4>
-                    <Badge variant="secondary">6 Members</Badge>
-                  </div>
-                  <Progress value={78} className="h-2" />
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>78% Attendance</span>
-                    <span>2 on leave</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

@@ -162,14 +162,28 @@ export function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProject
 
       const userData = JSON.parse(userStr);
       
+      // Validate user data
+      if (!userData.companyId) {
+        setError('Company ID not found. Please log in again.');
+        setLoading(false);
+        return;
+      }
+
+      if (!userData.employeeId) {
+        setError('Employee ID not found. Please ensure you have an employee record.');
+        setLoading(false);
+        return;
+      }
+
       const projectData = {
-        name: formData.name,
-        description: formData.description,
+        name: formData.name.trim(),
+        description: formData.description?.trim() || '',
         departmentId: formData.departmentId,
         companyId: userData.companyId,
-        ownerId: userData.employeeId,
+        ownerId: userData.employeeId, // Add the owner ID from the logged-in user
         startDate: formData.startDate,
         endDate: formData.endDate,
+        status: 'PLANNING' as const,
         teamMembers: selectedMembers.length > 0 ? selectedMembers.map(memberId => ({
           employeeId: memberId,
           role: 'MEMBER' as const
@@ -177,6 +191,13 @@ export function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProject
       };
 
       console.log('📤 Submitting project creation with data:', projectData);
+      console.log('👤 User context:', {
+        userId: userData.id,
+        employeeId: userData.employeeId,
+        companyId: userData.companyId,
+        role: userData.role,
+        designation: userData.designation
+      });
 
       const result = await projectService.createProject(projectData);
       

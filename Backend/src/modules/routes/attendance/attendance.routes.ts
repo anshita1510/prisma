@@ -2,7 +2,7 @@
 import { Router } from 'express';
 import { AttendanceController } from '../../controller/attendance/attendance.controller';
 import { validateBody, validateQuery } from '../../../middlewares/validation.middleware';
-import { authenticate } from '../../../middlewares/auth.middleware';
+import { authenticateToken } from '../../../middlewares/auth.middleware';
 import { requireAnyRole } from '../../../middlewares/role.middleware';
 import { Role } from '@prisma/client';
 import { 
@@ -15,8 +15,8 @@ import {
 const router = Router();
 const attendanceController = new AttendanceController();
 
-// Apply authentication middleware to all routes
-router.use(authenticate);
+// Apply authentication middleware to all routes (using authenticateToken for employeeId)
+router.use(authenticateToken);
 
 // Personal Attendance Routes (All authenticated users)
 router.post(
