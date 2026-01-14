@@ -44,6 +44,12 @@ export class LoginUsecase {
       email: user.email,
     });
 
+    // Get employee information if exists
+    let employeeId = null;
+    if (user.employee) {
+      employeeId = user.employee.id;
+    }
+
     // Format user data for frontend
     const firstName = user.firstName || '';
     const lastName = user.lastName || '';
@@ -57,6 +63,8 @@ export class LoginUsecase {
 
     const formattedUser = {
       id: user.id,
+      employeeId, // Include employeeId for attendance system
+      companyId: user.companyId, // Include companyId for project management
       name,
       email: user.email,
       role: user.role,

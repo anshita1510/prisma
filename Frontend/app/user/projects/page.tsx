@@ -30,14 +30,9 @@ export default function ProjectsPage() {
   const loadProjects = async () => {
     try {
       setLoading(true);
-      const response = await projectService.getProjects({
-        page: pagination.page,
-        limit: pagination.limit,
-        isActive: statusFilter === 'all' ? undefined : statusFilter === 'active'
-      });
+      const response = await projectService.getAllProjects();
 
-      setProjects(response.data);
-      setPagination(response.pagination);
+      setProjects(response.data || []);
     } catch (error) {
       console.error('Error loading projects:', error);
     } finally {

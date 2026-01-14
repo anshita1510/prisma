@@ -58,6 +58,11 @@ router.get('/audit/trail',
 );
 
 // Dashboard Routes (Admin and Manager only)
+router.get('/dashboard-stats', 
+  authorizeRoles(['SUPER_ADMIN', 'ADMIN', 'MANAGER']), 
+  attendanceController.getAttendanceDashboardStats
+);
+
 router.get('/dashboard/stats', 
   authorizeRoles(['SUPER_ADMIN', 'ADMIN', 'MANAGER']), 
   attendanceController.getAttendanceDashboardStats

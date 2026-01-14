@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Sidebar from '../../admin/_components/Sidebar_A';
 import PageHeader from '../../admin/_components/PageHeader';
+import { CreateTaskModal } from '@/components/projects/CreateTaskModal';
+import { dynamicProjectService } from '@/app/services/dynamicProjectService';
 import {
   CheckSquare,
   Plus,
@@ -19,15 +21,24 @@ import {
 } from 'lucide-react';
 
 interface Task {
-  id: string;
+  id: number;
   title: string;
-  description: string;
-  status: 'TODO' | 'IN_PROGRESS' | 'COMPLETED' | 'BLOCKED';
+  description?: string;
+  status: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | 'CANCELLED';
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-  dueDate: string;
-  assignee: string;
-  project: string;
-  tags: string[];
+  dueDate?: string;
+  startDate?: string;
+  assignedTo?: {
+    id: number;
+    name: string;
+  };
+  project?: {
+    id: number;
+    name: string;
+  };
+  tags?: string[];
+  estimatedHours?: number;
+  progressPercentage?: number;
 }
 
 export default function TasksPage() {
@@ -35,81 +46,96 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<number>(1);
+  const [debugInfo, setDebugInfo] = useState<string>('');
 
   useEffect(() => {
-    // Mock data - replace with actual API call
-    setTimeout(() => {
-      setTasks([
-        {
-          id: '1',
-          title: 'Design user authentication flow',
-          description: 'Create wireframes and mockups for the login and registration process',
-          status: 'IN_PROGRESS',
-          priority: 'HIGH',
-          dueDate: '2024-12-20',
-          assignee: 'John Doe',
-          project: 'Mobile App Development',
-          tags: ['UI/UX', 'Authentication']
-        },
-        {
-          id: '2',
-          title: 'Implement REST API endpoints',
-          description: 'Develop backend API endpoints for user management and data operations',
-          status: 'TODO',
-          priority: 'MEDIUM',
-          dueDate: '2024-12-25',
-          assignee: 'Jane Smith',
-          project: 'Mobile App Development',
-          tags: ['Backend', 'API']
-        },
-        {
-          id: '3',
-          title: 'Database schema optimization',
-          description: 'Optimize database queries and improve performance',
-          status: 'COMPLETED',
-          priority: 'LOW',
-          dueDate: '2024-12-15',
-          assignee: 'Mike Johnson',
-          project: 'Database Migration',
-          tags: ['Database', 'Performance']
-        },
-        {
-          id: '4',
-          title: 'Frontend component library',
-          description: 'Build reusable React components for the design system',
-          status: 'IN_PROGRESS',
-          priority: 'MEDIUM',
-          dueDate: '2024-12-30',
-          assignee: 'Sarah Wilson',
-          project: 'Website Redesign',
-          tags: ['Frontend', 'Components']
-        },
-        {
-          id: '5',
-          title: 'Security audit and testing',
-          description: 'Conduct comprehensive security testing and vulnerability assessment',
-          status: 'BLOCKED',
-          priority: 'URGENT',
-          dueDate: '2024-12-18',
-          assignee: 'Alex Brown',
-          project: 'API Integration',
-          tags: ['Security', 'Testing']
-        }
-      ]);
-      setLoading(false);
-    }, 1000);
+    loadTasks();
   }, []);
 
-  const getStatusColor = (status: Task['status']) => {
+  const loadTasks = async () => {
+    setLoading(true);
+    setDebugInfo('Loading projects...');
+    try {
+      // Get all projects first
+      console.log('🔍 Fetching all projects...');
+      const projectsResult = await dynamicProjectService.getAllProjects();
+      
+      console.log('📊 Projects result:', projectsResult);
+      
+      if (projectsResult.success && projectsResult.data && projectsResult.data.length > 0) {
+        console.log('✅ Found projects:', projectsResult.data.length);
+        setProjects(projectsResult.data);
+        setSelectedProjectId(projectsResult.data[0].id);
+        setDebugInfo(`Found ${projectsResult.data.length} projects. Fetching tasks...`);
+        
+        // Fetch tasks from all projects
+        const allTasks: Task[] = [];
+        
+        for (const project of projectsResult.data) {
+          console.log(`📋 Fetching tasks for project ${project.id}...`);
+          const tasksResult = await dynamicProjectService.getProjectTasks(project.id);
+          console.log(`📋 Tasks result for project ${project.id}:`, tasksResult);
+          
+          if (tasksResult.success && tasksResult.data) {
+            console.log(`✅ Found ${tasksResult.data.length} tasks in project ${project.id}`);
+            const projectTasks = tasksResult.data.map((task: any) => ({
+              id: task.id,
+              title: task.title,
+              description: task.description,
+              status: task.status,
+              priority: task.priority,
+              dueDate: task.dueDate,
+              assignedTo: task.assignedTo,
+              project: { id: project.id, name: project.name },
+              tags: task.tags || []
+            }));
+            allTasks.push(...projectTasks);
+          }
+        }
+        
+        setTasks(allTasks);
+        setDebugInfo(`✅ Loaded ${allTasks.length} total tasks`);
+        console.log('✅ Tasks loaded:', allTasks.length);
+      } else {
+        console.warn('⚠️ No projects found or API error');
+        setDebugInfo('No projects found. Create a project first to add tasks.');
+        setTasks([]);
+        setProjects([]);
+      }
+    } catch (error) {
+      console.error('❌ Error loading tasks:', error);
+      setDebugInfo(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setTasks([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusColor = (status: Task['status'], dueDate?: string) => {
+    // Check if overdue
+    if (dueDate && status !== 'COMPLETED' && status !== 'CANCELLED') {
+      const due = new Date(dueDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (due < today) {
+        return 'bg-red-100 text-red-800';
+      }
+    }
+
     switch (status) {
       case 'TODO':
         return 'bg-gray-100 text-gray-800';
       case 'IN_PROGRESS':
         return 'bg-blue-100 text-blue-800';
+      case 'IN_REVIEW':
+        return 'bg-orange-100 text-orange-800';
       case 'COMPLETED':
         return 'bg-green-100 text-green-800';
-      case 'BLOCKED':
-        return 'bg-red-100 text-red-800';
+      case 'CANCELLED':
+        return 'bg-gray-100 text-gray-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -130,14 +156,23 @@ export default function TasksPage() {
     }
   };
 
-  const isOverdue = (dueDate: string) => {
-    return new Date(dueDate) < new Date() && tasks.find(t => t.dueDate === dueDate)?.status !== 'COMPLETED';
+  const isOverdue = (dueDate?: string, status?: Task['status']) => {
+    if (!dueDate || status === 'COMPLETED' || status === 'CANCELLED') {
+      return false;
+    }
+    return new Date(dueDate) < new Date();
+  };
+
+  const handleTaskCreated = () => {
+    // Reload tasks after creation
+    console.log('📝 Task created, reloading tasks...');
+    loadTasks();
   };
 
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.project.toLowerCase().includes(searchTerm.toLowerCase());
+      task.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.project?.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'ALL' || task.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -168,13 +203,23 @@ export default function TasksPage() {
           title="Enhanced Tasks" 
           subtitle="Manage and track your team's tasks"
         >
-          <Button className="flex items-center gap-2">
+          <Button 
+            className="flex items-center gap-2"
+            onClick={() => setIsCreateTaskOpen(true)}
+          >
             <Plus className="w-4 h-4" />
             Create New Task
           </Button>
         </PageHeader>
         <div className="p-6">
           <div className="space-y-6 animate-fade-in">
+            {/* Debug Info */}
+            {debugInfo && (
+              <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg">
+                <p className="text-sm">{debugInfo}</p>
+              </div>
+            )}
+
             {/* Search and Filter */}
             <div className="flex items-center gap-4">
               <div className="relative flex-1 max-w-md">
@@ -195,8 +240,9 @@ export default function TasksPage() {
                 <option value="ALL">All Status</option>
                 <option value="TODO">To Do</option>
                 <option value="IN_PROGRESS">In Progress</option>
+                <option value="IN_REVIEW">In Review</option>
                 <option value="COMPLETED">Completed</option>
-                <option value="BLOCKED">Blocked</option>
+                <option value="CANCELLED">Cancelled</option>
               </select>
               <Button variant="outline" className="flex items-center gap-2">
                 <Filter className="w-4 h-4" />
@@ -219,13 +265,13 @@ export default function TasksPage() {
                       <div className="flex items-center gap-3">
                         <CheckSquare className="w-5 h-5 text-blue-600" />
                         <h3 className="text-lg font-semibold text-gray-900">{task.title}</h3>
-                        <Badge className={getStatusColor(task.status)}>
+                        <Badge className={getStatusColor(task.status, task.dueDate)}>
                           {task.status.replace('_', ' ')}
                         </Badge>
                         <Badge className={getPriorityColor(task.priority)}>
                           {task.priority}
                         </Badge>
-                        {isOverdue(task.dueDate) && (
+                        {isOverdue(task.dueDate, task.status) && (
                           <Badge className="bg-red-100 text-red-800 flex items-center gap-1">
                             <AlertCircle className="w-3 h-3" />
                             Overdue
@@ -240,21 +286,23 @@ export default function TasksPage() {
                       <div className="flex items-center gap-6 text-sm text-gray-500">
                         <div className="flex items-center gap-2">
                           <User className="w-4 h-4" />
-                          <span>{task.assignee}</span>
+                          <span>{task.assignedTo?.name || 'Unassigned'}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4" />
-                          <span>{new Date(task.dueDate).toLocaleDateString()}</span>
-                        </div>
+                        {task.dueDate && (
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4" />
+                            <span>{new Date(task.dueDate).toLocaleDateString()}</span>
+                          </div>
+                        )}
                         <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4" />
-                          <span>{task.project}</span>
+                          <span>{task.project?.name || 'No Project'}</span>
                         </div>
                       </div>
 
                       {/* Tags */}
                       <div className="flex items-center gap-2">
-                        {task.tags.map((tag, tagIndex) => (
+                        {task.tags && task.tags.map((tag, tagIndex) => (
                           <span
                             key={tagIndex}
                             className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md"
@@ -286,7 +334,10 @@ export default function TasksPage() {
                   : 'Get started by creating your first task'
                 }
               </p>
-              <Button className="flex items-center gap-2 mx-auto">
+              <Button 
+                className="flex items-center gap-2 mx-auto"
+                onClick={() => setIsCreateTaskOpen(true)}
+              >
                 <Plus className="w-4 h-4" />
                 Create New Task
               </Button>
@@ -294,6 +345,14 @@ export default function TasksPage() {
           )}
           </div>
         </div>
+
+        <CreateTaskModal 
+          isOpen={isCreateTaskOpen}
+          onClose={() => setIsCreateTaskOpen(false)}
+          onSuccess={handleTaskCreated}
+          projectId={selectedProjectId}
+          projectName={projects.find(p => p.id === selectedProjectId)?.name || 'Tasks'}
+        />
       </main>
     </div>
   );

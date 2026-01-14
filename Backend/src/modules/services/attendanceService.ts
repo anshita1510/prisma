@@ -64,6 +64,16 @@ class AttendanceService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Get employee details first
+    const employee = await prisma.employee.findUnique({
+      where: { id: data.employeeId },
+      include: { user: true }
+    });
+
+    if (!employee) {
+      throw new Error('Employee not found');
+    }
+
     // Check if already checked in today
     const existingAttendance = await prisma.attendance.findUnique({
       where: {
@@ -83,6 +93,8 @@ class AttendanceService {
     // Determine status based on policy (simplified logic)
     const status = this.determineAttendanceStatus(checkInTime, 'checkin');
 
+    console.log(`✅ Employee ${employee.name} (ID: ${data.employeeId}) checking in at ${checkInTime.toISOString()}`);
+
     const attendance = await prisma.attendance.upsert({
       where: {
         employeeId_date: {
@@ -99,8 +111,8 @@ class AttendanceService {
       },
       create: {
         employeeId: data.employeeId,
-        companyId: await this.getEmployeeCompanyId(data.employeeId),
-        departmentId: await this.getEmployeeDepartmentId(data.employeeId),
+        companyId: employee.companyId,
+        departmentId: employee.departmentId,
         date: today,
         checkIn: checkInTime,
         status,
@@ -133,6 +145,9 @@ class AttendanceService {
           employeeId: data.employeeId,
           date: today
         }
+      },
+      include: {
+        employee: true
       }
     });
 
@@ -145,8 +160,16 @@ class AttendanceService {
     }
 
     const checkOutTime = new Date();
+    
+    // Calculate work hours and overtime with 6:30 PM rule
     const workHours = this.calculateWorkHours(attendance.checkIn, checkOutTime);
     const overtime = this.calculateOvertime(workHours);
+    
+    // Update status based on check-out time
+    const finalStatus = this.determineFinalAttendanceStatus(attendance.checkIn, checkOutTime);
+
+    console.log(`✅ Employee ${attendance.employee.name} (ID: ${data.employeeId}) checking out at ${checkOutTime.toISOString()}`);
+    console.log(`📊 Work Hours: ${workHours}h, Overtime: ${overtime}h, Status: ${finalStatus}`);
 
     const updatedAttendance = await prisma.attendance.update({
       where: { id: attendance.id },
@@ -154,6 +177,7 @@ class AttendanceService {
         checkOut: checkOutTime,
         workHours,
         overtime,
+        status: finalStatus,
         location: data.location,
         deviceInfo: data.deviceInfo,
         updatedAt: new Date()
@@ -168,7 +192,7 @@ class AttendanceService {
       ipAddress: req.ip,
       userAgent: req.get('User-Agent'),
       oldValues: { checkOut: null },
-      newValues: { checkOut: checkOutTime, workHours, overtime },
+      newValues: { checkOut: checkOutTime, workHours, overtime, status: finalStatus },
       reason: 'Employee check-out'
     });
 
@@ -613,12 +637,12 @@ class AttendanceService {
 
   // Helper Methods
   private determineAttendanceStatus(checkInTime: Date, type: 'checkin' | 'checkout'): AttendanceStatus {
-    // Simplified logic - in real implementation, this would check against policies
     const hour = checkInTime.getHours();
     const minute = checkInTime.getMinutes();
     
     if (type === 'checkin') {
-      if (hour > 9 || (hour === 9 && minute > 15)) {
+      // Late if after 9:30 AM
+      if (hour > 9 || (hour === 9 && minute > 30)) {
         return AttendanceStatus.LATE;
       }
       return AttendanceStatus.PRESENT;
@@ -627,15 +651,138 @@ class AttendanceService {
     return AttendanceStatus.PRESENT;
   }
 
+  private determineFinalAttendanceStatus(checkIn: Date, checkOut: Date): AttendanceStatus {
+    const checkInHour = checkIn.getHours();
+    const checkInMinute = checkIn.getMinutes();
+    const checkOutHour = checkOut.getHours();
+    const checkOutMinute = checkOut.getMinutes();
+    
+    // Check if late (after 9:30 AM)
+    const isLate = checkInHour > 9 || (checkInHour === 9 && checkInMinute > 30);
+    
+    // Check if early departure (before 6:30 PM)
+    const isEarlyDeparture = checkOutHour < 18 || (checkOutHour === 18 && checkOutMinute < 30);
+    
+    if (isLate && isEarlyDeparture) {
+      return AttendanceStatus.PARTIAL;
+    } else if (isLate) {
+      return AttendanceStatus.LATE;
+    } else if (isEarlyDeparture) {
+      return AttendanceStatus.EARLY_DEPARTURE;
+    } else {
+      return AttendanceStatus.PRESENT;
+    }
+  }
+
   private calculateWorkHours(checkIn: Date, checkOut: Date): number {
     const diffMs = checkOut.getTime() - checkIn.getTime();
     const diffHours = diffMs / (1000 * 60 * 60);
-    return Math.round(diffHours * 100) / 100; // Round to 2 decimal places
+    
+    // Round to 2 decimal places
+    return Math.round(diffHours * 100) / 100;
   }
 
   private calculateOvertime(workHours: number): number {
-    const standardHours = 8;
-    return workHours > standardHours ? workHours - standardHours : 0;
+    // Standard work hours: 9:30 AM to 6:30 PM = 9 hours
+    const standardHours = 9;
+    const overtime = workHours > standardHours ? workHours - standardHours : 0;
+    
+    // Round to 2 decimal places
+    return Math.round(overtime * 100) / 100;
+  }
+
+  // Auto checkout functionality
+  async performAutoCheckout() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Find all employees who are checked in but not checked out
+    const pendingAttendances = await prisma.attendance.findMany({
+      where: {
+        date: today,
+        checkIn: { not: null },
+        checkOut: null
+      },
+      include: {
+        employee: true
+      }
+    });
+
+    console.log(`🕕 Auto-checkout process: Found ${pendingAttendances.length} employees to check out`);
+
+    const results = [];
+    
+    for (const attendance of pendingAttendances) {
+      try {
+        // Set checkout time to exactly 6:30 PM
+        const checkOutTime = new Date();
+        checkOutTime.setHours(18, 30, 0, 0);
+        
+        const workHours = this.calculateWorkHours(attendance.checkIn!, checkOutTime);
+        const overtime = this.calculateOvertime(workHours);
+        const finalStatus = this.determineFinalAttendanceStatus(attendance.checkIn!, checkOutTime);
+
+        const updatedAttendance = await prisma.attendance.update({
+          where: { id: attendance.id },
+          data: {
+            checkOut: checkOutTime,
+            workHours,
+            overtime,
+            status: finalStatus,
+            isManuallyEdited: true,
+            editReason: 'Auto checkout at 6:30 PM',
+            editedBy: null, // System auto-checkout
+            editedAt: new Date(),
+            updatedAt: new Date()
+          }
+        });
+
+        // Create audit entry
+        await this.createAuditEntry({
+          attendanceId: attendance.id,
+          action: AuditAction.CHECK_OUT,
+          performedBy: attendance.employeeId,
+          ipAddress: 'system',
+          userAgent: 'auto-checkout-system',
+          oldValues: { checkOut: null },
+          newValues: { 
+            checkOut: checkOutTime, 
+            workHours, 
+            overtime, 
+            status: finalStatus,
+            autoCheckout: true 
+          },
+          reason: 'Automatic checkout at 6:30 PM'
+        });
+
+        results.push({
+          employeeId: attendance.employeeId,
+          employeeName: attendance.employee.name,
+          workHours,
+          overtime,
+          status: finalStatus,
+          success: true
+        });
+
+        console.log(`✅ Auto-checkout: ${attendance.employee.name} - ${workHours}h (${overtime}h OT)`);
+        
+      } catch (error: any) {
+        console.error(`❌ Auto-checkout failed for employee ${attendance.employee.name}:`, error.message);
+        results.push({
+          employeeId: attendance.employeeId,
+          employeeName: attendance.employee.name,
+          success: false,
+          error: error.message
+        });
+      }
+    }
+
+    return {
+      processedCount: results.length,
+      successCount: results.filter(r => r.success).length,
+      failureCount: results.filter(r => !r.success).length,
+      results
+    };
   }
 
   private async getEmployeeCompanyId(employeeId: number): Promise<number> {

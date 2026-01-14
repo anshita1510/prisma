@@ -12,6 +12,7 @@ router.use(authenticateToken);
 // Personal Attendance Routes (All authenticated users)
 router.post('/checkin', attendanceController.checkIn);
 router.post('/checkout', attendanceController.checkOut);
+router.get('/personal/:employeeId', attendanceController.getPersonalAttendanceHistory);
 router.get('/history/:employeeId', attendanceController.getPersonalAttendanceHistory);
 router.post('/regularization-request', attendanceController.submitRegularizationRequest);
 
@@ -59,9 +60,19 @@ router.get('/audit/trail',
 );
 
 // Dashboard Routes (Admin and Manager only)
-router.get('/dashboard/stats', 
+router.get('/dashboard-stats', 
   authorizeRoles(['SUPER_ADMIN', 'ADMIN', 'MANAGER']), 
   attendanceController.getAttendanceDashboardStats
+);
+
+// Auto-checkout Routes (System only)
+router.post('/auto-checkout/trigger', 
+  authorizeRoles(['SUPER_ADMIN', 'ADMIN']), 
+  require('../../controller/attendance/autoCheckout.controller').autoCheckoutController.triggerAutoCheckout
+);
+
+router.post('/auto-checkout/scheduled', 
+  require('../../controller/attendance/autoCheckout.controller').autoCheckoutController.scheduledAutoCheckout
 );
 
 export default router;

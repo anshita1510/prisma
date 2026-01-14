@@ -42,11 +42,8 @@ export default function DashboardPage() {
       setMyTasks(myTasksResponse.data.slice(0, 6)); // Show only first 6
 
       // Load recent projects
-      const projectsResponse = await projectService.getProjects({ 
-        limit: 6,
-        isActive: true 
-      });
-      setRecentProjects(projectsResponse.data);
+      const projectsResponse = await projectService.getAllProjects();
+      setRecentProjects(projectsResponse.data?.slice(0, 6) || []);
 
       // Load task statistics
       const statsResponse = await taskService.getTaskStats();

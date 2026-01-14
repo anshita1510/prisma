@@ -22,6 +22,7 @@ import {
   UserPlus
 } from 'lucide-react';
 import { authService } from '@/app/services/authService';
+import TestProjectCreation from './_components/TestProjectCreation';
 
 interface DashboardStats {
   totalEmployees: number;
@@ -119,6 +120,9 @@ export default function AdminDashboard() {
       <main style={{ marginLeft: '64px', width: 'calc(100% - 64px)', minHeight: '100vh' }}>
         <PageHeader title="Dashboard" subtitle="Admin dashboard overview" showBackButton={false} />
         <div className="p-6 space-y-8">
+          {/* Debug Test Component - Remove after fixing */}
+          <TestProjectCreation />
+          
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card className="hover:shadow-lg transition-shadow">

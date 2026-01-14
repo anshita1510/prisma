@@ -79,7 +79,9 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
             id: true,
             name: true,
             designation: true,
-            companyId: true
+            companyId: true,
+            departmentId: true,
+            isActive: true
           }
         },
         company: {
@@ -98,10 +100,13 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
       });
     }
 
-    if (!user.employee) {
+    // Get companyId from employee or user record
+    const companyId = user.employee?.companyId || user.companyId;
+
+    if (!companyId) {
       return res.status(401).json({
         success: false,
-        message: 'Employee profile not found'
+        message: 'Company information not found for user'
       });
     }
 
@@ -110,8 +115,11 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
       id: user.id,
       role: user.role,
       email: user.email,
-      employeeId: user.employee.id,
-      companyId: user.employee.companyId
+      employeeId: user.employee?.id,
+      companyId: companyId,
+      designation: user.employee?.designation,
+      isActive: user.employee?.isActive || user.isActive,
+      departmentId: user.employee?.departmentId
     };
 
     next();

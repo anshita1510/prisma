@@ -1,10 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Sidebar from '../../admin/_components/Sidebar_A';
+import { AddTeamMemberModal } from '@/components/team/AddTeamMemberModal';
+import { AddManagerTeamMemberModal } from '@/components/team/AddManagerTeamMemberModal';
+import { employeeService } from '@/app/services/employeeService';
+import { teamService } from '@/app/services/teamService';
 import {
   Users,
   Plus,
@@ -18,7 +23,7 @@ import {
 } from 'lucide-react';
 
 interface TeamMember {
-  id: string;
+  id: string | number;
   name: string;
   email: string;
   role: string;
@@ -29,86 +34,166 @@ interface TeamMember {
   completedTasks: number;
   location: string;
   phone: string;
+  isActive?: boolean;
 }
 
 export default function TeamPage() {
+  const router = useRouter();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string>('');
+  const [userRole, setUserRole] = useState<string>('');
+  const [projects, setProjects] = useState<any[]>([]);
+  const [selectedProject, setSelectedProject] = useState<string>('all');
 
   useEffect(() => {
-    // Mock data - replace with actual API call
-    setTimeout(() => {
-      setTeamMembers([
-        {
-          id: '1',
-          name: 'John Doe',
-          email: 'john.doe@company.com',
-          role: 'MANAGER',
-          designation: 'Team Lead',
-          avatar: 'JD',
-          status: 'ACTIVE',
-          activeTasks: 5,
-          completedTasks: 23,
-          location: 'New York, USA',
-          phone: '+1 (555) 123-4567'
-        },
-        {
-          id: '2',
-          name: 'Jane Smith',
-          email: 'jane.smith@company.com',
-          role: 'EMPLOYEE',
-          designation: 'Senior Developer',
-          avatar: 'JS',
-          status: 'ACTIVE',
-          activeTasks: 3,
-          completedTasks: 18,
-          location: 'San Francisco, USA',
-          phone: '+1 (555) 234-5678'
-        },
-        {
-          id: '3',
-          name: 'Mike Johnson',
-          email: 'mike.johnson@company.com',
-          role: 'EMPLOYEE',
-          designation: 'Backend Developer',
-          avatar: 'MJ',
-          status: 'BUSY',
-          activeTasks: 4,
-          completedTasks: 15,
-          location: 'Austin, USA',
-          phone: '+1 (555) 345-6789'
-        },
-        {
-          id: '4',
-          name: 'Sarah Wilson',
-          email: 'sarah.wilson@company.com',
-          role: 'EMPLOYEE',
-          designation: 'UI/UX Designer',
-          avatar: 'SW',
-          status: 'AWAY',
-          activeTasks: 2,
-          completedTasks: 12,
-          location: 'Seattle, USA',
-          phone: '+1 (555) 456-7890'
-        },
-        {
-          id: '5',
-          name: 'Alex Brown',
-          email: 'alex.brown@company.com',
-          role: 'EMPLOYEE',
-          designation: 'DevOps Engineer',
-          avatar: 'AB',
-          status: 'OFFLINE',
-          activeTasks: 1,
-          completedTasks: 9,
-          location: 'Denver, USA',
-          phone: '+1 (555) 567-8901'
-        }
-      ]);
-      setLoading(false);
-    }, 1000);
+    // Get user role from localStorage
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    setUserRole(user?.role || '');
+
+    // Load appropriate team members based on role
+    if (user?.role === 'MANAGER') {
+      loadManagerTeamMembers();
+    } else {
+      loadTeamMembers();
+    }
+    
+    // Load projects for filtering
+    loadProjects();
   }, []);
+
+  const loadTeamMembers = async () => {
+    setLoading(true);
+    setDebugInfo('Loading team members...');
+    try {
+      console.log('🔍 Fetching team members...');
+      
+      // Get user from localStorage to get company ID
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      const companyId = user?.companyId;
+
+      if (!companyId) {
+        console.warn('⚠️ Company ID not found in user data');
+        setDebugInfo('Company ID not found. Please log in again.');
+        setTeamMembers([]);
+        setLoading(false);
+        return;
+      }
+
+      const result = await employeeService.getCompanyEmployees(companyId);
+      console.log('📊 Employees result:', result);
+
+      if (result.success && result.data && Array.isArray(result.data)) {
+        console.log('✅ Found employees:', result.data.length);
+        
+        // Transform employees to team members
+        const members: TeamMember[] = result.data.map((emp: any) => ({
+          id: emp.id || emp.employeeId,
+          name: emp.name,
+          email: emp.email || emp.user?.email || '',
+          role: emp.role || emp.user?.role || 'EMPLOYEE',
+          designation: emp.designation || 'Employee',
+          avatar: employeeService.generateAvatarInitials(emp.name),
+          status: emp.status || 'ACTIVE',
+          activeTasks: emp.activeTasks || 0,
+          completedTasks: emp.completedTasks || 0,
+          location: emp.location || 'Not specified',
+          phone: emp.phone || emp.user?.phone || 'N/A',
+          isActive: emp.isActive !== false,
+        }));
+
+        setTeamMembers(members);
+        setDebugInfo(`✅ Loaded ${members.length} team members`);
+        console.log('✅ Team members loaded:', members.length);
+      } else {
+        console.warn('⚠️ No employees found or API error');
+        setDebugInfo('No team members found. Create one to get started.');
+        setTeamMembers([]);
+      }
+    } catch (error) {
+      console.error('❌ Error loading team members:', error);
+      setDebugInfo(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setTeamMembers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadManagerTeamMembers = async () => {
+    setLoading(true);
+    setDebugInfo('Loading your team members...');
+    try {
+      console.log('🔍 Fetching manager team members...');
+      
+      const result = await teamService.getManagerTeamMembers();
+      console.log('📊 Team members result:', result);
+
+      if (result.success && result.data && Array.isArray(result.data)) {
+        console.log('✅ Found team members:', result.data.length);
+        
+        // Transform employees to team members
+        const members: TeamMember[] = result.data.map((emp: any) => ({
+          id: emp.id || emp.employeeId,
+          name: emp.name,
+          email: emp.email || emp.user?.email || '',
+          role: emp.role || emp.user?.role || 'EMPLOYEE',
+          designation: emp.designation || 'Employee',
+          avatar: teamService.generateAvatarInitials(emp.name),
+          status: emp.status || 'ACTIVE',
+          activeTasks: emp.activeTasks || 0,
+          completedTasks: emp.completedTasks || 0,
+          location: emp.location || 'Not specified',
+          phone: emp.phone || emp.user?.phone || 'N/A',
+          isActive: emp.isActive !== false,
+        }));
+
+        setTeamMembers(members);
+        setDebugInfo(`✅ Loaded ${members.length} team members`);
+        console.log('✅ Team members loaded:', members.length);
+      } else {
+        console.warn('⚠️ No team members found or API error');
+        setDebugInfo('No team members assigned yet. Add one to get started.');
+        setTeamMembers([]);
+      }
+    } catch (error) {
+      console.error('❌ Error loading team members:', error);
+      setDebugInfo(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setTeamMembers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadProjects = async () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      
+      if (!user?.companyId) return;
+
+      const { dynamicProjectService } = await import('@/app/services/dynamicProjectService');
+      const result = await dynamicProjectService.getAllProjects({
+        companyId: user.companyId
+      });
+
+      if (result.success && result.data) {
+        setProjects(result.data);
+      }
+    } catch (error) {
+      console.error('❌ Error loading projects:', error);
+    }
+  };
+
+  const handleAddMemberSuccess = (newMember: TeamMember) => {
+    console.log('✅ New member added:', newMember);
+    // Add the new member to the list
+    setTeamMembers(prev => [newMember, ...prev]);
+    setDebugInfo(`✅ Team member "${newMember.name}" added successfully!`);
+  };
 
   const getStatusColor = (status: TeamMember['status']) => {
     switch (status) {
@@ -140,11 +225,27 @@ export default function TeamPage() {
     }
   };
 
-  const filteredMembers = teamMembers.filter(member =>
-    member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.designation.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredMembers = teamMembers.filter(member => {
+    // Search filter
+    const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      member.designation.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      member.email.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Project filter
+    if (selectedProject !== 'all') {
+      const project = projects.find(p => p.id === parseInt(selectedProject));
+      if (project && project.members) {
+        const isProjectMember = project.members.some((m: any) => m.employeeId === member.id);
+        return matchesSearch && isProjectMember;
+      }
+      return false;
+    }
+    
+    return matchesSearch;
+  });
+
+  const isManager = userRole === 'MANAGER';
+  const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
 
   if (loading) {
     return (
@@ -172,16 +273,39 @@ export default function TeamPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Enhanced Team</h1>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  {isManager ? 'My Team' : 'Enhanced Team'}
+                </h1>
                 <p className="text-gray-600 mt-1">Manage your team members and their activities</p>
               </div>
-              <Button className="flex items-center gap-2">
-                <Plus className="w-4 h-4" />
-                Add Team Member
-              </Button>
+              {isManager && (
+                <Button 
+                  className="flex items-center gap-2"
+                  onClick={() => setIsAddMemberOpen(true)}
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Team Member
+                </Button>
+              )}
+              {isAdmin && (
+                <Button 
+                  className="flex items-center gap-2"
+                  onClick={() => router.push('/admin/manage-users')}
+                >
+                  <Users className="w-4 h-4" />
+                  Manage Users
+                </Button>
+              )}
             </div>
 
-            {/* Search */}
+            {/* Debug Info */}
+            {debugInfo && (
+              <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg">
+                <p className="text-sm">{debugInfo}</p>
+              </div>
+            )}
+
+            {/* Search and Filter */}
             <div className="flex items-center gap-4">
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -193,6 +317,22 @@ export default function TeamPage() {
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
+              
+              {/* Project Filter */}
+              {projects.length > 0 && (
+                <select
+                  value={selectedProject}
+                  onChange={(e) => setSelectedProject(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                >
+                  <option value="all">All Team Members</option>
+                  {projects.map((project) => (
+                    <option key={project.id} value={project.id.toString()}>
+                      Project: {project.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* Team Stats */}
@@ -328,14 +468,37 @@ export default function TeamPage() {
                 <p className="text-gray-600 mb-4">
                   {searchTerm ? 'Try adjusting your search terms' : 'Get started by adding your first team member'}
                 </p>
-                <Button className="flex items-center gap-2 mx-auto">
-                  <Plus className="w-4 h-4" />
-                  Add Team Member
-                </Button>
+                {isManager && (
+                  <Button 
+                    className="flex items-center gap-2 mx-auto"
+                    onClick={() => setIsAddMemberOpen(true)}
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Team Member
+                  </Button>
+                )}
               </div>
             )}
           </div>
         </div>
+
+        {/* Add Team Member Modal - for Admins */}
+        {isAdmin && (
+          <AddTeamMemberModal
+            isOpen={isAddMemberOpen}
+            onClose={() => setIsAddMemberOpen(false)}
+            onSuccess={handleAddMemberSuccess}
+          />
+        )}
+
+        {/* Add Manager Team Member Modal - for Managers */}
+        {isManager && (
+          <AddManagerTeamMemberModal
+            isOpen={isAddMemberOpen}
+            onClose={() => setIsAddMemberOpen(false)}
+            onSuccess={handleAddMemberSuccess}
+          />
+        )}
       </main>
     </div>
   );

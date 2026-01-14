@@ -9,6 +9,9 @@ declare global {
         email: string;
         employeeId?: number;
         companyId?: number;
+        designation?: string;
+        isActive?: boolean;
+        departmentId?: number;
       };
     }
   }

@@ -1,306 +1,266 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+import axios from 'axios';
 
-interface CheckInData {
-  employeeId: number;
-  location?: {
-    latitude: number;
-    longitude: number;
-    address?: string;
-  };
-  deviceType?: string;
-}
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5004';
 
-interface CheckOutData {
-  employeeId: number;
-  location?: {
-    latitude: number;
-    longitude: number;
-    address?: string;
-  };
-  deviceType?: string;
-}
+const api = axios.create({
+  baseURL: API_BASE_URL,
+});
 
-interface RegularizationRequestData {
-  employeeId: number;
-  attendanceId: number;
-  requestType: 'MISSED_PUNCH' | 'TIME_CORRECTION' | 'ATTENDANCE_REGULARIZATION';
-  reason: string;
-  proposedCheckIn?: string;
-  proposedCheckOut?: string;
-  proposedStatus?: string;
-}
+// Add auth token to requests
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
-interface AttendanceCorrectionData {
-  attendanceId: number;
+export interface AttendanceRecord {
+  id: number;
+  date: string;
+  status: string;
   checkIn?: string;
   checkOut?: string;
-  status?: string;
-  reason: string;
-  correctedBy: number;
+  workHours?: number;
+  overtime?: number;
+  isManuallyEdited: boolean;
+  editReason?: string;
+  employee: {
+    id: number;
+    name: string;
+    employeeCode: string;
+    designation: string;
+  };
+  department: {
+    name: string;
+  };
 }
 
-class AttendanceService {
-  private async makeRequest(endpoint: string, options: RequestInit = {}) {
-    const token = localStorage.getItem('token');
-    
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': token ? `Bearer ${token}` : '',
-        ...options.headers,
-      },
-    });
+export interface AttendanceStats {
+  totalEmployees: number;
+  present: number;
+  absent: number;
+  late: number;
+  earlyDeparture: number;
+  totalWorkHours: number;
+  totalOvertime: number;
+}
 
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Request failed');
-    }
-
-    return data;
-  }
-
-  // Personal Attendance Methods
-  async checkIn(data: CheckInData) {
-    return this.makeRequest('/attendance/checkin', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async checkOut(data: CheckOutData) {
-    return this.makeRequest('/attendance/checkout', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async getPersonalAttendanceHistory(employeeId: number, startDate?: string, endDate?: string) {
-    const params = new URLSearchParams();
-    if (startDate) params.append('startDate', startDate);
-    if (endDate) params.append('endDate', endDate);
-    
-    const queryString = params.toString();
-    return this.makeRequest(`/attendance/history/${employeeId}${queryString ? `?${queryString}` : ''}`);
-  }
-
-  async submitRegularizationRequest(data: RegularizationRequestData) {
-    return this.makeRequest('/attendance/regularization-request', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  // Employee Management Methods
-  async getAllEmployeeAttendance(date?: string, departmentId?: number) {
-    const params = new URLSearchParams();
-    if (date) params.append('date', date);
-    if (departmentId) params.append('departmentId', departmentId.toString());
-    
-    const queryString = params.toString();
-    return this.makeRequest(`/attendance/employees${queryString ? `?${queryString}` : ''}`);
-  }
-
-  async performManualAttendanceCorrection(data: AttendanceCorrectionData) {
-    return this.makeRequest('/attendance/correction', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  }
-
-  async getPendingRegularizationRequests(approverId?: number) {
-    const params = new URLSearchParams();
-    if (approverId) params.append('approverId', approverId.toString());
-    
-    const queryString = params.toString();
-    return this.makeRequest(`/attendance/requests/pending${queryString ? `?${queryString}` : ''}`);
-  }
-
-  async approveRegularizationRequest(requestId: string, approverId: number) {
-    return this.makeRequest(`/attendance/requests/${requestId}/approve`, {
-      method: 'PUT',
-      body: JSON.stringify({ approverId }),
-    });
-  }
-
-  async rejectRegularizationRequest(requestId: string, approverId: number, rejectionReason: string) {
-    return this.makeRequest(`/attendance/requests/${requestId}/reject`, {
-      method: 'PUT',
-      body: JSON.stringify({ approverId, rejectionReason }),
-    });
-  }
-
-  // Reporting Methods
-  async generateDailyAttendanceReport(date?: string, departmentId?: number) {
-    const params = new URLSearchParams();
-    if (date) params.append('date', date);
-    if (departmentId) params.append('departmentId', departmentId.toString());
-    
-    const queryString = params.toString();
-    return this.makeRequest(`/attendance/reports/daily${queryString ? `?${queryString}` : ''}`);
-  }
-
-  async generateMonthlyAttendanceReport(year: number, month: number, departmentId?: number) {
-    const params = new URLSearchParams();
-    params.append('year', year.toString());
-    params.append('month', month.toString());
-    if (departmentId) params.append('departmentId', departmentId.toString());
-    
-    const queryString = params.toString();
-    return this.makeRequest(`/attendance/reports/monthly?${queryString}`);
-  }
-
-  // Audit Methods
-  async getAuditTrail(attendanceId?: number, employeeId?: number, startDate?: string, endDate?: string) {
-    const params = new URLSearchParams();
-    if (attendanceId) params.append('attendanceId', attendanceId.toString());
-    if (employeeId) params.append('employeeId', employeeId.toString());
-    if (startDate) params.append('startDate', startDate);
-    if (endDate) params.append('endDate', endDate);
-    
-    const queryString = params.toString();
-    return this.makeRequest(`/attendance/audit/trail${queryString ? `?${queryString}` : ''}`);
-  }
-
-  // Dashboard Methods
-  async getAttendanceDashboardStats(date?: string, departmentId?: number) {
-    const params = new URLSearchParams();
-    if (date) params.append('date', date);
-    if (departmentId) params.append('departmentId', departmentId.toString());
-    
-    const queryString = params.toString();
-    return this.makeRequest(`/attendance/dashboard/stats${queryString ? `?${queryString}` : ''}`);
-  }
-
-  // Utility Methods
-  getCurrentLocation(): Promise<GeolocationPosition> {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error('Geolocation is not supported by this browser'));
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        (position) => resolve(position),
-        (error) => reject(error),
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 60000
-        }
-      );
-    });
-  }
-
-  async getLocationData() {
+export const attendanceService = {
+  // Personal Attendance
+  async checkIn(location?: { latitude: number; longitude: number; address?: string }) {
     try {
-      const position = await this.getCurrentLocation();
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const employeeId = user.employeeId || user.id; // Fallback to user.id if employeeId not available
+      
+      const response = await api.post('/api/attendance/checkin', {
+        employeeId,
+        location,
+        deviceType: 'web'
+      });
+      
       return {
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-        accuracy: position.coords.accuracy
+        success: true,
+        data: response.data.data,
+        message: response.data.message
       };
-    } catch (error) {
-      console.warn('Could not get location:', error);
-      return null;
+    } catch (error: any) {
+      console.error('Check-in error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Check-in failed'
+      };
     }
-  }
+  },
 
-  getDeviceInfo() {
-    return {
-      userAgent: navigator.userAgent,
-      deviceType: this.getDeviceType(),
-      platform: navigator.platform,
-      language: navigator.language
-    };
-  }
+  async checkOut(location?: { latitude: number; longitude: number; address?: string }) {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const employeeId = user.employeeId || user.id;
+      
+      const response = await api.post('/api/attendance/checkout', {
+        employeeId,
+        location,
+        deviceType: 'web'
+      });
+      
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message
+      };
+    } catch (error: any) {
+      console.error('Check-out error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Check-out failed'
+      };
+    }
+  },
 
-  private getDeviceType(): string {
-    const userAgent = navigator.userAgent.toLowerCase();
+  async getTodayAttendance() {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const employeeId = user.employeeId || user.id;
+      
+      const today = new Date().toISOString().split('T')[0];
+      const response = await api.get(`/api/attendance/personal/${employeeId}?startDate=${today}&endDate=${today}`);
+      
+      const attendanceRecords = response.data.data;
+      return {
+        success: true,
+        data: attendanceRecords.length > 0 ? attendanceRecords[0] : null
+      };
+    } catch (error: any) {
+      console.error('Get today attendance error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to fetch attendance',
+        data: null
+      };
+    }
+  },
+
+  async getPersonalAttendanceHistory(startDate?: string, endDate?: string) {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const employeeId = user.employeeId || user.id;
+      
+      let url = `/api/attendance/personal/${employeeId}`;
+      const params = new URLSearchParams();
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      if (params.toString()) url += `?${params.toString()}`;
+      
+      const response = await api.get(url);
+      
+      return {
+        success: true,
+        data: response.data.data
+      };
+    } catch (error: any) {
+      console.error('❌ Get attendance history error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to fetch attendance history',
+        data: []
+      };
+    }
+  },
+
+  // Admin Functions
+  async getAllEmployeeAttendance(date?: string, departmentId?: number) {
+    try {
+      let url = '/api/attendance/employees';
+      const params = new URLSearchParams();
+      if (date) params.append('date', date);
+      if (departmentId) params.append('departmentId', departmentId.toString());
+      if (params.toString()) url += `?${params.toString()}`;
+      
+      const response = await api.get(url);
+      
+      return {
+        success: true,
+        data: response.data.data
+      };
+    } catch (error: any) {
+      console.error('❌ Get all employee attendance error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to fetch employee attendance',
+        data: []
+      };
+    }
+  },
+
+  async getAttendanceDashboardStats(date?: string, departmentId?: number) {
+    try {
+      let url = '/api/attendance/dashboard-stats';
+      const params = new URLSearchParams();
+      if (date) params.append('date', date);
+      if (departmentId) params.append('departmentId', departmentId.toString());
+      if (params.toString()) url += `?${params.toString()}`;
+      
+      const response = await api.get(url);
+      
+      return {
+        success: true,
+        data: response.data.data
+      };
+    } catch (error: any) {
+      console.error('❌ Get dashboard stats error:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Failed to fetch dashboard stats',
+        data: {
+          totalEmployees: 0,
+          present: 0,
+          absent: 0,
+          late: 0,
+          earlyDeparture: 0,
+          totalWorkHours: 0,
+          totalOvertime: 0
+        }
+      };
+    }
+  },
+
+  // Utility functions
+  calculateWorkingHours(checkIn: string, checkOut: string): number {
+    const checkInTime = new Date(checkIn);
+    const checkOutTime = new Date(checkOut);
+    const diffMs = checkOutTime.getTime() - checkInTime.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
+    return Math.max(0, Math.round(diffHours * 100) / 100);
+  },
+
+  calculateOvertime(workHours: number, standardHours: number = 9): number {
+    return Math.max(0, Math.round((workHours - standardHours) * 100) / 100);
+  },
+
+  getAttendanceStatus(checkIn: string, checkOut?: string): string {
+    const checkInTime = new Date(checkIn);
+    const checkInHour = checkInTime.getHours();
+    const checkInMinute = checkInTime.getMinutes();
     
-    if (/mobile|android|iphone|ipad|phone/i.test(userAgent)) {
-      return 'mobile';
-    } else if (/tablet|ipad/i.test(userAgent)) {
-      return 'tablet';
-    } else {
-      return 'desktop';
+    // Check if late (after 9:30 AM)
+    const isLate = checkInHour > 9 || (checkInHour === 9 && checkInMinute > 30);
+    
+    if (!checkOut) {
+      return isLate ? 'LATE' : 'PRESENT';
     }
-  }
+    
+    const checkOutTime = new Date(checkOut);
+    const checkOutHour = checkOutTime.getHours();
+    const checkOutMinute = checkOutTime.getMinutes();
+    
+    // Check if early departure (before 6:30 PM)
+    const isEarlyDeparture = checkOutHour < 18 || (checkOutHour === 18 && checkOutMinute < 30);
+    
+    if (isLate && isEarlyDeparture) {
+      return 'PARTIAL';
+    } else if (isLate) {
+      return 'LATE';
+    } else if (isEarlyDeparture) {
+      return 'EARLY_DEPARTURE';
+    } else {
+      return 'PRESENT';
+    }
+  },
 
-  formatTime(date: Date | string): string {
-    const d = typeof date === 'string' ? new Date(date) : date;
-    return d.toLocaleTimeString('en-US', {
+  formatTime(dateString: string): string {
+    return new Date(dateString).toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: true
     });
-  }
+  },
 
-  formatDate(date: Date | string): string {
-    const d = typeof date === 'string' ? new Date(date) : date;
-    return d.toLocaleDateString('en-US', {
+  formatDate(dateString: string): string {
+    return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     });
   }
-
-  formatDateTime(date: Date | string): string {
-    const d = typeof date === 'string' ? new Date(date) : date;
-    return d.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
-  }
-
-  calculateWorkHours(checkIn: Date | string, checkOut: Date | string): number {
-    const start = typeof checkIn === 'string' ? new Date(checkIn) : checkIn;
-    const end = typeof checkOut === 'string' ? new Date(checkOut) : checkOut;
-    
-    const diffMs = end.getTime() - start.getTime();
-    const diffHours = diffMs / (1000 * 60 * 60);
-    
-    return Math.round(diffHours * 100) / 100; // Round to 2 decimal places
-  }
-
-  getAttendanceStatusColor(status: string): string {
-    switch (status) {
-      case 'PRESENT':
-        return 'bg-green-100 text-green-800';
-      case 'ABSENT':
-        return 'bg-red-100 text-red-800';
-      case 'LATE':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'EARLY_DEPARTURE':
-        return 'bg-orange-100 text-orange-800';
-      case 'PARTIAL':
-        return 'bg-blue-100 text-blue-800';
-      case 'REGULARIZED':
-        return 'bg-purple-100 text-purple-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  }
-
-  getRequestStatusColor(status: string): string {
-    switch (status) {
-      case 'PENDING':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'APPROVED':
-        return 'bg-green-100 text-green-800';
-      case 'REJECTED':
-        return 'bg-red-100 text-red-800';
-      case 'ESCALATED':
-        return 'bg-purple-100 text-purple-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  }
-}
-
-export const attendanceService = new AttendanceService();
+};

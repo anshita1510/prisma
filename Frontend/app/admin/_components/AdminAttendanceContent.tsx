@@ -25,37 +25,7 @@ import {
   X
 } from 'lucide-react';
 import { authService } from '@/app/services/authService';
-
-interface AttendanceStats {
-  totalEmployees: number;
-  present: number;
-  absent: number;
-  late: number;
-  earlyDeparture: number;
-  totalWorkHours: number;
-  totalOvertime: number;
-}
-
-interface AttendanceRecord {
-  id: number;
-  date: string;
-  status: string;
-  checkIn?: string;
-  checkOut?: string;
-  workHours?: number;
-  overtime?: number;
-  isManuallyEdited: boolean;
-  editReason?: string;
-  employee: {
-    id: number;
-    name: string;
-    employeeCode: string;
-    designation: string;
-  };
-  department: {
-    name: string;
-  };
-}
+import { attendanceService, AttendanceRecord, AttendanceStats } from '@/app/services/attendanceService';
 
 interface RegularizationRequest {
   id: string;
@@ -172,49 +142,21 @@ export default function AdminAttendanceContent() {
     try {
       setLoading(true);
       
-      // Mock attendance records
-      setAttendanceRecords([
-        {
-          id: 1,
-          date: selectedDate,
-          status: 'PRESENT',
-          checkIn: '2024-12-18T09:00:00Z',
-          checkOut: '2024-12-18T17:30:00Z',
-          workHours: 8.5,
-          overtime: 0.5,
-          isManuallyEdited: false,
-          employee: {
-            id: 1,
-            name: 'John Doe',
-            employeeCode: 'EMP001',
-            designation: 'Software Engineer'
-          },
-          department: {
-            name: 'IT'
-          }
-        },
-        {
-          id: 2,
-          date: selectedDate,
-          status: 'LATE',
-          checkIn: '2024-12-18T09:30:00Z',
-          checkOut: '2024-12-18T18:00:00Z',
-          workHours: 8.5,
-          overtime: 0.5,
-          isManuallyEdited: false,
-          employee: {
-            id: 2,
-            name: 'Jane Smith',
-            employeeCode: 'EMP002',
-            designation: 'Designer'
-          },
-          department: {
-            name: 'Design'
-          }
-        }
+      // Load real attendance data
+      const [employeeAttendanceResult, dashboardStatsResult] = await Promise.all([
+        attendanceService.getAllEmployeeAttendance(selectedDate),
+        attendanceService.getAttendanceDashboardStats(selectedDate)
       ]);
+      
+      if (employeeAttendanceResult.success) {
+        setAttendanceRecords(employeeAttendanceResult.data);
+      }
+      
+      if (dashboardStatsResult.success) {
+        setStats(dashboardStatsResult.data);
+      }
 
-      // Mock pending requests
+      // Mock pending requests (replace with real API call when available)
       setPendingRequests([
         {
           id: '1',
@@ -244,14 +186,15 @@ export default function AdminAttendanceContent() {
   };
 
   const loadPersonalAttendance = async () => {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
     
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const storedAttendance = localStorage.getItem(`attendance_${user.id}_${today}`);
+      const result = await attendanceService.getTodayAttendance();
       
-      if (storedAttendance) {
-        const attendance = JSON.parse(storedAttendance);
+      if (result.success && result.data) {
+        const attendance = result.data;
         setPersonalAttendance(attendance);
         setCanCheckIn(!attendance.checkIn);
         setCanCheckOut(attendance.checkIn && !attendance.checkOut);
@@ -275,6 +218,31 @@ export default function AdminAttendanceContent() {
       }
     } catch (error) {
       console.error('Error loading personal attendance:', error);
+      // Fallback to localStorage for offline functionality
+      const today = new Date().toISOString().split('T')[0];
+      const storedAttendance = localStorage.getItem(`attendance_${user.id}_${today}`);
+      
+      if (storedAttendance) {
+        const attendance = JSON.parse(storedAttendance);
+        setPersonalAttendance(attendance);
+        setCanCheckIn(!attendance.checkIn);
+        setCanCheckOut(attendance.checkIn && !attendance.checkOut);
+        
+        if (attendance.checkIn && !attendance.checkOut) {
+          const checkInTime = new Date(attendance.checkIn);
+          const now = new Date();
+          const diffMs = now.getTime() - checkInTime.getTime();
+          const diffHours = diffMs / (1000 * 60 * 60);
+          setWorkingHours(Math.max(0, diffHours));
+        } else if (attendance.workHours) {
+          setWorkingHours(attendance.workHours);
+        }
+      } else {
+        setPersonalAttendance(null);
+        setCanCheckIn(isWorkingDay);
+        setCanCheckOut(false);
+        setWorkingHours(0);
+      }
     }
   };
 
@@ -325,37 +293,34 @@ export default function AdminAttendanceContent() {
     
     try {
       setLoading(true);
-      const now = new Date();
-      const checkInTime = now.toISOString();
-      const today = now.toISOString().split('T')[0];
       
-      const attendance = {
-        checkIn: checkInTime,
-        checkOut: null,
-        status: getAttendanceStatus(checkInTime),
-        workHours: null,
-        overtime: 0,
-        date: today
-      };
+      const result = await attendanceService.checkIn();
       
-      // Store in localStorage (in real app, this would be an API call)
-      localStorage.setItem(`attendance_${user.id}_${today}`, JSON.stringify(attendance));
-      
-      setPersonalAttendance(attendance);
-      setCanCheckIn(false);
-      setCanCheckOut(true);
-      
-      // Show success message
-      const checkInTimeFormatted = now.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      });
-      
-      alert(`Check-in successful at ${checkInTimeFormatted}!`);
+      if (result.success) {
+        const attendance = result.data;
+        setPersonalAttendance(attendance);
+        setCanCheckIn(false);
+        setCanCheckOut(true);
+        
+        // Show success message
+        const checkInTime = new Date(attendance.checkIn);
+        const checkInTimeFormatted = checkInTime.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+        
+        alert(`✅ Check-in successful at ${checkInTimeFormatted}!`);
+        
+        // Reload dashboard data
+        loadDashboardData();
+      } else {
+        alert(`❌ Check-in failed: ${result.message}`);
+      }
       
     } catch (error: any) {
-      alert(error.message || 'Check-in failed');
+      console.error('Check-in error:', error);
+      alert(`❌ Check-in failed: ${error.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -366,40 +331,37 @@ export default function AdminAttendanceContent() {
     
     try {
       setLoading(true);
-      const now = new Date();
-      const checkOutTime = now.toISOString();
-      const today = now.toISOString().split('T')[0];
       
-      const workHours = calculateWorkingHours(personalAttendance.checkIn, checkOutTime);
-      const overtime = calculateOvertime(workHours);
-      const status = getAttendanceStatus(personalAttendance.checkIn, checkOutTime);
+      const result = await attendanceService.checkOut();
       
-      const updatedAttendance = {
-        ...personalAttendance,
-        checkOut: checkOutTime,
-        workHours: Math.round(workHours * 100) / 100, // Round to 2 decimal places
-        overtime: Math.round(overtime * 100) / 100,
-        status: status
-      };
-      
-      // Store in localStorage (in real app, this would be an API call)
-      localStorage.setItem(`attendance_${user.id}_${today}`, JSON.stringify(updatedAttendance));
-      
-      setPersonalAttendance(updatedAttendance);
-      setCanCheckOut(false);
-      setWorkingHours(workHours);
-      
-      // Show success message with summary
-      const checkOutTimeFormatted = now.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      });
-      
-      alert(`Check-out successful at ${checkOutTimeFormatted}!\nWork Hours: ${workHours.toFixed(2)}h${overtime > 0 ? `\nOvertime: ${overtime.toFixed(2)}h` : ''}`);
+      if (result.success) {
+        const attendance = result.data;
+        setPersonalAttendance(attendance);
+        setCanCheckOut(false);
+        setWorkingHours(attendance.workHours || 0);
+        
+        // Show success message with summary
+        const checkOutTime = new Date(attendance.checkOut);
+        const checkOutTimeFormatted = checkOutTime.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+        
+        const workHours = attendance.workHours || 0;
+        const overtime = attendance.overtime || 0;
+        
+        alert(`✅ Check-out successful at ${checkOutTimeFormatted}!\nWork Hours: ${workHours.toFixed(2)}h${overtime > 0 ? `\nOvertime: ${overtime.toFixed(2)}h` : ''}`);
+        
+        // Reload dashboard data
+        loadDashboardData();
+      } else {
+        alert(`❌ Check-out failed: ${result.message}`);
+      }
       
     } catch (error: any) {
-      alert(error.message || 'Check-out failed');
+      console.error('Check-out error:', error);
+      alert(`❌ Check-out failed: ${error.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }

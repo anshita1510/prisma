@@ -343,6 +343,8 @@ export class UserController {
 
       const formattedUser = {
         id: user.id,
+        employeeId: user.employee?.id,
+        companyId: user.companyId,
         name,
         email: user.email,
         role: user.role,

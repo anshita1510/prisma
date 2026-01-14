@@ -11,12 +11,22 @@ export class UserRepository {
 
   /* Find by email */
   async findByEmail(email: string) {
-    return prisma.user.findUnique({ where: { email } });
+    return prisma.user.findUnique({ 
+      where: { email },
+      include: {
+        employee: true
+      }
+    });
   }
 
   /* Find by ID */
   async findById(id: number) {
-    return prisma.user.findUnique({ where: { id } });
+    return prisma.user.findUnique({ 
+      where: { id },
+      include: {
+        employee: true
+      }
+    });
   }
 
   /* Count Super Admins */
