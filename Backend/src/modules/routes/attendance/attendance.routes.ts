@@ -18,7 +18,59 @@ const attendanceController = new AttendanceController();
 // Apply authentication middleware to all routes (using authenticateToken for employeeId)
 router.use(authenticateToken);
 
+/**
+ * @swagger
+ * tags:
+ *   name: Attendance
+ *   description: Attendance management endpoints
+ */
+
 // Personal Attendance Routes (All authenticated users)
+/**
+ * @swagger
+ * /api/attendance/my-check-in:
+ *   post:
+ *     summary: Check in for the day
+ *     tags: [Attendance]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               location:
+ *                 type: string
+ *                 example: "Office"
+ *               latitude:
+ *                 type: number
+ *                 example: 28.7041
+ *               longitude:
+ *                 type: number
+ *                 example: 77.1025
+ *     responses:
+ *       200:
+ *         description: Check-in successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Checked in successfully"
+ *                 data:
+ *                   $ref: '#/components/schemas/Attendance'
+ *       400:
+ *         description: Already checked in
+ *       401:
+ *         description: Unauthorized
+ */
 router.post(
   '/my-check-in', 
   (req, res) => attendanceController.checkIn(req, res)
