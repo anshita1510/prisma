@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Target } from "lucide-react";
 
 // 1. Added this interface to define the types for your props
 interface MenuItemProps {
@@ -56,14 +57,11 @@ export default function Navbar() {
       <div className="mx-auto max-w-7xl px-6 md:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/">
-            <img
-              src="#¸"
-              alt="Tikr Logo"
-              width={120}
-              height={60}
-              className="h-20 w-auto object-contain"
-            />
+          <Link href="/" className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-white text-blue-700 rounded-xl flex items-center justify-center shadow-lg font-bold border-2 border-blue-600">
+              <Target size={20} />
+            </div>
+            <span className="font-bold text-lg tracking-tight uppercase text-gray-800">Tikr</span>
           </Link>
 
           {/* Desktop Menu */}
