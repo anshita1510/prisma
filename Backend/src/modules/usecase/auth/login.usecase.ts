@@ -23,7 +23,7 @@ export class LoginUsecase {
     }
 
     if (!isValid) {
-      throw new Error("Invalid email or password wow");
+      throw new Error("Invalid password");
     }
 
     if(!user.isActive){

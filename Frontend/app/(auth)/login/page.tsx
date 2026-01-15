@@ -251,103 +251,84 @@ export default function LoginPage(): JSX.Element {
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = async (emailFromInput?: string) => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    
+    if (!clientId) {
+      // If no Google OAuth is configured, show helpful error
+      setError("Google OAuth is not configured. Please enter your email and use password login instead.");
+      setCurrentStep("email");
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError("");
 
     try {
-      // In a real implementation, you would use Google OAuth SDK
-      // For now, we'll simulate the OAuth flow
-      console.log("Initiating Google OAuth for:", email);
+      // Redirect to Google OAuth
+      const redirectUri = `${window.location.origin}/api/auth/google/callback`;
+
+      // Build Google OAuth URL
+      const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+      googleAuthUrl.searchParams.append('client_id', clientId);
+      googleAuthUrl.searchParams.append('redirect_uri', redirectUri);
+      googleAuthUrl.searchParams.append('response_type', 'code');
+      googleAuthUrl.searchParams.append('scope', 'email profile');
+      googleAuthUrl.searchParams.append('access_type', 'offline');
+      googleAuthUrl.searchParams.append('prompt', 'consent');
       
-      // Simulate Google OAuth token
-      const mockGoogleToken = "mock_google_token_" + Date.now();
-      
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/google-login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          googleToken: mockGoogleToken,
-          email: email.toLowerCase().trim()
-        }),
-      });
+      // If email was provided, pass it as login_hint
+      if (emailFromInput || email) {
+        googleAuthUrl.searchParams.append('login_hint', emailFromInput || email);
+      }
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Google login failed");
-
-      // Store session data and redirect
-      const { token, user } = data;
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
-      
-      // Set token as cookie for middleware with 30-day expiration
-      const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
-      document.cookie = `token=${token}; path=/; max-age=${thirtyDaysInSeconds}; SameSite=Lax`;
-
-      const routes: Record<string, string> = {
-        SUPER_ADMIN: "/superAdmin",
-        ADMIN: "/admin",
-        MANAGER: "/manager",
-        EMPLOYEE: "/user",
-      };
-
-      const targetRoute = routes[user.role as keyof typeof routes];
-      router.push(targetRoute || "/dashboard");
+      // Redirect to Google OAuth
+      window.location.href = googleAuthUrl.toString();
 
     } catch (err) {
       setError(err instanceof Error ? err.message : "Google login failed");
-      setCurrentStep("email"); // Go back to email step on error
-    } finally {
+      setCurrentStep("email");
       setLoading(false);
     }
   };
 
-  const handleMicrosoftLogin = async () => {
+  const handleMicrosoftLogin = async (emailFromInput?: string) => {
+    const clientId = process.env.NEXT_PUBLIC_MICROSOFT_CLIENT_ID;
+    
+    if (!clientId) {
+      setError("Microsoft OAuth is not configured. Please enter your email and use password login instead.");
+      setCurrentStep("email");
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError("");
 
     try {
-      // In a real implementation, you would use Microsoft OAuth SDK
-      console.log("Initiating Microsoft OAuth for:", email);
+      // Redirect to Microsoft OAuth
+      const redirectUri = `${window.location.origin}/api/auth/microsoft/callback`;
+
+      // Build Microsoft OAuth URL
+      const microsoftAuthUrl = new URL('https://login.microsoftonline.com/common/oauth2/v2.0/authorize');
+      microsoftAuthUrl.searchParams.append('client_id', clientId);
+      microsoftAuthUrl.searchParams.append('redirect_uri', redirectUri);
+      microsoftAuthUrl.searchParams.append('response_type', 'code');
+      microsoftAuthUrl.searchParams.append('scope', 'openid email profile');
+      microsoftAuthUrl.searchParams.append('response_mode', 'query');
       
-      // Simulate Microsoft OAuth token
-      const mockMicrosoftToken = "mock_microsoft_token_" + Date.now();
-      
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/microsoft-login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          microsoftToken: mockMicrosoftToken,
-          email: email.toLowerCase().trim()
-        }),
-      });
+      // If email was provided, pass it as login_hint
+      if (emailFromInput || email) {
+        microsoftAuthUrl.searchParams.append('login_hint', emailFromInput || email);
+      }
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Microsoft login failed");
-
-      // Store session data and redirect
-      const { token, user } = data;
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
-      
-      // Set token as cookie for middleware with 30-day expiration
-      const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
-      document.cookie = `token=${token}; path=/; max-age=${thirtyDaysInSeconds}; SameSite=Lax`;
-
-      const routes: Record<string, string> = {
-        SUPER_ADMIN: "/superAdmin",
-        ADMIN: "/admin",
-        MANAGER: "/manager",
-        EMPLOYEE: "/user",
-      };
-
-      const targetRoute = routes[user.role as keyof typeof routes];
-      router.push(targetRoute || "/dashboard");
+      // Redirect to Microsoft OAuth
+      window.location.href = microsoftAuthUrl.toString();
 
     } catch (err) {
       setError(err instanceof Error ? err.message : "Microsoft login failed");
-      setCurrentStep("email"); // Go back to email step on error
-    } finally {
+      setCurrentStep("email");
       setLoading(false);
     }
   };
@@ -359,21 +340,50 @@ export default function LoginPage(): JSX.Element {
     setAuthProvider(null);
   };
 
-  const handleDirectProviderLogin = (provider: "GOOGLE" | "MICROSOFT" | "MOBILE") => {
-    if (!email.trim()) {
-      setError("Please enter your email first");
-      return;
+  const handleDirectProviderLogin = async (provider: "GOOGLE" | "MICROSOFT" | "MOBILE") => {
+    // If user has entered email, check their auth provider first
+    if (email.trim()) {
+      setLoading(true);
+      setError("");
+
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/check-user`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email.toLowerCase().trim() }),
+        });
+
+        const data = await res.json();
+        
+        if (res.ok && data.provider) {
+          // Check if the user's auth provider matches the selected provider
+          if (data.provider === "LOCAL") {
+            setError(`This email is registered with password login. Please use the "Continue" button or "Continue with Username" instead.`);
+            setLoading(false);
+            return;
+          } else if (data.provider !== provider && data.provider !== "NEW_USER") {
+            setError(`This email is registered with ${data.provider} login. Please use the correct login method.`);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (err) {
+        // If check fails, continue with OAuth anyway
+        console.warn("Failed to check user provider:", err);
+      } finally {
+        setLoading(false);
+      }
     }
 
+    // Proceed with OAuth login
     setAuthProvider(provider);
     setCurrentStep("oauth");
 
     if (provider === "GOOGLE") {
-      handleGoogleLogin();
+      handleGoogleLogin(email.trim() || undefined);
     } else if (provider === "MICROSOFT") {
-      handleMicrosoftLogin();
+      handleMicrosoftLogin(email.trim() || undefined);
     } else if (provider === "MOBILE") {
-      // Handle mobile login
       setError("Mobile login not implemented yet");
       setCurrentStep("email");
     }
@@ -614,8 +624,14 @@ export default function LoginPage(): JSX.Element {
         <Button
           type="button"
           variant="outline"
-          onClick={() => setCurrentStep("password")}
-          disabled={loading || !email.trim()}
+          onClick={() => {
+            if (!email.trim()) {
+              setError("Please enter your email first");
+              return;
+            }
+            setCurrentStep("password");
+          }}
+          disabled={loading}
           className="w-full py-3 border-gray-300 hover:bg-gray-50 transition-all"
         >
           <div className="flex items-center gap-3">

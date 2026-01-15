@@ -95,10 +95,6 @@ This Enterprise HR Management System is a full-stack application designed to str
 ### 🔔 Notifications
 - Real-time notifications
 - Email notifications (Nodemailer)
-- Task assignment alerts
-- Leave approval notifications
-- Deadline reminders
-
 ---
 
 ## 🛠️ Tech Stack
@@ -115,7 +111,6 @@ This Enterprise HR Management System is a full-stack application designed to str
 | **Bcrypt** | 6.0+ | Password hashing |
 | **Zod** | 4.2+ | Schema validation |
 | **Nodemailer** | 7.0+ | Email service |
-| **Winston** | 3.19+ | Logging |
 | **Swagger** | 6.2+ | API documentation |
 | **Node-cron** | 4.2+ | Scheduled tasks |
 | **Helmet** | 8.1+ | Security headers |
@@ -129,7 +124,6 @@ This Enterprise HR Management System is a full-stack application designed to str
 | **TypeScript** | 5+ | Type-safe JavaScript |
 | **Tailwind CSS** | 3.4+ | Utility-first CSS |
 | **Radix UI** | Latest | Accessible components |
-| **Lucide React** | 0.562+ | Icon library |
 | **Recharts** | 3.6+ | Chart library |
 | **Axios** | 1.13+ | HTTP client |
 | **Class Variance Authority** | 0.7+ | Component variants |
@@ -142,171 +136,19 @@ This Enterprise HR Management System is a full-stack application designed to str
 - **Prettier** - Code formatting
 - **Postman** - API testing
 
----
+Code → Git Commit
+     → ESLint + Prettier
+     → Nodemon (Dev)
+     → Postman (API test)
+     → Push to GitLab
 
-## 🤔 Why This Tech Stack?
-
-### Strategic Technology Choices
-
-Our tech stack was carefully selected based on production requirements, scalability, developer experience, and industry standards. Here's why we chose each technology:
-
-### Frontend: Next.js + Tailwind CSS
-
-#### Why Next.js over React or Vue?
-
-**Next.js = React + Production Superpowers**
-
-| Feature | Next.js | React (CRA/Vite) | Vue/Nuxt |
-|---------|---------|------------------|----------|
-| **Server-Side Rendering (SSR)** | ✅ Built-in | ❌ Requires setup | ✅ Nuxt only |
-| **File-Based Routing** | ✅ Automatic | ❌ Manual (React Router) | ✅ Nuxt only |
-| **API Routes** | ✅ Built-in | ❌ Separate backend | ✅ Nuxt only |
-| **Image Optimization** | ✅ Automatic | ❌ Manual | 🟡 Limited |
-| **TypeScript Support** | ✅ Zero config | 🟡 Manual setup | 🟡 Good but less mature |
-| **Job Market** | ✅ 60% of jobs | ✅ 60% of jobs | 🟡 15% of jobs |
-| **Enterprise Adoption** | ✅ Netflix, Uber, Airbnb | ✅ Facebook, Instagram | 🟡 Smaller companies |
-| **Bundle Size** | 🟡 Medium | 🟡 Medium | ✅ Smaller |
-| **Learning Curve** | 🟡 Moderate | ✅ Easy | ✅ Easier |
-| **Performance** | ✅ Excellent | 🟡 Good | ✅ Excellent |
-
-**Key Advantages for Our Project:**
-1. **SEO-Friendly**: Server-side rendering improves search engine visibility
-2. **Faster Initial Load**: Better user experience with SSR
-3. **Built-in API Routes**: Can handle backend logic without separate server
-4. **File-Based Routing**: `app/admin/page.tsx` → `/admin` automatically
-5. **Production Ready**: Automatic code splitting, image optimization, and performance features
-6. **Industry Standard**: More jobs, larger community, better long-term support
-7. **TypeScript First**: Better type safety and developer experience
-
-#### Why Tailwind CSS over Bootstrap or Material-UI?
-
-| Feature | Tailwind CSS | Bootstrap | Material-UI |
-|---------|--------------|-----------|-------------|
-| **Customization** | ✅ Highly flexible | 🟡 Limited | 🟡 Theme-based |
-| **Bundle Size** | ✅ Purges unused CSS | ❌ Large | ❌ Large |
-| **Design Freedom** | ✅ Complete control | 🟡 Opinionated | 🟡 Material Design only |
-| **Learning Curve** | 🟡 Moderate | ✅ Easy | 🟡 Moderate |
-| **Performance** | ✅ Excellent | 🟡 Good | 🟡 Good |
-| **Modern Design** | ✅ Utility-first | 🟡 Component-based | 🟡 Material Design |
-
-**Why Tailwind for HR System:**
-- **Custom Design**: Not constrained by Bootstrap's look
-- **Smaller Bundle**: Only includes CSS we actually use
-- **Faster Development**: No context switching between HTML and CSS files
-- **Responsive by Default**: Mobile-first approach built-in
-- **Dark Mode Support**: Easy to implement
-
----
-
-### Backend: Node.js + Express + TypeScript
-
-#### Why Node.js over Python/Django or Java/Spring?
-
-| Feature | Node.js | Python/Django | Java/Spring |
-|---------|---------|---------------|-------------|
-| **Performance** | ✅ Fast (V8 engine) | 🟡 Moderate | ✅ Fast |
-| **Real-time** | ✅ Excellent (async) | 🟡 Limited | 🟡 Good |
-| **Learning Curve** | ✅ Easy (JavaScript) | ✅ Easy | ❌ Steep |
-| **Ecosystem** | ✅ npm (2M+ packages) | 🟡 pip (400K packages) | 🟡 Maven |
-| **Microservices** | ✅ Excellent | 🟡 Good | ✅ Excellent |
-| **JSON Handling** | ✅ Native | 🟡 Good | 🟡 Verbose |
-| **Deployment** | ✅ Easy | ✅ Easy | 🟡 Complex |
-| **Memory Usage** | ✅ Low | ✅ Low | ❌ High |
-
-**Why Node.js for HR System:**
-1. **JavaScript Everywhere**: Same language for frontend and backend
-2. **Async by Nature**: Perfect for I/O-heavy operations (database, APIs)
-3. **Fast Development**: Rapid prototyping and iteration
-4. **Large Ecosystem**: npm has packages for everything
-5. **Scalability**: Easy to scale horizontally
-6. **Real-time Features**: WebSockets for notifications and live updates
-
-#### Why Express over NestJS or Fastify?
-
-| Feature | Express | NestJS | Fastify |
-|---------|---------|--------|---------|
-| **Simplicity** | ✅ Minimal | 🟡 Opinionated | ✅ Simple |
-| **Flexibility** | ✅ Very flexible | 🟡 Structured | ✅ Flexible |
-| **Performance** | 🟡 Good | 🟡 Good | ✅ Fastest |
-| **Learning Curve** | ✅ Easy | ❌ Steep | 🟡 Moderate |
-| **Ecosystem** | ✅ Largest | 🟡 Growing | 🟡 Growing |
-| **TypeScript** | 🟡 Manual setup | ✅ Built-in | ✅ Built-in |
-| **Maturity** | ✅ 13+ years | 🟡 5 years | 🟡 7 years |
-
-**Why Express:**
-- **Battle-Tested**: Used by millions of applications
-- **Flexibility**: Not opinionated, can structure as needed
-- **Huge Community**: More tutorials, packages, and solutions
-- **Easy to Learn**: Simple API, quick to get started
-- **Middleware Ecosystem**: Thousands of middleware packages
-
-#### Why TypeScript over JavaScript?
 
 **TypeScript = JavaScript + Type Safety**
 
-**Benefits:**
-1. **Catch Errors Early**: Type checking at compile time
-2. **Better IDE Support**: Autocomplete, refactoring, navigation
-3. **Self-Documenting**: Types serve as inline documentation
-4. **Easier Refactoring**: Confident code changes
-5. **Team Collaboration**: Clear interfaces and contracts
-6. **Industry Standard**: Most modern projects use TypeScript
-
----
 
 ### Database: PostgreSQL + Prisma
-
-#### Why PostgreSQL over MySQL or MongoDB?
-
-| Feature | PostgreSQL | MySQL | MongoDB |
-|---------|------------|-------|---------|
-| **ACID Compliance** | ✅ Full | ✅ Full | 🟡 Limited |
-| **Complex Queries** | ✅ Excellent | 🟡 Good | 🟡 Limited |
-| **JSON Support** | ✅ Native | 🟡 Limited | ✅ Native |
-| **Scalability** | ✅ Excellent | ✅ Excellent | ✅ Excellent |
-| **Data Integrity** | ✅ Strong | 🟡 Good | 🟡 Flexible |
-| **Performance** | ✅ Excellent | ✅ Excellent | ✅ Excellent |
-| **Transactions** | ✅ Advanced | 🟡 Basic | 🟡 Limited |
-| **Full-Text Search** | ✅ Built-in | 🟡 Basic | ✅ Good |
-
-**Why PostgreSQL for HR System:**
-1. **Data Integrity**: Critical for HR data (attendance, leave, payroll)
-2. **Complex Relationships**: Employee-Manager, Department hierarchies
-3. **ACID Transactions**: Ensure data consistency
-4. **Advanced Features**: Window functions, CTEs, full-text search
-5. **JSON Support**: Flexible data storage when needed
-6. **Open Source**: No licensing costs
-7. **Enterprise Ready**: Used by major companies
-
-**Why Not MongoDB?**
-- HR data is highly relational (employees, departments, managers)
-- Need strong data integrity and ACID compliance
-- Complex queries and joins are common
-- Schema changes are infrequent
-
-#### Why Prisma over TypeORM or Sequelize?
-
-| Feature | Prisma | TypeORM | Sequelize |
-|---------|--------|---------|-----------|
-| **Type Safety** | ✅ Excellent | 🟡 Good | 🟡 Limited |
-| **Developer Experience** | ✅ Excellent | 🟡 Good | 🟡 Moderate |
-| **Migrations** | ✅ Automatic | 🟡 Manual | 🟡 Manual |
-| **Query Builder** | ✅ Intuitive | 🟡 Complex | 🟡 Complex |
-| **Performance** | ✅ Optimized | 🟡 Good | 🟡 Good |
-| **Auto-completion** | ✅ Full | 🟡 Partial | ❌ Limited |
-| **Learning Curve** | ✅ Easy | 🟡 Moderate | 🟡 Moderate |
-
-**Why Prisma:**
-1. **Type-Safe Queries**: Auto-generated types from schema
-2. **Intuitive API**: Easy to read and write queries
-3. **Automatic Migrations**: Schema changes → SQL migrations
-4. **Prisma Studio**: Built-in database GUI
-5. **Great DX**: Autocomplete, validation, error messages
-6. **Modern**: Built for TypeScript-first development
-
 ---
 
-### Why This Combination Works
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -322,59 +164,6 @@ Our tech stack was carefully selected based on production requirements, scalabil
 │                                                                  │
 │  = End-to-end type safety from database to UI                   │
 └──────────────────────────────────────────────────────────────────┘
-```
-
-**Key Benefits:**
-1. **Single Language**: JavaScript/TypeScript everywhere
-2. **Type Safety**: From database to frontend
-3. **Fast Development**: Modern tooling and DX
-4. **Scalable**: Can handle growth from startup to enterprise
-5. **Maintainable**: Clear structure and patterns
-6. **Cost-Effective**: All open-source technologies
-7. **Future-Proof**: Industry-standard technologies with long-term support
-
----
-
-### Real-World Validation
-
-**Companies Using Similar Stack:**
-- **Vercel**: Next.js creators, use this exact stack
-- **Netflix**: Uses Node.js and React
-- **Uber**: Node.js for backend services
-- **Airbnb**: React/Next.js for frontend
-- **Stripe**: Node.js and PostgreSQL
-- **GitHub**: Uses PostgreSQL for data integrity
-
-**Market Demand (2024-2026):**
-- Next.js/React: 60% of frontend job postings
-- Node.js: 50% of backend job postings
-- PostgreSQL: 40% of database requirements
-- TypeScript: 70% of new projects
-
----
-
-### Alternative Stacks Considered
-
-#### MERN Stack (MongoDB, Express, React, Node)
-**Why Not:**
-- MongoDB not ideal for relational HR data
-- No built-in SSR (need Next.js anyway)
-- Less type safety without Prisma
-
-#### Django + React
-**Why Not:**
-- Python backend + JavaScript frontend = context switching
-- Django ORM less type-safe than Prisma
-- Slower development for real-time features
-
-#### Spring Boot + Angular
-**Why Not:**
-- Steeper learning curve
-- Heavier resource usage
-- Slower development cycle
-- Less modern developer experience
-
----
 
 ## 🏗️ System Architecture
 
@@ -414,19 +203,19 @@ Our tech stack was carefully selected based on production requirements, scalabil
 │  │  │  - leaveService                              │ │         │
 │  │  │  - projectService                            │ │         │
 │  │  └──────────────────────────────────────────────┘ │         │
-│  └────────────────────────────────────────────────────┘         │
-│                           │                                      │
-│                           │ HTTP/REST                            │
-│                           │                                      │
-│  ┌────────────────────────▼───────────────────────────┐         │
-│  │         Express.js Backend (Port 5004)             │         │
+│  └────────────────────────────────────────────────────┘        │
+│                           │                                    │
+│                           │ HTTP/REST                          │
+│                           │                                    │
+│  ┌────────────────────────▼───────────────────────────┐        │
+│  │         Express.js Backend (Port 5004)             │        │
 │  │  ┌──────────────────────────────────────────────┐ │         │
 │  │  │  Middleware Layer                            │ │         │
 │  │  │  - Authentication (JWT)                      │ │         │
 │  │  │  - Authorization (RBAC)                      │ │         │
 │  │  │  - Validation (Zod)                          │ │         │
 │  │  │  - Error Handling                            │ │         │
-│  │  │  - Logging (Winston)                         │ │         │
+│  │  │                                              │ │         │
 │  │  │  - Security (Helmet, CORS)                   │ │         │
 │  │  └──────────────────────────────────────────────┘ │         │
 │  │  ┌──────────────────────────────────────────────┐ │         │
@@ -620,45 +409,6 @@ Response ← Service ← Controller ← Middleware ← Frontend ← User
 
 ---
 
-### Permission Matrix
-
-| Feature | SUPER_ADMIN | ADMIN | MANAGER | EMPLOYEE |
-|---------|-------------|-------|---------|----------|
-| **User Management** |
-| Create Users | ✅ | ✅ | ❌ | ❌ |
-| Edit Users | ✅ | ✅ | ❌ | ❌ |
-| Delete Users | ✅ | ✅ | ❌ | ❌ |
-| View All Users | ✅ | ✅ | 🟡 Team | ❌ |
-| **Attendance** |
-| Personal Check-in/out | ✅ | ✅ | ✅ | ✅ |
-| View Team Attendance | ✅ | ✅ | ✅ | ❌ |
-| Edit Attendance | ✅ | ✅ | ❌ | ❌ |
-| Approve Regularization | ✅ | ✅ | 🟡 Review | ❌ |
-| Configure Policies | ✅ | ❌ | ❌ | ❌ |
-| **Leave Management** |
-| Apply Leave | ✅ | ✅ | ✅ | ✅ |
-| Approve Leave (L1) | ✅ | ✅ | ✅ | ❌ |
-| Approve Leave (L2) | ✅ | ✅ | ❌ | ❌ |
-| View Team Leaves | ✅ | ✅ | ✅ | ❌ |
-| Configure Leave Types | ✅ | ✅ | ❌ | ❌ |
-| **Project Management** |
-| Create Projects | ✅ | ✅ | ✅ | ❌ |
-| Edit Projects | ✅ | ✅ | 🟡 Own | ❌ |
-| Delete Projects | ✅ | ✅ | 🟡 Own | ❌ |
-| View Projects | ✅ | ✅ | ✅ | 🟡 Assigned |
-| Assign Tasks | ✅ | ✅ | ✅ | ❌ |
-| **Reports & Analytics** |
-| System Reports | ✅ | ❌ | ❌ | ❌ |
-| Department Reports | ✅ | ✅ | 🟡 Own Dept | ❌ |
-| Team Reports | ✅ | ✅ | ✅ | ❌ |
-| Personal Reports | ✅ | ✅ | ✅ | ✅ |
-| **System Configuration** |
-| Company Settings | ✅ | ❌ | ❌ | ❌ |
-| Department Settings | ✅ | ✅ | ❌ | ❌ |
-| Security Settings | ✅ | ❌ | ❌ | ❌ |
-| Audit Logs | ✅ | 🟡 Limited | ❌ | ❌ |
-
-**Legend**: ✅ Full Access | 🟡 Partial Access | ❌ No Access
 
 ---
 
@@ -699,10 +449,10 @@ Response ← Service ← Controller ← Middleware ← Frontend ← User
 │  ┌──────────────┐                                              │
 │  │   REJECTED   │                                              │
 │  └──────────────┘                                              │
-│                                                                  │
-│  Special Cases:                                                 │
+│                                                                │
+│  Special Cases:                                                │
 │  • Manager cannot approve own leave → Goes directly to HR      │
-│  • HR cannot approve own leave → Requires SUPER_ADMIN          │
+│  • HR cannot approve own leave → Requires Manager              │
 │  • SUPER_ADMIN leave → Requires another SUPER_ADMIN            │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -715,10 +465,6 @@ Response ← Service ← Controller ← Middleware ← Frontend ← User
 
 Before you begin, ensure you have the following installed:
 
-- **Node.js** (v20 or higher) - [Download](https://nodejs.org/)
-- **npm** (v10 or higher) - Comes with Node.js
-- **PostgreSQL** (v16 or higher) - [Download](https://www.postgresql.org/download/)
-- **Git** - [Download](https://git-scm.com/)
 
 ### Step 1: Clone the Repository
 
@@ -823,7 +569,7 @@ DATABASE_URL="postgresql://postgres:your_password@localhost:5432/tikr_database?s
 # Generate a secure secret: openssl rand -hex 32
 JWT_SECRET=your_super_secret_jwt_key_here_min_32_chars
 JWT_EXPIRES_IN=7d
-JWT_COOKIE_EXPIRES_IN=7
+JWT_COOKIE_EXPIRES_IN=7d
 
 # ============================================
 # EMAIL CONFIGURATION (SMTP)
@@ -852,25 +598,6 @@ MICROSOFT_CALLBACK_URL=http://localhost:5004/api/auth/microsoft/callback
 # ============================================
 FRONTEND_URL=http://localhost:3000
 
-# ============================================
-# LOGGING
-# ============================================
-LOG_LEVEL=info
-LOG_FILE=logs/app.log
-
-# ============================================
-# SECURITY
-# ============================================
-BCRYPT_ROUNDS=10
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
-
-# ============================================
-# CRON JOBS
-# ============================================
-AUTO_CHECKOUT_TIME=18:30
-AUTO_CHECKOUT_ENABLED=true
-```
 
 ### Frontend Environment Variables
 
@@ -900,38 +627,6 @@ NEXT_PUBLIC_MICROSOFT_CLIENT_ID=your-microsoft-client-id
 NEXT_PUBLIC_ENABLE_GOOGLE_AUTH=false
 NEXT_PUBLIC_ENABLE_MICROSOFT_AUTH=false
 NEXT_PUBLIC_ENABLE_MOBILE_APP=false
-
-# ============================================
-# ANALYTICS (Optional)
-# ============================================
-NEXT_PUBLIC_GA_TRACKING_ID=your-google-analytics-id
-```
-
-### Environment Variable Security
-
-⚠️ **IMPORTANT SECURITY NOTES**:
-
-1. **Never commit `.env` files to version control**
-   ```bash
-   # Add to .gitignore
-   echo ".env" >> .gitignore
-   echo ".env.local" >> .gitignore
-   ```
-
-2. **Generate Strong JWT Secret**
-   ```bash
-   # Generate a secure random string
-   openssl rand -hex 32
-   ```
-
-3. **Use App-Specific Passwords for Gmail**
-   - Enable 2-Factor Authentication
-   - Generate App Password at: https://myaccount.google.com/apppasswords
-
-4. **Production Environment**
-   - Use environment variable management services (AWS Secrets Manager, Azure Key Vault)
-   - Rotate secrets regularly
-   - Use different secrets for each environment
 
 ---
 
@@ -1003,149 +698,17 @@ npx prisma studio
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-### Common Migration Scenarios
-
-#### 1. Adding a New Table
-
-```prisma
-// In schema.prisma
-model NewTable {
-  id        Int      @id @default(autoincrement())
-  name      String
-  createdAt DateTime @default(now())
-}
-```
-
-```bash
-npx prisma migrate dev --name add_new_table
-```
-
-#### 2. Adding a Column
-
-```prisma
-model Employee {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  phone     String   // New column
-}
-```
-
-```bash
-npx prisma migrate dev --name add_phone_to_employee
-```
-
-#### 3. Modifying a Column
-
-```prisma
-model Employee {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String?  // Made optional
-}
-```
-
-```bash
-npx prisma migrate dev --name make_email_optional
-```
-
-#### 4. Adding Relations
-
-```prisma
-model Department {
-  id        Int        @id @default(autoincrement())
-  name      String
-  employees Employee[]
-}
-
-model Employee {
-  id           Int        @id @default(autoincrement())
-  name         String
-  departmentId Int
-  department   Department @relation(fields: [departmentId], references: [id])
-}
-```
-
-```bash
-npx prisma migrate dev --name add_department_relation
-```
-
-### Migration Best Practices
-
-1. **Always backup before migrations**
-   ```bash
-   pg_dump -U postgres tikr_database > backup_$(date +%Y%m%d).sql
-   ```
-
-2. **Test migrations in development first**
-   ```bash
-   # Development
-   npx prisma migrate dev
-   
-   # Production (after testing)
-   npx prisma migrate deploy
-   ```
-
-3. **Use descriptive migration names**
-   ```bash
-   # Good
-   npx prisma migrate dev --name add_attendance_geolocation
-   
-   # Bad
-   npx prisma migrate dev --name update
-   ```
-
-4. **Never edit migration files manually**
-   - Migrations are immutable once applied
-   - Create a new migration instead
-
-5. **Keep migrations small and focused**
-   - One logical change per migration
-   - Easier to debug and rollback
-
-### Troubleshooting Migrations
-
-#### Issue: Migration fails
-
-```bash
-# Check migration status
-npx prisma migrate status
-
-# Resolve failed migration
-npx prisma migrate resolve --applied <migration_name>
-
-# Or reset and start fresh (⚠️ DELETES DATA)
-npx prisma migrate reset
-```
-
-#### Issue: Schema drift detected
-
-```bash
-# Generate a new migration to sync
-npx prisma migrate dev --name fix_schema_drift
-```
-
-#### Issue: Need to rollback
-
-```bash
-# Prisma doesn't support automatic rollback
-# Manual steps:
-# 1. Restore database from backup
-# 2. Remove migration files
-# 3. Run migrations again
-```
-
----
 
 ## 🏃 Running the Application
 
 ### Development Mode
 
-#### Option 1: Run Backend and Frontend Separately
+#### Run Backend and Frontend Separately
 
 **Terminal 1 - Backend:**
 ```bash
 cd Backend
+npm run build
 npm run dev
 ```
 Backend will start on: `http://localhost:5004`
@@ -1153,63 +716,10 @@ Backend will start on: `http://localhost:5004`
 **Terminal 2 - Frontend:**
 ```bash
 cd Frontend
+npm run build
 npm run dev
 ```
 Frontend will start on: `http://localhost:3000`
-
-#### Option 2: Run Concurrently (Recommended)
-
-```bash
-# From project root
-npm run dev:all
-
-# Or use a process manager like PM2
-pm2 start ecosystem.config.js
-```
-
-### Production Mode
-
-#### Backend Production Build
-
-```bash
-cd Backend
-
-# Build TypeScript
-npm run build
-
-# Start production server
-npm start
-
-# Or use PM2 for process management
-pm2 start dist/server.js --name "hr-backend"
-```
-
-#### Frontend Production Build
-
-```bash
-cd Frontend
-
-# Build Next.js application
-npm run build
-
-# Start production server
-npm start
-
-# Or use PM2
-pm2 start npm --name "hr-frontend" -- start
-```
-
-### Using Docker (Optional)
-
-```bash
-# Build and run with Docker Compose
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop containers
-docker-compose down
 ```
 
 ### Accessing the Application
@@ -1237,30 +747,14 @@ After seeding the database, use these credentials:
 ### Health Check
 
 ```bash
-# Check backend health
-curl http://localhost:5004/health
+# Check backend test
+curl http://localhost:5004/test
 
 # Expected response:
 # {"status":"ok","timestamp":"2024-01-15T10:30:00.000Z"}
-```
 
-### Stopping the Application
 
-```bash
-# Stop development servers
-# Press Ctrl+C in each terminal
-
-# Stop PM2 processes
-pm2 stop all
-pm2 delete all
-
-# Stop Docker containers
-docker-compose down
-```
-
----
-
-## 📚 API Documentation
+# 📚 API Documentation
 
 ### Swagger/OpenAPI Documentation
 
@@ -1368,79 +862,6 @@ POST   /api/project-management/tasks/:id/comments # Add comment
 POST   /api/project-management/tasks/:id/time     # Log time entry
 ```
 
-### Example API Requests
-
-#### Login
-
-```bash
-curl -X POST http://localhost:5004/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "employee@company.com",
-    "password": "Employee@123"
-  }'
-```
-
-Response:
-```json
-{
-  "success": true,
-  "message": "Login successful",
-  "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "user": {
-      "id": 1,
-      "email": "employee@company.com",
-      "role": "EMPLOYEE",
-      "employeeId": 1
-    }
-  }
-}
-```
-
-#### Check In
-
-```bash
-curl -X POST http://localhost:5004/api/attendance/check-in \
-  -H "Authorization: Bearer <your_token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "location": "Office",
-    "deviceInfo": {
-      "userAgent": "Mozilla/5.0...",
-      "ipAddress": "192.168.1.1"
-    }
-  }'
-```
-
-#### Apply Leave
-
-```bash
-curl -X POST http://localhost:5004/api/leaves \
-  -H "Authorization: Bearer <your_token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "type": "CASUAL",
-    "startDate": "2024-01-20",
-    "endDate": "2024-01-22",
-    "reason": "Personal work"
-  }'
-```
-
-### Error Responses
-
-All errors follow this format:
-
-```json
-{
-  "success": false,
-  "message": "Error description",
-  "error": {
-    "code": "ERROR_CODE",
-    "details": "Additional error details"
-  }
-}
-```
 
 Common HTTP Status Codes:
 - `200` - Success
@@ -1506,7 +927,6 @@ Backend/
 │   │       └── user/
 │   │           └── user.routes.ts
 │   ├── utils/                  # Utility functions
-│   │   ├── logger.ts           # Winston logger
 │   │   ├── validators.ts       # Zod schemas
 │   │   ├── helpers.ts          # Helper functions
 │   │   └── constants.ts        # Constants
@@ -1646,212 +1066,7 @@ Frontend/
 └── README.md                   # Frontend documentation
 ```
 
----
 
-## 🚢 Deployment
-
-### Production Deployment Checklist
-
-- [ ] Update environment variables for production
-- [ ] Change default passwords
-- [ ] Enable HTTPS/SSL
-- [ ] Configure CORS for production domain
-- [ ] Set up database backups
-- [ ] Configure logging and monitoring
-- [ ] Set up error tracking (Sentry, etc.)
-- [ ] Enable rate limiting
-- [ ] Configure CDN for static assets
-- [ ] Set up CI/CD pipeline
-- [ ] Run security audit
-- [ ] Load testing
-- [ ] Documentation review
-
-### Deployment Options
-
-#### Option 1: Traditional VPS (DigitalOcean, AWS EC2, etc.)
-
-```bash
-# 1. Install Node.js and PostgreSQL on server
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs postgresql
-
-# 2. Clone repository
-git clone <repository-url>
-cd <project-directory>
-
-# 3. Install dependencies
-cd Backend && npm install
-cd ../Frontend && npm install
-
-# 4. Set up environment variables
-nano Backend/.env
-nano Frontend/.env.local
-
-# 5. Run database migrations
-cd Backend
-npx prisma migrate deploy
-
-# 6. Build applications
-cd Backend && npm run build
-cd ../Frontend && npm run build
-
-# 7. Use PM2 for process management
-npm install -g pm2
-pm2 start Backend/dist/server.js --name hr-backend
-pm2 start Frontend/npm --name hr-frontend -- start
-pm2 save
-pm2 startup
-
-# 8. Configure Nginx as reverse proxy
-sudo nano /etc/nginx/sites-available/hr-system
-```
-
-Nginx Configuration:
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-
-    # Frontend
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-
-    # Backend API
-    location /api {
-        proxy_pass http://localhost:5004;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-```
-
-#### Option 2: Docker Deployment
-
-Create `docker-compose.yml`:
-
-```yaml
-version: '3.8'
-
-services:
-  postgres:
-    image: postgres:16
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: tikr_database
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-
-  backend:
-    build: ./Backend
-    environment:
-      DATABASE_URL: postgresql://postgres:${DB_PASSWORD}@postgres:5432/tikr_database
-      JWT_SECRET: ${JWT_SECRET}
-      NODE_ENV: production
-    ports:
-      - "5004:5004"
-    depends_on:
-      - postgres
-
-  frontend:
-    build: ./Frontend
-    environment:
-      NEXT_PUBLIC_API_URL: http://backend:5004
-    ports:
-      - "3000:3000"
-    depends_on:
-      - backend
-
-volumes:
-  postgres_data:
-```
-
-Deploy:
-```bash
-docker-compose up -d
-```
-
-#### Option 3: Cloud Platform (Vercel + Railway/Render)
-
-**Frontend (Vercel):**
-```bash
-# Install Vercel CLI
-npm install -g vercel
-
-# Deploy
-cd Frontend
-vercel --prod
-```
-
-**Backend (Railway/Render):**
-1. Connect GitHub repository
-2. Set environment variables
-3. Deploy automatically on push
-
-#### Option 4: Kubernetes
-
-Create Kubernetes manifests and deploy:
-```bash
-kubectl apply -f k8s/
-```
-
-### SSL/HTTPS Setup
-
-```bash
-# Install Certbot
-sudo apt-get install certbot python3-certbot-nginx
-
-# Obtain SSL certificate
-sudo certbot --nginx -d your-domain.com
-
-# Auto-renewal
-sudo certbot renew --dry-run
-```
-
-### Database Backup
-
-```bash
-# Create backup script
-cat > backup.sh << 'EOF'
-#!/bin/bash
-DATE=$(date +%Y%m%d_%H%M%S)
-pg_dump -U postgres tikr_database > backup_$DATE.sql
-# Upload to S3 or cloud storage
-EOF
-
-chmod +x backup.sh
-
-# Schedule with cron
-crontab -e
-# Add: 0 2 * * * /path/to/backup.sh
-```
-
-### Monitoring
-
-```bash
-# Install monitoring tools
-npm install -g pm2
-pm2 install pm2-logrotate
-
-# View logs
-pm2 logs
-
-# Monitor resources
-pm2 monit
-```
-
----
 
 ## 🧪 Testing
 
@@ -1866,18 +1081,8 @@ npm test
 cd Frontend
 npm test
 
-# E2E tests
-npm run test:e2e
 ```
 
-### Test Coverage
-
-```bash
-# Generate coverage report
-npm run test:coverage
-```
-
----
 
 ## 🤝 Contributing
 
@@ -1907,26 +1112,11 @@ npm run test:coverage
 
 ---
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
 
 ## 👥 Team
 
-- **Project Lead**: [Your Name]
-- **Backend Developer**: [Name]
-- **Frontend Developer**: [Name]
-- **DevOps Engineer**: [Name]
-
----
-
-## 📞 Support
-
-For support, email support@your-company.com or join our Slack channel.
-
----
+Anshita
+Deepak Singla 
 
 ## 🙏 Acknowledgments
 
@@ -1947,4 +1137,4 @@ For support, email support@your-company.com or join our Slack channel.
 
 ---
 
-**Made with ❤️ by the HR System Team**
+**Made with ❤️ by the Team Tikr**
