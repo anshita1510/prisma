@@ -26,11 +26,10 @@ const NAV_ITEMS = [
   { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, href: '/admin' }, 
   { id: 'attendance', name: 'Attendance', icon: UserCheck, href: '/admin/attendance' },       
   { id: 'leave', name: 'Leave Management', icon: CalendarOff, href: '/admin/leave' },       
-  { id: 'project', name: 'Project', icon: Briefcase, href: '/admin/project' },
+  { id: 'projects', name: 'Projects', icon: FolderOpen, href: '/admin/projects' },
   { id: 'tasks', name: 'Tasks', icon: CheckSquare, href: '/admin/tasks' },            
   { id: 'create-user', name: 'Create User', icon: UserPlus, href: '/admin/createUser' },
   // Enhanced TMS Items
-  { id: 'enhanced-projects', name: 'Enhanced Projects', icon: FolderOpen, href: '/enhanced-tms/projects' },
   { id: 'enhanced-calendar', name: 'Enhanced Calendar', icon: Calendar, href: '/enhanced-tms/calendar' },
   { id: 'enhanced-team', name: 'Enhanced Team', icon: Users, href: '/enhanced-tms/team' },
 ];

@@ -2,12 +2,6 @@
 
 > A comprehensive, production-ready HR Management System with attendance tracking, leave management, project management, and role-based access control.
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue)](https://www.typescriptlang.org/)
-[![Next.js](https://img.shields.io/badge/Next.js-16.1-black)](https://nextjs.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-20+-green)](https://nodejs.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-blue)](https://www.postgresql.org/)
-[![Prisma](https://img.shields.io/badge/Prisma-6.19-2D3748)](https://www.prisma.io/)
-
 ---
 
 ## 📋 Table of Contents
@@ -41,9 +35,7 @@ This Enterprise HR Management System is a full-stack application designed to str
 - **Project & Task Management**: Comprehensive project tracking with Gantt charts
 - **Audit Trail**: Complete audit logging for compliance
 - **RESTful API**: Well-documented API with Swagger/OpenAPI
-- **Responsive UI**: Mobile-first design with Tailwind CSS
 
----
 
 ## ✨ Features
 
@@ -57,10 +49,8 @@ This Enterprise HR Management System is a full-stack application designed to str
 
 ### 👥 User Management
 - Employee onboarding with invite system
-- Department and team management
 - Reporting hierarchy (Manager-Employee relationships)
 - Employee profiles with designation tracking
-- Bulk user import/export
 
 ### ⏰ Attendance Management
 - Multiple check-in/check-out per day
@@ -68,24 +58,17 @@ This Enterprise HR Management System is a full-stack application designed to str
 - Geolocation tracking
 - Attendance regularization requests
 - Automated attendance policies
-- Late arrival and early departure tracking
-- Overtime calculation
-- Shift management
-- Attendance reports and analytics
 
 ### 🏖️ Leave Management
 - Multiple leave types (Casual, Sick, Earned, Unpaid)
 - Designation-based approval workflows
 - Manager and HR dual approval system
 - Leave balance tracking
-- Leave calendar integration
-- Email notifications
 - Leave history and reports
 
 ### 📊 Project Management
 - Project creation and tracking
 - Task assignment and management
-- Milestone tracking
 - Time tracking per task
 - Project progress visualization
 - Team member roles (Owner, Manager, Member, Viewer)

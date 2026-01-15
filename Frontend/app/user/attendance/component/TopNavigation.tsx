@@ -13,7 +13,7 @@ const NAV_ITEMS = [
 
 export const TopNavigation = () => {
   return (
-    <nav className="bg-white border-b border-gray-200">
+    <nav className="bg-white">
       <div className="max-w-[1400px] mx-auto px-6">
         <div className="flex items-center gap-8">
           {NAV_ITEMS.map((item) => (

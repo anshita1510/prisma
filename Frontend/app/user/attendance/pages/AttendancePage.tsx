@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { TopNavigation } from '../component/TopNavigation';
 import { AttendanceStats } from '../component/AttendanceStats';
 import { TimingsCard } from '../component/Timingscard';
 import { ActionsCard } from '../component/ActionsCard';
@@ -86,11 +85,6 @@ export const AttendancePage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Purple header bar */}
-      <div className="bg-gradient-to-r from-purple-600 to-purple-700 h-2"></div>
-      
-      <TopNavigation />
-      
       <main className="p-6 max-w-[1400px] mx-auto">
         {/* Top section - 3 columns */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

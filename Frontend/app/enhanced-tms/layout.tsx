@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { AuthGuard } from '@/lib/auth/AuthGuard';
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: 'LayoutDashboard' },
@@ -27,11 +28,12 @@ export default function EnhancedTMSLayout({
     }
   }, [pathname, router]);
 
-  // For Enhanced TMS pages, render without the blue sidebar
-  // The admin layout will handle the sidebar
+  // Protected layout - only SUPER_ADMIN, ADMIN, and MANAGER can access
   return (
-    <div className="flex-1">
-      {children}
-    </div>
+    <AuthGuard allowedRoles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']} requireAuth={true}>
+      <div className="flex-1">
+        {children}
+      </div>
+    </AuthGuard>
   );
 }

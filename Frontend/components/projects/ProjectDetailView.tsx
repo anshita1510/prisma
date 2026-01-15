@@ -13,13 +13,11 @@ import {
   User,
   Building2,
   Target,
-  TrendingUp,
   Clock,
   CheckSquare,
   Activity,
   AlertCircle,
   Trash2,
-  Mail,
   Briefcase,
   Plus
 } from 'lucide-react';
@@ -32,6 +30,7 @@ interface ProjectDetailViewProps {
   onDeleteProject: (projectId: number) => void;
   onDeleteTask: (taskId: number) => void;
   onUpdateTaskStatus: (taskId: number, status: string) => void;
+  onUpdateProjectStatus?: (projectId: number, status: string) => void;
 }
 
 export function ProjectDetailView({
@@ -41,7 +40,8 @@ export function ProjectDetailView({
   onAddTask,
   onDeleteProject,
   onDeleteTask,
-  onUpdateTaskStatus
+  onUpdateTaskStatus,
+  onUpdateProjectStatus
 }: ProjectDetailViewProps) {
   const [activeTab, setActiveTab] = useState('TODO');
 
@@ -214,10 +214,24 @@ export function ProjectDetailView({
                   <Badge variant="outline">{project.code || 'N/A'}</Badge>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 font-medium mb-1">Status</p>
-                  <Badge className={getStatusColor(project.status)}>
-                    {project.status?.replace('_', ' ')}
-                  </Badge>
+                  <p className="text-sm text-gray-600 font-medium mb-2">Status</p>
+                  {onUpdateProjectStatus ? (
+                    <select
+                      value={project.status || 'PLANNING'}
+                      onChange={(e) => onUpdateProjectStatus(project.id, e.target.value)}
+                      className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white font-medium"
+                    >
+                      <option value="PLANNING">Planning</option>
+                      <option value="ACTIVE">Active</option>
+                      <option value="ON_HOLD">On Hold</option>
+                      <option value="COMPLETED">Completed</option>
+                      <option value="CANCELLED">Cancelled</option>
+                    </select>
+                  ) : (
+                    <Badge className={getStatusColor(project.status)}>
+                      {project.status?.replace('_', ' ')}
+                    </Badge>
+                  )}
                 </div>
               </div>
             </CardContent>

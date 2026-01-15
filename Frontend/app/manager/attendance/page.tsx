@@ -12,7 +12,7 @@ export default function ManagerAttendancePage() {
       {/* Main content with proper offset for sidebar - 64px (16 * 4) on desktop */}
       <div className="lg:ml-16 min-h-screen pt-16 lg:pt-0">
         {/* Page Header */}
-        <div className="border-b border-gray-200 bg-white px-4 sm:px-6 py-4 sticky top-0 z-10">
+        <div className="bg-white px-4 sm:px-6 py-4 sticky top-0 z-10">
           <h1 className="text-2xl font-bold text-gray-900">My Attendance</h1>
           <p className="text-gray-600 mt-1">Track your attendance and work hours</p>
           <div className="mt-2">
