@@ -13,7 +13,7 @@ export class NotificationController {
   private notificationService: NotificationService;
 
   constructor() {
-    this.notificationService = new NotificationService(prisma);
+    this.notificationService = new NotificationService();
   }
 
   createNotification = async (req: Request, res: Response) => {
@@ -21,10 +21,10 @@ export class NotificationController {
       const validatedData = CreateNotificationDto.parse(req.body);
       const { employeeId } = req.user as any;
 
-      const notification = await this.notificationService.createNotification(
-        validatedData,
-        employeeId
-      );
+      const notification = await this.notificationService.createNotification({
+        ...validatedData,
+        createdById: employeeId
+      });
 
       res.status(201).json({
         success: true,
@@ -41,18 +41,17 @@ export class NotificationController {
 
   getNotifications = async (req: Request, res: Response) => {
     try {
-      const validatedQuery = NotificationQueryDto.parse(req.query);
       const { employeeId } = req.user as any;
+      const { unreadOnly } = req.query;
 
-      const result = await this.notificationService.getNotifications(
-        validatedQuery,
-        employeeId
+      const notifications = await this.notificationService.getNotifications(
+        employeeId,
+        unreadOnly === 'true'
       );
 
       res.json({
         success: true,
-        data: result.notifications,
-        pagination: result.pagination
+        data: notifications
       });
     } catch (error: any) {
       res.status(400).json({
@@ -64,10 +63,14 @@ export class NotificationController {
 
   markAsRead = async (req: Request, res: Response) => {
     try {
-      const validatedData = MarkNotificationReadDto.parse(req.body);
+      const { notificationId } = req.body;
       const { employeeId } = req.user as any;
 
-      await this.notificationService.markAsRead(validatedData, employeeId);
+      if (notificationId) {
+        await this.notificationService.markAsRead(notificationId, employeeId);
+      } else {
+        await this.notificationService.markAllAsRead(employeeId);
+      }
 
       res.json({
         success: true,
@@ -95,59 +98,6 @@ export class NotificationController {
       res.status(400).json({
         success: false,
         message: error.message || 'Failed to fetch unread count'
-      });
-    }
-  };
-
-  // System notification triggers (for admin/cron jobs)
-  sendDeadlineReminders = async (req: Request, res: Response) => {
-    try {
-      const { role } = req.user as any;
-
-      // Only allow ADMIN and SUPER_ADMIN to trigger system notifications
-      if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied'
-        });
-      }
-
-      const count = await this.notificationService.sendDeadlineReminders();
-
-      res.json({
-        success: true,
-        message: `Deadline reminders sent for ${count} tasks`
-      });
-    } catch (error: any) {
-      res.status(400).json({
-        success: false,
-        message: error.message || 'Failed to send deadline reminders'
-      });
-    }
-  };
-
-  checkBlockedTasks = async (req: Request, res: Response) => {
-    try {
-      const { role } = req.user as any;
-
-      // Only allow ADMIN and SUPER_ADMIN to trigger system checks
-      if (role !== 'ADMIN' && role !== 'SUPER_ADMIN') {
-        return res.status(403).json({
-          success: false,
-          message: 'Access denied'
-        });
-      }
-
-      const count = await this.notificationService.checkBlockedTasks();
-
-      res.json({
-        success: true,
-        message: `Checked ${count} blocked tasks`
-      });
-    } catch (error: any) {
-      res.status(400).json({
-        success: false,
-        message: error.message || 'Failed to check blocked tasks'
       });
     }
   };

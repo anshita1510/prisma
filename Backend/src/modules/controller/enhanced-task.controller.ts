@@ -21,7 +21,7 @@ export class EnhancedTaskController {
 
   constructor() {
     this.taskService = new EnhancedTaskService(prisma);
-    this.notificationService = new NotificationService(prisma);
+    this.notificationService = new NotificationService();
   }
 
   createTask = async (req: Request, res: Response) => {
@@ -37,11 +37,15 @@ export class EnhancedTaskController {
 
       // Send notification if task is assigned
       if (task.assignedToId && task.assignedToId !== employeeId) {
-        await this.notificationService.notifyTaskAssigned(
-          task.id,
-          task.assignedToId,
-          employeeId
-        );
+        await this.notificationService.createNotification({
+          title: 'New Task Assigned',
+          message: `You have been assigned to task "${task.title}"`,
+          type: 'TASK_ASSIGNED',
+          referenceId: task.id,
+          referenceType: 'task',
+          createdById: employeeId,
+          recipientIds: [task.assignedToId]
+        });
       }
 
       res.status(201).json({
@@ -127,23 +131,40 @@ export class EnhancedTaskController {
 
       // Send notifications for status changes
       if (validatedData.status && currentTask && validatedData.status !== currentTask.status) {
-        await this.notificationService.notifyTaskStatusChanged(
-          taskId,
-          currentTask.status,
-          validatedData.status,
-          employeeId
-        );
+        const recipientIds = [];
+        if (task.assignedToId && task.assignedToId !== employeeId) {
+          recipientIds.push(task.assignedToId);
+        }
+        if (task.createdById && task.createdById !== employeeId) {
+          recipientIds.push(task.createdById);
+        }
+        
+        if (recipientIds.length > 0) {
+          await this.notificationService.createNotification({
+            title: 'Task Status Updated',
+            message: `Task "${task.title}" status changed from ${currentTask.status} to ${validatedData.status}`,
+            type: 'TASK_UPDATED',
+            referenceId: taskId,
+            referenceType: 'task',
+            createdById: employeeId,
+            recipientIds: [...new Set(recipientIds)] // Remove duplicates
+          });
+        }
       }
 
       // Send notification if task is reassigned
       if (validatedData.assignedToId && 
           currentTask?.assignedToId !== validatedData.assignedToId &&
           validatedData.assignedToId !== employeeId) {
-        await this.notificationService.notifyTaskAssigned(
-          taskId,
-          validatedData.assignedToId,
-          employeeId
-        );
+        await this.notificationService.createNotification({
+          title: 'Task Reassigned',
+          message: `You have been assigned to task "${task.title}"`,
+          type: 'TASK_ASSIGNED',
+          referenceId: taskId,
+          referenceType: 'task',
+          createdById: employeeId,
+          recipientIds: [validatedData.assignedToId]
+        });
       }
 
       res.json({
@@ -428,12 +449,28 @@ export class EnhancedTaskController {
       if (validatedUpdates.status) {
         for (const task of tasks) {
           if (task.status !== validatedUpdates.status) {
-            await this.notificationService.notifyTaskStatusChanged(
-              task.id,
-              task.status,
-              validatedUpdates.status,
-              employeeId
-            );
+            const updatedTask = updatedTasks.find(t => t.id === task.id);
+            if (updatedTask) {
+              const recipientIds = [];
+              if (updatedTask.assignedToId && updatedTask.assignedToId !== employeeId) {
+                recipientIds.push(updatedTask.assignedToId);
+              }
+              if (updatedTask.createdById && updatedTask.createdById !== employeeId) {
+                recipientIds.push(updatedTask.createdById);
+              }
+              
+              if (recipientIds.length > 0) {
+                await this.notificationService.createNotification({
+                  title: 'Task Status Updated',
+                  message: `Task "${updatedTask.title}" status changed from ${task.status} to ${validatedUpdates.status}`,
+                  type: 'TASK_UPDATED',
+                  referenceId: task.id,
+                  referenceType: 'task',
+                  createdById: employeeId,
+                  recipientIds: [...new Set(recipientIds)]
+                });
+              }
+            }
           }
         }
       }

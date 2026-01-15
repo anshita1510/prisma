@@ -18,7 +18,7 @@ export class EnhancedProjectController {
 
   constructor() {
     this.projectService = new EnhancedProjectService(prisma);
-    this.notificationService = new NotificationService(prisma);
+    this.notificationService = new NotificationService();
   }
 
   createProject = async (req: Request, res: Response) => {
@@ -33,7 +33,17 @@ export class EnhancedProjectController {
       );
 
       // Send notifications to project members
-      await this.notificationService.notifyProjectCreated(project.id, employeeId);
+      if (validatedData.memberIds && validatedData.memberIds.length > 0) {
+        await this.notificationService.createNotification({
+          title: 'New Project Created',
+          message: `You have been added to project "${project.name}"`,
+          type: 'PROJECT_CREATED',
+          referenceId: project.id,
+          referenceType: 'project',
+          createdById: employeeId,
+          recipientIds: validatedData.memberIds
+        });
+      }
 
       res.status(201).json({
         success: true,

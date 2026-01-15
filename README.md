@@ -120,7 +120,6 @@ This Enterprise HR Management System is a full-stack application designed to str
 | Technology | Version | Purpose |
 |------------|---------|---------|
 | **Next.js** | 16.1+ | React framework |
-| **React** | 19.2+ | UI library |
 | **TypeScript** | 5+ | Type-safe JavaScript |
 | **Tailwind CSS** | 3.4+ | Utility-first CSS |
 | **Radix UI** | Latest | Accessible components |

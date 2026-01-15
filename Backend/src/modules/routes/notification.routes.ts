@@ -14,8 +14,4 @@ router.get('/', notificationController.getNotifications);
 router.put('/mark-read', notificationController.markAsRead);
 router.get('/unread-count', notificationController.getUnreadCount);
 
-// System notification triggers (admin only)
-router.post('/system/deadline-reminders', notificationController.sendDeadlineReminders);
-router.post('/system/check-blocked-tasks', notificationController.checkBlockedTasks);
-
 export default router;

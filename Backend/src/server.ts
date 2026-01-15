@@ -13,6 +13,7 @@ import enhancedTaskRoutes from './modules/routes/enhanced-task.routes';
 import notificationRoutes from './modules/routes/notification.routes';
 import newProjectRoutes from './modules/routes/project/project.routes';
 import employeeRoutes from './modules/routes/employee.routes';
+import calendarRoutes from './modules/routes/calendar.routes';
 import { errorHandler } from './middlewares/validation.middleware';
 import { scheduleAutoCheckout } from './cron/autoCheckout.cron';
 import { swaggerSpec } from './config/swagger';
@@ -121,6 +122,8 @@ app.get('/api/debug/departments', async (req, res) => {
 // New Project Management Routes
 app.use('/api/project-management', newProjectRoutes);
 
+// Calendar Routes
+app.use('/api/calendar', calendarRoutes);
 
 // Error handling middleware
 app.use(errorHandler);
