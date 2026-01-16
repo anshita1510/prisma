@@ -51,6 +51,14 @@ export default function AdminLeaveManagement() {
       return;
     }
     
+    console.log('👤 Current user:', {
+      id: currentUser.id,
+      employeeCode: currentUser.employeeCode,
+      employeeId: currentUser.employeeId,
+      name: currentUser.name,
+      role: currentUser.role
+    });
+    
     setUser(currentUser);
     loadAllLeaves();
   }, []);
@@ -151,7 +159,7 @@ export default function AdminLeaveManagement() {
       console.log('🟢 Response received:', response);
       
       if (response.success) {
-        setSuccess('Leave application approved successfully!');
+        // ❌ NO success message - silent approval
         console.log('🟢 Success! Reloading leaves...');
         await loadAllLeaves(); // Refresh the list
       } else {
@@ -203,7 +211,7 @@ export default function AdminLeaveManagement() {
       console.log('🔴 Response received:', response);
       
       if (response.success) {
-        setSuccess('Leave application rejected successfully!');
+        // ❌ NO success message - silent rejection
         setShowRejectDialog(false);
         setRejectionReason('');
         setSelectedLeave(null);
@@ -367,7 +375,25 @@ export default function AdminLeaveManagement() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {filteredLeaves.map((leave) => (
+                      {filteredLeaves.map((leave) => {
+                        // Debug: Log leave and user info for ownership check
+                        const isOwnLeave = user && (
+                          (leave as any).employee?.employeeCode === user.employeeCode ||
+                          (leave as any).employee?.id === user.id ||
+                          (leave as any).employeeId === user.employeeId
+                        );
+                        
+                        console.log('🔍 Leave ownership check:', {
+                          leaveId: leave.id,
+                          leaveEmployeeCode: (leave as any).employee?.employeeCode,
+                          leaveEmployeeId: (leave as any).employee?.id,
+                          userEmployeeCode: user?.employeeCode,
+                          userId: user?.id,
+                          isOwnLeave,
+                          status: leave.status
+                        });
+                        
+                        return (
                         <div 
                           key={leave.id} 
                           className="border rounded-lg p-4 hover:shadow-md transition-shadow"
@@ -455,12 +481,20 @@ export default function AdminLeaveManagement() {
                               )}
                             </div>
                             
-                            <div className="flex items-center gap-2 ml-4">
-                              {leave.status === 'PENDING' && (
-                                <>
+                            {/* Approve/Reject buttons - dynamically check if NOT own leave */}
+                            {(() => {
+                              const isOwnLeave = user && (
+                                (leave as any).employee?.employeeCode === user.employeeCode ||
+                                (leave as any).employee?.id === user.id ||
+                                (leave as any).employeeId === user.employeeId
+                              );
+                              const isPending = leave.status === 'PENDING';
+                              const showButtons = isPending && !isOwnLeave;
+                              
+                              return showButtons ? (
+                                <div className="flex items-center gap-2 ml-4">
                                   <Button
                                     onClick={(e) => {
-                                      console.log('🔥 APPROVE BUTTON CLICKED!', { leaveId: leave.id, event: e });
                                       e.preventDefault();
                                       e.stopPropagation();
                                       handleApproveLeave(leave.id);
@@ -475,7 +509,6 @@ export default function AdminLeaveManagement() {
                                   
                                   <Button
                                     onClick={(e) => {
-                                      console.log('🔥 REJECT BUTTON CLICKED!', { leaveId: leave.id, event: e });
                                       e.preventDefault();
                                       e.stopPropagation();
                                       setSelectedLeave(leave);
@@ -489,12 +522,13 @@ export default function AdminLeaveManagement() {
                                     <XCircle className="w-4 h-4 mr-1" />
                                     {actionLoading ? 'Processing...' : 'Reject'}
                                   </Button>
-                                </>
-                              )}
-                            </div>
+                                </div>
+                              ) : null;
+                            })()}
                           </div>
                         </div>
-                      ))}
+                      );
+                      })}
                     </div>
                   )}
                 </CardContent>
@@ -510,7 +544,7 @@ export default function AdminLeaveManagement() {
           onClose={() => setShowApplyModal(false)}
           onSuccess={() => {
             setShowApplyModal(false);
-            setSuccess('Leave application submitted successfully!');
+            // ❌ NO success message shown - silent submission
             loadAllLeaves();
           }}
         />

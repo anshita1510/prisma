@@ -98,18 +98,12 @@ export const createLeave = async (req: Request, res: Response) => {
       }
     });
 
-    // Send notifications to appropriate recipients
-    await notificationService.sendLeaveApplicationNotification(
-      leave.id,
-      employee.id,
-      req.user.role,
-      employee.companyId,
-      employee.departmentId
-    );
+    // ✅ NO NOTIFICATION TO APPLICANT - Silent submission
+    // Leave remains in PENDING state without any UI indication
 
     res.status(201).json({
       success: true,
-      message: "Leave application submitted successfully. Notifications sent to approvers.",
+      message: "", // ❌ Empty message - no UI indication
       leave: {
         id: leave.id,
         type: leave.type,
@@ -153,6 +147,8 @@ export const getMyLeaves = async (req: Request, res: Response) => {
       });
     }
 
+    // ✅ Show ALL leaves (PENDING, APPROVED, REJECTED) to applicant
+    // But NO success message on application
     const leaves = await prisma.leave.findMany({
       where: { employeeId: employee.id },
       include: { 
@@ -372,13 +368,16 @@ export const updateLeaveStatus = async (req: Request, res: Response) => {
       }
     });
 
-    // Send notification to applicant
-    const approverName = approverEmployee.name;
-    await notificationService.sendLeaveStatusNotification(
-      leave.id,
-      status,
-      approverName
-    );
+    // ✅ SEND NOTIFICATION ONLY TO APPLICANT when status changes from PENDING
+    if (status === LeaveStatus.APPROVED || status === LeaveStatus.REJECTED) {
+      await notificationService.sendLeaveStatusNotification(
+        leave,
+        status,
+        approverEmployee,
+        req.user.role,
+        rejectionReason
+      );
+    }
 
     const formattedLeave = {
       id: leave.id,
@@ -400,7 +399,7 @@ export const updateLeaveStatus = async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      message: `Leave request ${status.toLowerCase()} successfully. Notification sent to applicant.`,
+      message: "", // ❌ No success message on approve/reject
       leave: formattedLeave
     });
   } catch (error) {

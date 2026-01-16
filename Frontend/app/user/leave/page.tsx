@@ -113,7 +113,7 @@ export default function LeavePage() {
       const response = await leaveService.applyLeave(formData);
       
       if (response.success) {
-        setSuccess(response.message || 'Leave application submitted successfully!');
+        // ❌ NO success message shown - silent submission
         // Reset form
         setFormData({
           type: 'CASUAL',

@@ -264,7 +264,7 @@ export default function EmployeeLeaveManagement() {
           onClose={() => setShowApplyModal(false)}
           onSuccess={() => {
             setShowApplyModal(false);
-            setSuccess('Leave application submitted successfully!');
+            // ❌ NO success message shown - silent submission
             loadMyLeaves();
           }}
         />

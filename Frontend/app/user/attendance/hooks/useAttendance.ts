@@ -210,21 +210,44 @@ export const useAttendance = () => {
 
           if (statsResponse.success && logsResponse.success && teamStatsResponse.success) {
             // Convert backend data to frontend format
-            const convertedLogs = logsResponse.data.map((log: any) => ({
-              id: `att-${log.date}`,
-              date: new Date(log.date),
-              status: log.status.toLowerCase(),
-              timeSlots: log.checkIn && log.checkOut ? [
-                { start: '09:30', end: '13:00', type: 'work' },
-                { start: '13:00', end: '14:00', type: 'break' },
-                { start: '14:00', end: '18:30', type: 'work' },
-              ] : [],
-              effectiveHours: `${Math.floor(log.effectiveHours)}h ${Math.floor((log.effectiveHours % 1) * 60)}m`,
-              grossHours: `${Math.floor(log.grossHours)}h ${Math.floor((log.grossHours % 1) * 60)}m`,
-              arrivalStatus: log.arrivalStatus,
-              arrivalTime: log.checkIn ? new Date(log.checkIn).toLocaleTimeString() : undefined,
-              departureTime: log.checkOut ? new Date(log.checkOut).toLocaleTimeString() : undefined,
-            }));
+            const convertedLogs = logsResponse.data.map((log: any) => {
+              // Calculate effective hours and gross hours from API data
+              const workHours = log.workHours || 0;
+              const effectiveHours = workHours; // Effective hours = work hours
+              const grossHours = log.checkIn && log.checkOut 
+                ? (new Date(log.checkOut).getTime() - new Date(log.checkIn).getTime()) / (1000 * 60 * 60)
+                : workHours;
+              
+              // Format hours to "Xh Ym" format
+              const formatHours = (hours: number) => {
+                const h = Math.floor(hours);
+                const m = Math.round((hours - h) * 60);
+                return `${h}h ${m}m`;
+              };
+
+              // Convert timeSlots from API format to frontend format
+              const timeSlots = (log.timeSlots || []).map((slot: any) => {
+                const checkInTime = new Date(slot.checkIn);
+                const checkOutTime = new Date(slot.checkOut);
+                return {
+                  start: checkInTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+                  end: checkOutTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+                  type: 'work' as const
+                };
+              });
+
+              return {
+                id: `att-${log.id}`,
+                date: new Date(log.date),
+                status: log.status.toLowerCase(),
+                timeSlots: timeSlots,
+                effectiveHours: formatHours(effectiveHours),
+                grossHours: formatHours(grossHours),
+                arrivalStatus: log.checkIn ? 'on-time' : 'no-entry',
+                arrivalTime: log.checkIn ? new Date(log.checkIn).toLocaleTimeString() : undefined,
+                departureTime: log.checkOut ? new Date(log.checkOut).toLocaleTimeString() : undefined,
+              };
+            });
 
             setRecords(convertedLogs);
 

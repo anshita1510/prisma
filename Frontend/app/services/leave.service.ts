@@ -120,6 +120,8 @@ class LeaveService {
    */
   async applyLeave(leaveData: LeaveApplication): Promise<LeaveResponse> {
     try {
+      console.log('📤 Applying for leave:', leaveData);
+      
       const response = await fetch(`${this.baseUrl}/api/leaves`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
@@ -127,15 +129,21 @@ class LeaveService {
       });
 
       const data = await response.json();
+      console.log('📥 Apply leave response:', { status: response.status, data });
       
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to apply for leave');
+        const errorMessage = data.error || data.message || 'Failed to apply for leave';
+        console.error('❌ Apply leave failed:', errorMessage);
+        throw new Error(errorMessage);
       }
 
       return data;
     } catch (error) {
-      console.error('Apply leave error:', error);
-      throw error;
+      console.error('💥 Apply leave error:', error);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error('Failed to apply for leave');
     }
   }
 
