@@ -16,19 +16,29 @@ interface JwtPayload {
 
 export const authenticate = (req: Request, res: Response, next: NextFunction) => {
   try {
+    console.log("🔍 Auth middleware: Processing request to", req.path);
+    console.log("🔍 Auth middleware: Method", req.method);
+    
     // Get token from header or cookie
     const authHeader = req.headers.authorization;
     const cookieToken = req.cookies?.auth_token;
+
+    console.log("🔍 Auth middleware: Auth header present", !!authHeader);
+    console.log("🔍 Auth middleware: Cookie token present", !!cookieToken);
+    console.log("🔍 Auth middleware: All cookies", req.cookies);
 
     let token: string | undefined;
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.substring(7); // Remove 'Bearer ' prefix
+      console.log("🔍 Auth middleware: Using Bearer token");
     } else if (cookieToken) {
       token = cookieToken;
+      console.log("🔍 Auth middleware: Using cookie token");
     }
 
     if (!token) {
+      console.log("❌ Auth middleware: No token provided");
       return res.status(401).json({
         success: false,
         message: 'No token provided',
@@ -42,8 +52,15 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
       process.env.JWT_SECRET || 'your-secret-key'
     ) as JwtPayload;
 
+    console.log("🔍 Auth middleware: Token decoded successfully", {
+      id: decoded.id,
+      role: decoded.role,
+      email: decoded.email
+    });
+
     // Check token expiration
     if (decoded.exp && decoded.exp * 1000 < Date.now()) {
+      console.log("❌ Auth middleware: Token expired");
       return res.status(401).json({
         success: false,
         message: 'Token has expired',
@@ -58,9 +75,10 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
       email: decoded.email
     };
 
+    console.log("✅ Auth middleware: User authenticated", req.user);
     next();
   } catch (error) {
-    console.error('Auth middleware error:', error);
+    console.error('❌ Auth middleware error:', error);
     
     if (error instanceof jwt.TokenExpiredError) {
       return res.status(401).json({

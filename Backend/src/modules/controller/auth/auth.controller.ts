@@ -107,7 +107,7 @@ export class UserController {
         return res.status(403).json({ error: "Forbidden: Admin access required" });
       }
 
-      const { email, firstName, lastName, phone, designation, role, employeeCode } = req.body;
+      const { email, firstName, lastName, phone, designation, role, employeeCode, companyName, companyId } = req.body;
 
       console.log('Extracted fields:', {
         email,
@@ -116,7 +116,9 @@ export class UserController {
         phone,
         designation,
         role,
-        employeeCode
+        employeeCode,
+        companyName,
+        companyId
       });
 
       if (!email || !firstName || !lastName || !phone || !designation || !role) {
@@ -147,6 +149,8 @@ export class UserController {
         designation,
         role: role as Role,
         employeeCode,
+        companyName,
+        companyId,
       });
 
       console.log('✅ Usecase executed successfully');
@@ -275,10 +279,11 @@ export class UserController {
         return res.status(403).json({ error: "Forbidden: Admin access required" });
       }
 
-      // Get all users with their employee information
+      // Get all users with their employee and company information
       const users = await prisma.user.findMany({
         include: {
-          employee: true
+          employee: true,
+          company: true
         },
         orderBy: {
           createdAt: 'desc'
@@ -309,6 +314,8 @@ export class UserController {
           status: user.status,
           isActive: user.isActive,
           employeeCode: user.employee?.employeeCode || null,
+          companyName: user.company?.name || null,
+          companyId: user.company?.code || null,
           createdAt: user.createdAt.toISOString(),
           updatedAt: user.updatedAt.toISOString()
         };
@@ -636,6 +643,189 @@ export class UserController {
       });
     } catch (error: any) {
       return res.status(400).json({ error: error.message });
+    }
+  }
+
+  /* ================= DELETE USER ================= */
+  async deleteUser(req: Request, res: Response) {
+    try {
+      const userId = parseInt(req.params.id);
+      const currentUser = (req as any).user;
+
+      console.log("🔍 Delete user request:", {
+        userId,
+        currentUser,
+        userRole: currentUser?.role,
+        userIdFromToken: currentUser?.userId || currentUser?.id
+      });
+
+      if (!userId || isNaN(userId)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid user ID"
+        });
+      }
+
+      // Check if user exists
+      const userToDelete = await prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          employee: true
+        }
+      });
+
+      if (!userToDelete) {
+        return res.status(404).json({
+          success: false,
+          error: "User not found"
+        });
+      }
+
+      console.log("🔍 User to delete:", {
+        id: userToDelete.id,
+        email: userToDelete.email,
+        role: userToDelete.role
+      });
+
+      // Prevent self-deletion
+      const currentUserId = currentUser.userId || currentUser.id;
+      if (userToDelete.id === currentUserId) {
+        return res.status(400).json({
+          success: false,
+          error: "Cannot delete your own account"
+        });
+      }
+
+      // Only prevent deletion of other super admins (super admin can delete admins, managers, employees)
+      if (userToDelete.role === Role.SUPER_ADMIN && currentUser.role !== Role.SUPER_ADMIN) {
+        return res.status(403).json({
+          success: false,
+          error: "Only super admins can delete other super admins"
+        });
+      }
+
+      // Additional check: prevent deletion of the last super admin
+      if (userToDelete.role === Role.SUPER_ADMIN) {
+        const superAdminCount = await prisma.user.count({
+          where: { role: Role.SUPER_ADMIN }
+        });
+        
+        if (superAdminCount <= 1) {
+          return res.status(400).json({
+            success: false,
+            error: "Cannot delete the last super admin in the system"
+          });
+        }
+      }
+
+      console.log("🔍 Proceeding with deletion...");
+
+      // Delete related employee record first (if exists)
+      if (userToDelete.employee) {
+        await prisma.employee.delete({
+          where: { userId: userId }
+        });
+      }
+
+      // Delete the user permanently
+      await prisma.user.delete({
+        where: { id: userId }
+      });
+
+      console.log("✅ User deleted successfully");
+
+      return res.status(200).json({
+        success: true,
+        message: "User deleted successfully"
+      });
+
+    } catch (error: any) {
+      console.error("Delete user error:", error);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to delete user"
+      });
+    }
+  }
+
+  /* ================= RESEND INVITATION ================= */
+  async resendInvitation(req: Request, res: Response) {
+    try {
+      const userId = parseInt(req.params.id);
+
+      if (!userId || isNaN(userId)) {
+        return res.status(400).json({
+          success: false,
+          error: "Invalid user ID"
+        });
+      }
+
+      // Check if user exists
+      const user = await prisma.user.findUnique({
+        where: { id: userId }
+      });
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          error: "User not found"
+        });
+      }
+
+      // Check if user already has a password set
+      if (user.password) {
+        return res.status(400).json({
+          success: false,
+          error: "User has already set up their account"
+        });
+      }
+
+      // Generate new OTP and temporary password
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const tempPassword = Math.random().toString(36).slice(-8);
+      const hashedTempPassword = await bcrypt.hash(tempPassword, 10);
+
+      // Update user with new OTP and temp password
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          otp: otp,
+          password: hashedTempPassword,
+          otpExpiry: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+        }
+      });
+
+      // Send invitation email
+      const emailContent = `
+        <h2>Account Setup - Tikr Task Management</h2>
+        <p>Hello ${user.firstName} ${user.lastName},</p>
+        <p>Your account invitation has been resent. Please use the following credentials to set up your account:</p>
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <p><strong>Email:</strong> ${user.email}</p>
+          <p><strong>Temporary Password:</strong> ${tempPassword}</p>
+          <p><strong>OTP:</strong> ${otp}</p>
+        </div>
+        <p>Please log in and set your permanent password. This OTP will expire in 10 minutes.</p>
+        <p>Best regards,<br>Tikr Team</p>
+      `;
+
+      await sendEmailUseCase.execute({
+        to: user.email,
+        subject: "Account Setup - Tikr Task Management",
+        html: emailContent
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "Invitation email sent successfully"
+      });
+
+    } catch (error: any) {
+      console.error("Resend invitation error:", error);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to resend invitation"
+      });
     }
   }
 

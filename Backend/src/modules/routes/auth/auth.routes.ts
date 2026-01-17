@@ -452,6 +452,70 @@ router.post(
     resetPassword
 )
 
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   delete:
+ *     summary: Delete user (SuperAdmin only - can delete admins, managers, employees, and other super admins)
+ *     tags: [User Management]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: User ID to delete
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Access denied
+ *       404:
+ *         description: User not found
+ */
+router.delete(
+    "/:id",
+    authenticate,
+    requireRole(Role.SUPER_ADMIN),
+    controller.deleteUser
+);
+
+/**
+ * @swagger
+ * /api/users/{id}/resend-invitation:
+ *   post:
+ *     summary: Resend invitation email (Admin/SuperAdmin only)
+ *     tags: [User Management]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: User ID to resend invitation
+ *     responses:
+ *       200:
+ *         description: Invitation sent successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Access denied
+ *       404:
+ *         description: User not found
+ */
+router.post(
+    "/:id/resend-invitation",
+    authenticate,
+    requireAnyRole(Role.ADMIN, Role.SUPER_ADMIN),
+    controller.resendInvitation
+);
+
 /* ---------------- API DOCUMENTATION ---------------- */
 router.get(
     "/api-docs",

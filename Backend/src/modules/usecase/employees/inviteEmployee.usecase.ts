@@ -22,7 +22,8 @@ export class InviteEmployeeUsecase {
       designation: string;
       role: Role;
       employeeCode?: string;
-      companyId?: number;
+      companyId?: number | string;
+      companyName?: string;
       departmentId?: number;
     }
   ) {
@@ -69,6 +70,27 @@ export class InviteEmployeeUsecase {
     console.log('   Temp Password:', tempPassword);
     console.log('   OTP Expiry:', otpExpiry);
 
+    /* 🏢 Handle Company Creation/Assignment */
+    let companyId: number | null = null;
+    if (data.companyName) {
+      // Create or find company by name
+      const companyCode = typeof data.companyId === 'string' ? data.companyId : 
+                         data.companyName.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10);
+      
+      const company = await prisma.company.upsert({
+        where: { 
+          code: companyCode
+        },
+        update: {},
+        create: {
+          name: data.companyName,
+          code: companyCode,
+          isActive: true
+        }
+      });
+      companyId = company.id;
+    }
+
     /* 🧑 CREATE USER (FULLY FILLED ✅) */
     const user = await this.userRepo.create({
       email: data.email,
@@ -84,6 +106,7 @@ export class InviteEmployeeUsecase {
       otpExpiry: otpExpiry,
       inviteToken,
       inviteExpiry,
+      companyId: companyId,
     });
 
     /* 🔐 Password setup record */
@@ -97,7 +120,7 @@ export class InviteEmployeeUsecase {
     });
 
     /* 🏢 CREATE EMPLOYEE RECORD */
-    await this.createEmployeeRecord(user.id, data);
+    await this.createEmployeeRecord(user.id, { ...data, companyId });
 
     /* 📧 Send invite email */
     try {

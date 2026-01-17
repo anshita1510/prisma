@@ -52,7 +52,7 @@ export class UserRepository {
     otpExpiry?: Date | null;
     inviteToken?: string | null;
     inviteExpiry?: Date | null;
-
+    companyId?: number | null;
   }) {
     return prisma.user.create({
       data: {
