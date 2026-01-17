@@ -40,9 +40,9 @@ export const authService = {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
         
-        // Set cookie for middleware with 30-day expiration
+        // Set auth_token cookie for middleware (same as OAuth) with 30-day expiration
         const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
-        document.cookie = `token=${response.data.token}; path=/; max-age=${thirtyDaysInSeconds}; SameSite=Lax`;
+        document.cookie = `auth_token=${response.data.token}; path=/; max-age=${thirtyDaysInSeconds}; SameSite=Lax`;
       }
       
       return response.data;
@@ -65,10 +65,11 @@ export const authService = {
     localStorage.removeItem('user');
     localStorage.removeItem('resetEmail'); // Clear any password reset data
     
-    // Clear cookie
-    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    // Clear auth_token cookie
+    document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     
-    window.location.href = '/';
+    console.log('Logged out - redirecting to login page');
+    window.location.href = '/login';
   },
 
   getCurrentUser: async () => {

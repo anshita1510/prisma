@@ -2,7 +2,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { Role, PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
-import '../types/express'; // Import express type extensions
+import { AuthUser } from '../types/express'; // Import the AuthUser type
 
 const prisma = new PrismaClient();
 
@@ -16,18 +16,25 @@ interface JwtPayload {
 
 export const authenticate = (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Get token from header
+    // Get token from header or cookie
     const authHeader = req.headers.authorization;
+    const cookieToken = req.cookies?.auth_token;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    let token: string | undefined;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    } else if (cookieToken) {
+      token = cookieToken;
+    }
+
+    if (!token) {
       return res.status(401).json({
         success: false,
         message: 'No token provided',
         code: 'NO_TOKEN'
       });
     }
-
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
     // Verify token
     const decoded = jwt.verify(
@@ -82,18 +89,25 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
 // Enhanced auth middleware that includes employee and company info
 export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Get token from header
+    // Get token from header or cookie
     const authHeader = req.headers.authorization;
+    const cookieToken = req.cookies?.auth_token;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    let token: string | undefined;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    } else if (cookieToken) {
+      token = cookieToken;
+    }
+
+    if (!token) {
       return res.status(401).json({
         success: false,
         message: 'No token provided',
         code: 'NO_TOKEN'
       });
     }
-
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
     // Verify token
     const decoded = jwt.verify(
@@ -203,9 +217,9 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
 // Role-based middleware
 export const authorize = (...roles: Role[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const user = req.user;
+    const user = req.user as AuthUser | undefined;
 
-    if (!user) {
+    if (!user || !user.role) {
       return res.status(401).json({
         success: false,
         message: 'Authentication required',
@@ -230,9 +244,9 @@ export const authorize = (...roles: Role[]) => {
 // Middleware to check if user is active
 export const requireActiveUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = req.user;
+    const user = req.user as AuthUser | undefined;
 
-    if (!user) {
+    if (!user || !user.id) {
       return res.status(401).json({
         success: false,
         message: 'Authentication required',

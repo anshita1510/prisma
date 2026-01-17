@@ -71,7 +71,7 @@ This Enterprise HR Management System is a full-stack application designed to str
 - Task assignment and management
 - Time tracking per task
 - Project progress visualization
-- Team member roles (Owner, Manager, Member, Viewer)
+- Team member roles (Super Admin, Admin, Manager, Employee)
 - Task dependencies
 - Gantt chart view
 - Project reports and analytics

@@ -2,8 +2,11 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 import swaggerUi from 'swagger-ui-express';
+import passport from './config/passport'; // Import passport config
 import authRoutes from './modules/routes/auth/auth.routes';
+import passportGoogleRoutes from './modules/routes/auth/passport-google.routes'; // New Passport routes
 import leaveRoutes from './modules/routes/leave/leave.routes';
 import attendanceRoutes from './modules/routes/attendance/attendance.routes'; // New attendance routes with my-logs endpoint
 import projectRoutes from './modules/routes/project.routes';
@@ -35,8 +38,12 @@ app.use(cors({
   optionsSuccessStatus: 200
 }));
 
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Initialize Passport
+app.use(passport.initialize());
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -48,6 +55,15 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Debug endpoint to check cookies
+app.get('/debug/cookies', (req, res) => {
+  res.json({
+    cookies: req.cookies,
+    headers: req.headers,
+    authToken: req.cookies?.auth_token ? 'Present' : 'Missing'
+  });
+});
+
 // Swagger Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customCss: '.swagger-ui .topbar { display: none }',
@@ -56,6 +72,20 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 
 // Routes
 app.use('/api/users', authRoutes);
+app.use('/api/auth', passportGoogleRoutes); // Use Passport routes
+
+// Test endpoint to verify OAuth routes are loaded
+app.get('/api/auth/test', (req, res) => {
+  res.json({ 
+    message: 'OAuth routes are working with Passport!',
+    availableRoutes: [
+      'GET /api/auth/google',
+      'GET /api/auth/google/callback',
+      'POST /api/auth/logout'
+    ]
+  });
+});
+
 app.use('/api/leaves', leaveRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/projects', projectRoutes);

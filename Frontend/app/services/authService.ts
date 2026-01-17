@@ -15,9 +15,9 @@ export const authService = {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
         
-        // Set cookie for middleware with 30-day expiration
+        // Set auth_token cookie for middleware (same as OAuth) with 30-day expiration
         const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
-        document.cookie = `token=${response.data.token}; path=/; max-age=${thirtyDaysInSeconds}; SameSite=Lax`;
+        document.cookie = `auth_token=${response.data.token}; path=/; max-age=${thirtyDaysInSeconds}; SameSite=Lax`;
       }
       return response.data;
     } catch (error: any) {
@@ -55,8 +55,11 @@ export const authService = {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     
-    // Clear cookie
-    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    // Clear auth_token cookie
+    document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    
+    console.log('Logged out - redirecting to login page');
+    window.location.href = '/login';
   },
 
   // Check if user is authenticated

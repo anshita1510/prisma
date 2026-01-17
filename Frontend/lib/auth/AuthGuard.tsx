@@ -31,7 +31,9 @@ export function AuthGuard({ children, allowedRoles, requireAuth = true }: AuthGu
         '/set_pass'
       ];
       
+      // If on a public route, don't check auth
       if (publicRoutes.some(route => pathname.startsWith(route))) {
+        console.log('📖 [AuthGuard] Public route, skipping auth check');
         setIsChecking(false);
         return;
       }
@@ -44,6 +46,7 @@ export function AuthGuard({ children, allowedRoles, requireAuth = true }: AuthGu
 
       // If auth is not required, allow access
       if (!requireAuth) {
+        console.log('🔓 [AuthGuard] Auth not required');
         setIsChecking(false);
         return;
       }
@@ -51,8 +54,9 @@ export function AuthGuard({ children, allowedRoles, requireAuth = true }: AuthGu
       // Check if user is authenticated (from localStorage)
       if (!isAuthenticated) {
         console.log('🔒 [AuthGuard] Not authenticated, redirecting to login');
+        setIsChecking(false); // Set to false before redirect
         const returnUrl = encodeURIComponent(pathname);
-        router.push(`/login?returnUrl=${returnUrl}`);
+        router.replace(`/login?returnUrl=${returnUrl}`);
         return;
       }
 

@@ -63,8 +63,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             name: parsedUser?.name
           });
           
-          // Only set if we have valid data
-          if (parsedUser && parsedUser.id && parsedUser.role) {
+          // Only set if we have valid data with proper role
+          if (parsedUser && parsedUser.id && parsedUser.role && 
+              ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EMPLOYEE'].includes(parsedUser.role)) {
             setToken(storedToken);
             setUser(parsedUser);
             
@@ -75,7 +76,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.log('✅ Auth restored from localStorage');
             console.log('✅ Cookie refreshed');
           } else {
-            console.warn('⚠️ Invalid user data in localStorage');
+            console.warn('⚠️ Invalid user data in localStorage - clearing auth data');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
           }
         } else {
           console.log('ℹ️ No stored authentication found');
@@ -159,15 +164,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Logout function
   const logout = () => {
+    console.log('🚪 Logout initiated');
+    
+    // Clear state first
+    setToken(null);
+    setUser(null);
+    setIsLoading(false);
+    
+    // Clear storage
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     
     // Clear cookie
     document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
     
-    setToken(null);
-    setUser(null);
-    router.push('/login');
+    console.log('✅ Logout complete, redirecting to login');
+    
+    // Force redirect with replace to prevent back navigation
+    window.location.href = '/login';
   };
 
   // Check if user has required role

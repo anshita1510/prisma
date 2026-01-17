@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, FormEvent, JSX } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, FormEvent, JSX, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +48,7 @@ type LoginStep = "email" | "password" | "oauth" | "signup";
 
 export default function LoginPage(): JSX.Element {
   const router = useRouter();
+  const searchParams = useSearchParams();
   
   // Email-first flow states
   const [currentStep, setCurrentStep] = useState<LoginStep>("email");
@@ -65,6 +66,17 @@ export default function LoginPage(): JSX.Element {
   const [testResults, setTestResults] = useState<any>(null);
   const [testLoading, setTestLoading] = useState<boolean>(false);
   const [copiedEndpoint, setCopiedEndpoint] = useState<string>("");
+
+  // Handle logout on page load if logout parameter is present
+  useEffect(() => {
+    const logout = searchParams.get("logout");
+    if (logout === "true") {
+      // Clear localStorage
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      console.log("Logged out - cleared localStorage");
+    }
+  }, [searchParams]);
 
   // API Endpoints for Postman Collection
   const apiEndpoints: ApiEndpoint[] = [
@@ -226,9 +238,9 @@ export default function LoginPage(): JSX.Element {
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
       
-      // Set token as cookie for middleware with 30-day expiration
+      // Set auth_token cookie for middleware (same as OAuth) with 30-day expiration
       const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
-      document.cookie = `token=${token}; path=/; max-age=${thirtyDaysInSeconds}; SameSite=Lax`;
+      document.cookie = `auth_token=${token}; path=/; max-age=${thirtyDaysInSeconds}; SameSite=Lax`;
 
       // Route based on role
       const routes: Record<string, string> = {
@@ -252,39 +264,15 @@ export default function LoginPage(): JSX.Element {
   };
 
   const handleGoogleLogin = async (emailFromInput?: string) => {
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    
-    if (!clientId) {
-      // If no Google OAuth is configured, show helpful error
-      setError("Google OAuth is not configured. Please enter your email and use password login instead.");
-      setCurrentStep("email");
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
     setError("");
 
     try {
-      // Redirect to Google OAuth
-      const redirectUri = `${window.location.origin}/api/auth/google/callback`;
-
-      // Build Google OAuth URL
-      const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
-      googleAuthUrl.searchParams.append('client_id', clientId);
-      googleAuthUrl.searchParams.append('redirect_uri', redirectUri);
-      googleAuthUrl.searchParams.append('response_type', 'code');
-      googleAuthUrl.searchParams.append('scope', 'email profile');
-      googleAuthUrl.searchParams.append('access_type', 'offline');
-      googleAuthUrl.searchParams.append('prompt', 'consent');
+      // Use backend Passport.js OAuth endpoint
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5004';
       
-      // If email was provided, pass it as login_hint
-      if (emailFromInput || email) {
-        googleAuthUrl.searchParams.append('login_hint', emailFromInput || email);
-      }
-
-      // Redirect to Google OAuth
-      window.location.href = googleAuthUrl.toString();
+      // Redirect to backend's Google OAuth route (Passport.js handles everything)
+      window.location.href = `${backendUrl}/api/auth/google`;
 
     } catch (err) {
       setError(err instanceof Error ? err.message : "Google login failed");
@@ -294,37 +282,15 @@ export default function LoginPage(): JSX.Element {
   };
 
   const handleMicrosoftLogin = async (emailFromInput?: string) => {
-    const clientId = process.env.NEXT_PUBLIC_MICROSOFT_CLIENT_ID;
-    
-    if (!clientId) {
-      setError("Microsoft OAuth is not configured. Please enter your email and use password login instead.");
-      setCurrentStep("email");
-      setLoading(false);
-      return;
-    }
-
     setLoading(true);
     setError("");
 
     try {
-      // Redirect to Microsoft OAuth
-      const redirectUri = `${window.location.origin}/api/auth/microsoft/callback`;
-
-      // Build Microsoft OAuth URL
-      const microsoftAuthUrl = new URL('https://login.microsoftonline.com/common/oauth2/v2.0/authorize');
-      microsoftAuthUrl.searchParams.append('client_id', clientId);
-      microsoftAuthUrl.searchParams.append('redirect_uri', redirectUri);
-      microsoftAuthUrl.searchParams.append('response_type', 'code');
-      microsoftAuthUrl.searchParams.append('scope', 'openid email profile');
-      microsoftAuthUrl.searchParams.append('response_mode', 'query');
+      // Use backend Passport.js OAuth endpoint (if implemented)
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5004';
       
-      // If email was provided, pass it as login_hint
-      if (emailFromInput || email) {
-        microsoftAuthUrl.searchParams.append('login_hint', emailFromInput || email);
-      }
-
-      // Redirect to Microsoft OAuth
-      window.location.href = microsoftAuthUrl.toString();
+      // Redirect to backend's Microsoft OAuth route
+      window.location.href = `${backendUrl}/api/auth/microsoft`;
 
     } catch (err) {
       setError(err instanceof Error ? err.message : "Microsoft login failed");
@@ -771,13 +737,27 @@ export default function LoginPage(): JSX.Element {
           <div className="mb-10">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-4xl font-black tracking-tight text-blue-600">Tikr.</h1>
-              <Dialog open={showPostmanDialog} onOpenChange={setShowPostmanDialog}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex items-center gap-2">
-                    <Code className="w-4 h-4" />
-                    API Docs
-                  </Button>
-                </DialogTrigger>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    // Clear all auth data
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("user");
+                    document.cookie = "auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                    window.location.reload();
+                  }}
+                  className="px-3 py-1 text-xs bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition-colors"
+                >
+                  Clear Auth
+                </button>
+                <Dialog open={showPostmanDialog} onOpenChange={setShowPostmanDialog}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="flex items-center gap-2">
+                      <Code className="w-4 h-4" />
+                      API Docs
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
@@ -947,6 +927,7 @@ export default function LoginPage(): JSX.Element {
                   </Tabs>
                 </DialogContent>
               </Dialog>
+              </div>
             </div>
           </div>
 

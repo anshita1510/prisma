@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import { prisma } from "../../../config/db";
 import { Role, Status, AuthProvider } from "@prisma/client"; // Import AuthProvider
+import { AuthUser } from "../../../types/express"; // Import AuthUser type
 import "../../../types/express"; // Import express type extensions
 
 import { UserRepository } from "../../repository/auth/user.repository";
@@ -73,7 +74,7 @@ export class UserController {
       console.log('Request headers:', req.headers);
       console.log('Request user:', req.user);
       console.log('Request body:', req.body);
-      
+
       return res.json({
         message: 'Debug test successful',
         user: req.user,
@@ -94,13 +95,15 @@ export class UserController {
       console.log('Request user:', req.user);
       console.log('Request headers:', req.headers.authorization);
 
-      if (!req.user) {
+      const user = req.user as AuthUser | undefined;
+
+      if (!user) {
         console.log('❌ No user in request');
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      if (!isAdminRole(req.user.role)) {
-        console.log('❌ User role not admin:', req.user.role);
+      if (!isAdminRole(user.role)) {
+        console.log('❌ User role not admin:', user.role);
         return res.status(403).json({ error: "Forbidden: Admin access required" });
       }
 
@@ -136,7 +139,7 @@ export class UserController {
 
       console.log('✅ All validations passed, calling usecase...');
 
-      await inviteEmployeeUsecase.execute(req.user.role, {
+      await inviteEmployeeUsecase.execute(user.role, {
         email,
         firstName,
         lastName,
@@ -145,10 +148,10 @@ export class UserController {
         role: role as Role,
         employeeCode,
       });
-      
+
       console.log('✅ Usecase executed successfully');
       console.log('Auth is here: ', req.body.authorization);
-      console.log("REQ.USER 👉", req.user);
+      console.log("REQ.USER 👉", user);
 
       return res.status(201).json({
         message: "Invitation email sent successfully",
@@ -175,7 +178,8 @@ export class UserController {
   /* ================= FORGET PASSWORD (SELF OR SUPER_ADMIN) ================= */
   async updatePassword(req: Request, res: Response) {
     try {
-      if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+      const user = req.user as AuthUser | undefined;
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
 
       const targetUserId = Number(req.params.id);
       const { newPassword } = req.body;
@@ -184,7 +188,7 @@ export class UserController {
         return res.status(400).json({ error: "Invalid input" });
       }
 
-      if (req.user.id !== targetUserId && req.user.role !== "SUPER_ADMIN") {
+      if (user.id !== targetUserId && user.role !== "SUPER_ADMIN") {
         return res.status(403).json({ error: "Forbidden" });
       }
 
@@ -262,11 +266,12 @@ export class UserController {
   /* ================= GET ALL USERS (ADMIN ONLY) ================= */
   async getAllUsers(req: Request, res: Response) {
     try {
-      if (!req.user) {
+      const user = req.user as AuthUser | undefined;
+      if (!user) {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      if (!isAdminRole(req.user.role)) {
+      if (!isAdminRole(user.role)) {
         return res.status(403).json({ error: "Forbidden: Admin access required" });
       }
 
@@ -284,7 +289,7 @@ export class UserController {
       const formattedUsers = users.map(user => {
         const firstName = user.firstName || '';
         const lastName = user.lastName || '';
-        
+
         // Create name, avoiding duplicates and handling empty values
         let name = firstName;
         if (lastName && lastName !== firstName) {
@@ -321,11 +326,12 @@ export class UserController {
   }
   async getCurrentUser(req: Request, res: Response) {
     try {
-      if (!req.user) {
+      const authUser = req.user as AuthUser | undefined;
+      if (!authUser) {
         return res.status(401).json({ error: "Unauthorized" });
       }
 
-      const user = await userRepo.findById(req.user.id);
+      const user = await userRepo.findById(authUser.id);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
@@ -333,7 +339,7 @@ export class UserController {
       // Format user data for frontend
       const firstName = user.firstName || '';
       const lastName = user.lastName || '';
-      
+
       // Create name, avoiding duplicates and handling empty values
       let name = firstName;
       if (lastName && lastName !== firstName) {
@@ -390,7 +396,7 @@ export class UserController {
       }
 
       // Return the auth provider
-      return res.json({ 
+      return res.json({
         provider: user.authProvider,
         userExists: true,
         isActive: user.isActive,
@@ -406,45 +412,22 @@ export class UserController {
   /* ================= GOOGLE OAUTH LOGIN ================= */
   async googleLogin(req: Request, res: Response) {
     try {
-      const { googleToken, email } = req.body;
+      const { token } = req.body;
 
-      if (!googleToken || !email) {
-        return res.status(400).json({ error: "Google token and email are required" });
+      if (!token) {
+        return res.status(400).json({ error: "Google token is required" });
       }
 
-      // Verify Google token and get user info
-      let googleUser: GoogleUserInfo;
-      try {
-        googleUser = await OAuthService.verifyGoogleToken(googleToken);
-      } catch (error) {
-        // For development, we'll allow mock tokens
-        if (googleToken.startsWith('mock_google_token_')) {
-          googleUser = {
-            id: 'mock_google_id',
-            email: email.toLowerCase(),
-            name: 'Google User',
-            given_name: 'Google',
-            family_name: 'User'
-          };
-        } else {
-          return res.status(400).json({ error: "Invalid Google token" });
-        }
-      }
+      const googleUser = await OAuthService.verifyGoogleToken(token);
 
-      // Verify email matches
-      if (googleUser.email.toLowerCase() !== email.toLowerCase()) {
-        return res.status(400).json({ error: "Email mismatch" });
-      }
+      const email = googleUser.email.toLowerCase();
 
-      let user = await prisma.user.findUnique({
-        where: { email: email.toLowerCase() }
-      });
+      let user = await prisma.user.findUnique({ where: { email } });
 
       if (!user) {
-        // Create new user with Google auth
         user = await prisma.user.create({
           data: {
-            email: email.toLowerCase(),
+            email,
             firstName: googleUser.given_name || "Google",
             lastName: googleUser.family_name || "User",
             phone: "",
@@ -456,32 +439,97 @@ export class UserController {
             isActive: true
           }
         });
-      } else {
-        // Update existing user to Google auth if not already
-        if (user.authProvider !== AuthProvider.GOOGLE) {
-          user = await prisma.user.update({
-            where: { id: user.id },
-            data: {
-              authProvider: AuthProvider.GOOGLE,
-              googleId: googleUser.id,
-              status: Status.ACTIVE,
-              isActive: true
-            }
-          });
-        }
       }
 
-      // Generate JWT token
       const usecase = new LoginUsecase(userRepo);
       const result = await usecase.generateTokenForUser(user);
-      
-      return res.json(result);
 
+      return res.json(result);
     } catch (error: any) {
-      console.error('Google login error:', error);
-      return res.status(500).json({ error: error.message });
+      console.error("Google login error:", error);
+      return res.status(500).json({ error: "Google authentication failed" });
     }
   }
+
+
+  // async googleLogin(req: Request, res: Response) {
+  //   try {
+  //     const { googleToken, email } = req.body;
+
+  //     if (!googleToken || !email) {
+  //       return res.status(400).json({ error: "Google token and email are required" });
+  //     }
+
+  //     // Verify Google token and get user info
+  //     let googleUser: GoogleUserInfo;
+  //     try {
+  //       googleUser = await OAuthService.verifyGoogleToken(googleToken);
+  //     } catch (error) {
+  //       // For development, we'll allow mock tokens
+  //       if (googleToken.startsWith('mock_google_token_')) {
+  //         googleUser = {
+  //           id: 'mock_google_id',
+  //           email: email.toLowerCase(),
+  //           name: 'Google User',
+  //           given_name: 'Google',
+  //           family_name: 'User'
+  //         };
+  //       } else {
+  //         return res.status(400).json({ error: "Invalid Google token" });
+  //       }
+  //     }
+
+  // Verify email matches
+  // if (googleUser.email.toLowerCase() !== email.toLowerCase()) {
+  //   return res.status(400).json({ error: "Email mismatch" });
+  // }
+
+  // let user = await prisma.user.findUnique({
+  //   where: { email: email.toLowerCase() }
+  // });
+
+  // if (!user) {
+  //   // Create new user with Google auth
+  //   user = await prisma.user.create({
+  //     data: {
+  //       email: email.toLowerCase(),
+  //       firstName: googleUser.given_name || "Google",
+  //       lastName: googleUser.family_name || "User",
+  //       phone: "",
+  //       designation: "Employee",
+  //       role: Role.EMPLOYEE,
+  //       authProvider: AuthProvider.GOOGLE,
+  //       googleId: googleUser.id,
+  //       status: Status.ACTIVE,
+  //       isActive: true
+  //     }
+  //   });
+  // } else {
+  //   // Update existing user to Google auth if not already
+  //   if (user.authProvider !== AuthProvider.GOOGLE) {
+  //     user = await prisma.user.update({
+  //       where: { id: user.id },
+  //       data: {
+  //             authProvider: AuthProvider.GOOGLE,
+  //             googleId: googleUser.id,
+  //             status: Status.ACTIVE,
+  //             isActive: true
+  //           }
+  //         });
+  //       }
+  //     }
+
+  //     // Generate JWT token
+  //     const usecase = new LoginUsecase(userRepo);
+  //     const result = await usecase.generateTokenForUser(user);
+
+  //     return res.json(result);
+
+  //   } catch (error: any) {
+  //     console.error('Google login error:', error);
+  //     return res.status(500).json({ error: error.message });
+  //   }
+  // }
 
   /* ================= MICROSOFT OAUTH LOGIN ================= */
   async microsoftLogin(req: Request, res: Response) {
@@ -555,7 +603,7 @@ export class UserController {
       // Generate JWT token
       const usecase = new LoginUsecase(userRepo);
       const result = await usecase.generateTokenForUser(user);
-      
+
       return res.json(result);
 
     } catch (error: any) {
@@ -567,9 +615,10 @@ export class UserController {
   /* ================= UPDATE USER CREDENTIALS ================= */
   async updateCredentials(req: Request, res: Response) {
     try {
-      if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+      const user = req.user as AuthUser | undefined;
+      if (!user) return res.status(401).json({ error: "Unauthorized" });
 
-      if (req.user.role !== "ADMIN") {
+      if (user.role !== "ADMIN") {
         return res.status(403).json({ error: "Admin access required" });
       }
 
@@ -827,7 +876,7 @@ export class UserController {
   async downloadPostmanCollection(req: Request, res: Response) {
     try {
       const baseUrl = process.env.API_BASE_URL || "http://localhost:3001";
-      
+
       const postmanCollection = {
         info: {
           name: "Tikr API Collection",

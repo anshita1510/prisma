@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Target } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 // 1. Added this interface to define the types for your props
 interface MenuItemProps {
@@ -11,10 +12,31 @@ interface MenuItemProps {
 }
 
 export default function Navbar() {
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   
   // 2. Added <string | null> so TypeScript knows this state stores the label name
   const [dropdown, setDropdown] = useState<string | null>(null);
+
+  // Handle login click - clear any existing session first
+  const handleLoginClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    
+    // Clear all auth data immediately
+    localStorage.clear(); // Clear everything in localStorage
+    
+    // Clear all cookies
+    document.cookie.split(";").forEach((c) => {
+      document.cookie = c
+        .replace(/^ +/, "")
+        .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    });
+    
+    console.log("Cleared all auth data, redirecting to login...");
+    
+    // Use window.location for hard redirect (bypasses any client-side routing)
+    window.location.href = "/login?logout=true&t=" + Date.now();
+  };
 
   // 3. Added the types to the function parameters here
   const MenuItem = ({ label, items }: MenuItemProps) => (
@@ -84,9 +106,13 @@ export default function Navbar() {
 
           {/* Right Actions */}
           <div className="hidden items-center gap-4 md:flex">
-            <Link href="/login" className="text-gray-700 hover:text-gray-900">
+            <a 
+              href="/login?logout=true" 
+              onClick={handleLoginClick}
+              className="text-gray-700 hover:text-gray-900 cursor-pointer"
+            >
               Login
-            </Link>
+            </a>
             <button className="rounded-full bg-blue-600 px-5 py-2 text-white hover:bg-blue-700">
               Get free trial
             </button>
@@ -144,9 +170,13 @@ export default function Navbar() {
           </Link>
 
           <div className="space-y-2 pt-2">
-            <Link href="/login" className="block text-gray-700">
+            <a 
+              href="/login?logout=true" 
+              onClick={handleLoginClick}
+              className="block text-gray-700 cursor-pointer"
+            >
               Login
-            </Link>
+            </a>
             <button className="w-full rounded-full bg-blue-600 py-2 text-white">
               Get free trial
             </button>

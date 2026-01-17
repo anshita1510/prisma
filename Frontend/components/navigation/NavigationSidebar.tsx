@@ -46,12 +46,22 @@ interface NavigationItem {
   badge?: number;
 }
 
+const getRoleBasedHomeRoute = (role: string): string => {
+  const roleRoutes: Record<string, string> = {
+    SUPER_ADMIN: "/superAdmin",
+    ADMIN: "/admin",
+    MANAGER: "/manager",
+    EMPLOYEE: "/user",
+  };
+  return roleRoutes[role] || "/dashboard";
+};
+
 const navigationConfig: NavigationItem[] = [
   {
     id: 'home',
     label: 'Home',
     icon: Home,
-    href: '/dashboard',
+    href: '/dashboard', // This will be dynamically updated based on user role
     roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'EMPLOYEE']
   },
   {
@@ -369,8 +379,14 @@ export default function NavigationSidebar() {
     setExpandedItems(newExpanded);
   };
 
-  const handleNavigation = (href: string) => {
-    router.push(href);
+  const handleNavigation = (href: string, itemId?: string) => {
+    // If this is the home navigation, redirect to role-specific dashboard
+    if (itemId === 'home' && user) {
+      const roleBasedRoute = getRoleBasedHomeRoute(user.role);
+      router.push(roleBasedRoute);
+    } else {
+      router.push(href);
+    }
   };
 
   const handleLogout = () => {
@@ -407,7 +423,7 @@ export default function NavigationSidebar() {
             if (hasChildren) {
               toggleExpanded(item.id);
             } else if (item.href) {
-              handleNavigation(item.href);
+              handleNavigation(item.href, item.id);
             }
           }}
         >

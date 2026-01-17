@@ -52,7 +52,7 @@ export default function Sidebar() {
 
   const handleLogout = () => {
     authService.logout();
-    router.push('/login');
+    // No need to manually redirect - authService.logout() handles it
   };
 
   const getUserInitials = () => {
