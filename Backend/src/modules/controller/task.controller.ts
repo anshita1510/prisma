@@ -41,10 +41,11 @@ export class TaskController {
       const validatedQuery = TaskQueryDto.parse(req.query);
       const { employeeId, companyId, role } = req.user as any;
       const isManager = ['MANAGER', 'ADMIN', 'SUPER_ADMIN'].includes(role);
+      const isSuperAdmin = role === 'SUPER_ADMIN';
 
       const result = await this.taskService.getTasks(
         validatedQuery,
-        companyId,
+        isSuperAdmin ? null : companyId, // Super admins can see all companies
         employeeId,
         isManager
       );
@@ -193,9 +194,10 @@ export class TaskController {
     try {
       const { employeeId, companyId, role } = req.user as any;
       const isManager = ['MANAGER', 'ADMIN', 'SUPER_ADMIN'].includes(role);
+      const isSuperAdmin = role === 'SUPER_ADMIN';
 
       const stats = await this.taskService.getTaskStats(
-        companyId,
+        isSuperAdmin ? null : companyId, // Super admins can see stats from all companies
         employeeId,
         isManager
       );

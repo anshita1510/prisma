@@ -151,7 +151,7 @@ export class UserController {
         employeeCode,
         companyName,
         companyId,
-      });
+      }, user.id); // Pass the inviter's user ID
 
       console.log('✅ Usecase executed successfully');
       console.log('Auth is here: ', req.body.authorization);

@@ -10,6 +10,9 @@ export class NodemailerService implements EmailService {
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT),
       secure: false,
+      connectionTimeout: 5000, // 5 seconds connection timeout
+      greetingTimeout: 5000,   // 5 seconds greeting timeout
+      socketTimeout: 10000,    // 10 seconds socket timeout
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
@@ -26,10 +29,6 @@ export class NodemailerService implements EmailService {
         user: process.env.SMTP_USER ? '***configured***' : 'NOT SET',
         pass: process.env.SMTP_PASS ? '***configured***' : 'NOT SET'
       });
-      
-      // Verify transporter configuration
-      await this.transporter.verify();
-      console.log('✅ SMTP connection verified');
       
       const mailOptions = {
         from: `"Tikr Team" <${process.env.SMTP_USER}>`,

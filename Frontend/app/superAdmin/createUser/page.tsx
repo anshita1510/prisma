@@ -1,18 +1,13 @@
 import Sidebar from "../_components/Sidebarr";
-import Create from "../../admin/_components/createu"
+import CreateUserSuperAdmin from "../_components/CreateUserSuperAdmin";
 
-export default function page() {
+export default function CreateUserPage() {
   return (
-   
     <div className="flex min-h-screen">
-    {/* Sidebar */}
-    <Sidebar />
-
-    {/* Main Content */}
-    <main className="flex-1 ">
-     <Create></Create>
-    </main>
-
-  </div>
-  )
+      <Sidebar />
+      <main className="flex-1 lg:ml-64 bg-gray-50">
+        <CreateUserSuperAdmin />
+      </main>
+    </div>
+  );
 }

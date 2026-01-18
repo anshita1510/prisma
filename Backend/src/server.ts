@@ -17,6 +17,9 @@ import notificationRoutes from './modules/routes/notification.routes';
 import newProjectRoutes from './modules/routes/project/project.routes';
 import employeeRoutes from './modules/routes/employee.routes';
 import calendarRoutes from './modules/routes/calendar.routes';
+import companyRoutes from './modules/routes/company.routes';
+import dashboardRoutes from './modules/routes/dashboard.routes';
+import analyticsRoutes from './modules/routes/analytics.routes';
 import { errorHandler } from './middlewares/validation.middleware';
 import { scheduleAutoCheckout } from './cron/autoCheckout.cron';
 import { swaggerSpec } from './config/swagger';
@@ -91,6 +94,9 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/employees', employeeRoutes);
+app.use('/api/companies', companyRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Enhanced TMS Routes
 app.use('/api/v2/projects', enhancedProjectRoutesV2);

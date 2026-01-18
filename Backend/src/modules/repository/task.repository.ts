@@ -27,12 +27,12 @@ export class TaskRepository {
     });
   }
 
-  async findMany(query: TaskQueryDtoType & { companyId: number; employeeId?: number; isManager?: boolean }) {
+  async findMany(query: TaskQueryDtoType & { companyId: number | null; employeeId?: number; isManager?: boolean }) {
     const { page, limit, projectId, assignedToId, status, priority, isActive, companyId, employeeId, isManager } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
-      project: { companyId },
+      ...(companyId && { project: { companyId } }), // Only filter by company if companyId is provided
       ...(projectId && { projectId }),
       ...(assignedToId && { assignedToId }),
       ...(status && { status }),
@@ -41,9 +41,9 @@ export class TaskRepository {
     };
 
     // If not a manager, only show tasks from projects where user has access
-    if (!isManager && employeeId) {
+    if (!isManager && employeeId && companyId) {
       where.project = {
-        ...where.project,
+        companyId, // Keep company filter for non-managers
         OR: [
           { ownerId: employeeId },
           { members: { some: { id: employeeId } } }

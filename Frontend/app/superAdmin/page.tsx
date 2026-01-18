@@ -28,33 +28,21 @@ import {
   Database
 } from 'lucide-react';
 import { authService } from '@/app/services/authService';
-
-interface DashboardStats {
-  totalUsers: number;
-  totalAdmins: number;
-  totalProjects: number;
-  systemHealth: number;
-  activeUsers: number;
-  pendingApprovals: number;
-}
-
-interface RecentActivity {
-  id: string;
-  type: 'admin_created' | 'system_update' | 'user_approved' | 'security_alert';
-  title: string;
-  description: string;
-  timestamp: string;
-  user: string;
-}
+import { dashboardService, DashboardStats, RecentActivity } from '@/app/services/dashboard.service';
 
 export default function SuperAdminDashboard() {
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
     totalAdmins: 0,
+    totalManagers: 0,
+    totalEmployees: 0,
+    totalCompanies: 0,
     totalProjects: 0,
-    systemHealth: 0,
+    totalDepartments: 0,
     activeUsers: 0,
-    pendingApprovals: 0
+    pendingApprovals: 0,
+    systemHealth: 0,
+    recentRegistrations: 0
   });
   
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
@@ -71,45 +59,54 @@ export default function SuperAdminDashboard() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
+      console.log('🔄 Loading dashboard data...');
       
-      // Mock data - in real app, this would come from APIs
+      // Fetch real data from API
+      const [statsResponse, activityResponse] = await Promise.all([
+        dashboardService.getDashboardStats(),
+        dashboardService.getRecentActivity()
+      ]);
+      
+      console.log('📊 Stats Response:', statsResponse);
+      console.log('📋 Activity Response:', activityResponse);
+      
+      if (statsResponse.success) {
+        setStats(statsResponse.stats);
+        console.log('✅ Stats updated:', statsResponse.stats);
+      }
+      
+      if (activityResponse.success) {
+        setRecentActivity(activityResponse.activities);
+        console.log('✅ Activity updated:', activityResponse.activities);
+      }
+    } catch (error: any) {
+      console.error('❌ Error loading dashboard data:', error);
+      
+      // Fallback to mock data if API fails
       setStats({
-        totalUsers: 156,
-        totalAdmins: 8,
-        totalProjects: 24,
-        systemHealth: 98,
-        activeUsers: 142,
-        pendingApprovals: 3
+        totalUsers: 0,
+        totalAdmins: 0,
+        totalManagers: 0,
+        totalEmployees: 0,
+        totalCompanies: 0,
+        totalProjects: 0,
+        totalDepartments: 0,
+        activeUsers: 0,
+        pendingApprovals: 0,
+        systemHealth: 0,
+        recentRegistrations: 0
       });
       
       setRecentActivity([
         {
           id: '1',
-          type: 'admin_created',
-          title: 'New Admin Created',
-          description: 'Sarah Wilson was promoted to Admin role',
-          timestamp: '1 hour ago',
-          user: 'Super Admin'
-        },
-        {
-          id: '2',
           type: 'system_update',
-          title: 'System Update',
-          description: 'Database backup completed successfully',
-          timestamp: '3 hours ago',
+          title: 'System Status',
+          description: `Unable to load real-time data: ${error.message}`,
+          timestamp: 'Just now',
           user: 'System'
-        },
-        {
-          id: '3',
-          type: 'security_alert',
-          title: 'Security Alert',
-          description: 'Multiple failed login attempts detected',
-          timestamp: '5 hours ago',
-          user: 'Security System'
         }
       ]);
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -119,10 +116,12 @@ export default function SuperAdminDashboard() {
     switch (type) {
       case 'admin_created':
         return <Shield className="w-4 h-4 text-blue-500" />;
+      case 'user_created':
+        return <UserPlus className="w-4 h-4 text-green-500" />;
+      case 'company_created':
+        return <Building className="w-4 h-4 text-purple-500" />;
       case 'system_update':
         return <Database className="w-4 h-4 text-green-500" />;
-      case 'user_approved':
-        return <UserPlus className="w-4 h-4 text-orange-500" />;
       case 'security_alert':
         return <AlertCircle className="w-4 h-4 text-red-500" />;
       default:
@@ -134,7 +133,7 @@ export default function SuperAdminDashboard() {
     return (
       <div className="flex min-h-screen">
         <Sidebar />
-        <main className="flex-1">
+        <main className="flex-1 lg:ml-64">
           <Banner />
           <div className="p-6">
             <div className="flex items-center justify-center h-64">
@@ -149,9 +148,25 @@ export default function SuperAdminDashboard() {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main className="flex-1">
+      <main className="flex-1 lg:ml-64">
         <Banner />
         <div className="p-6 space-y-8">
+          {/* Header with Refresh Button */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
+              <p className="text-gray-600">Real-time system statistics and activity</p>
+            </div>
+            <Button 
+              onClick={loadDashboardData}
+              disabled={loading}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Activity className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh Data
+            </Button>
+          </div>
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card className="hover:shadow-lg transition-shadow">
@@ -205,6 +220,61 @@ export default function SuperAdminDashboard() {
             </Card>
           </div>
 
+          {/* Additional Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Companies</CardTitle>
+                <Building className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-indigo-600">{stats.totalCompanies}</div>
+                <p className="text-xs text-muted-foreground">
+                  Active organizations
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Managers</CardTitle>
+                <User className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-600">{stats.totalManagers}</div>
+                <p className="text-xs text-muted-foreground">
+                  Management level
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-teal-600">{stats.totalEmployees}</div>
+                <p className="text-xs text-muted-foreground">
+                  Staff members
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Recent Registrations</CardTitle>
+                <UserPlus className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-pink-600">{stats.recentRegistrations}</div>
+                <p className="text-xs text-muted-foreground">
+                  Last 7 days
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Quick Actions */}
@@ -222,7 +292,7 @@ export default function SuperAdminDashboard() {
                 <Button className="w-full justify-start" variant="outline" asChild>
                   <a href="/superAdmin/createUser">
                     <UserPlus className="mr-2 h-4 w-4" />
-                    Create Admin User
+                    Create Admin/ Manage Company
                   </a>
                 </Button>
                 <Button className="w-full justify-start" variant="outline" asChild>

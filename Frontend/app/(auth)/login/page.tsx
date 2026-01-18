@@ -737,27 +737,13 @@ export default function LoginPage(): JSX.Element {
           <div className="mb-10">
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-4xl font-black tracking-tight text-blue-600">Tikr.</h1>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    // Clear all auth data
-                    localStorage.removeItem("token");
-                    localStorage.removeItem("user");
-                    document.cookie = "auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-                    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-                    window.location.reload();
-                  }}
-                  className="px-3 py-1 text-xs bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition-colors"
-                >
-                  Clear Auth
-                </button>
-                <Dialog open={showPostmanDialog} onOpenChange={setShowPostmanDialog}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="flex items-center gap-2">
-                      <Code className="w-4 h-4" />
-                      API Docs
-                    </Button>
-                  </DialogTrigger>
+              <Dialog open={showPostmanDialog} onOpenChange={setShowPostmanDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <Code className="w-4 h-4" />
+                    API Docs
+                  </Button>
+                </DialogTrigger>
                 <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
@@ -927,7 +913,6 @@ export default function LoginPage(): JSX.Element {
                   </Tabs>
                 </DialogContent>
               </Dialog>
-              </div>
             </div>
           </div>
 

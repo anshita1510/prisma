@@ -50,7 +50,7 @@ export class TaskService {
     });
   }
 
-  async getTasks(query: TaskQueryDtoType, companyId: number, employeeId: number, isManager: boolean) {
+  async getTasks(query: TaskQueryDtoType, companyId: number | null, employeeId: number, isManager: boolean) {
     return this.taskRepository.findMany({
       ...query,
       companyId,
@@ -154,16 +154,20 @@ export class TaskService {
     return this.taskRepository.getMyTasks(employeeId, companyId, status);
   }
 
-  async getTaskStats(companyId: number, employeeId?: number, isManager?: boolean) {
+  async getTaskStats(companyId: number | null, employeeId?: number, isManager?: boolean) {
     const where: any = {
-      project: { companyId },
       isActive: true
     };
 
+    // Only filter by company if companyId is provided (not for Super Admins)
+    if (companyId) {
+      where.project = { companyId };
+    }
+
     // If not a manager, only count tasks from accessible projects
-    if (!isManager && employeeId) {
+    if (!isManager && employeeId && companyId) {
       where.project = {
-        ...where.project,
+        companyId,
         OR: [
           { ownerId: employeeId },
           { members: { some: { id: employeeId } } }

@@ -1,14 +1,8 @@
 import { Request, Response } from 'express';
 import { projectService } from '../../services/projectService';
-import { $Enums } from '@prisma/client';
+import { ProjectStatus, ProjectRole, TaskStatus, TaskPriority } from '@prisma/client';
 import { CreateProjectUsecase } from '../../usecase/project/createProject.usecase';
 import { AuthorizationUtil, UserContext } from '../../../shared/utils/authorization.util';
-
-// Type aliases for easier use
-type ProjectStatus = $Enums.ProjectStatus;
-type ProjectRole = $Enums.ProjectRole;
-type TaskStatus = $Enums.TaskStatus;
-type TaskPriority = $Enums.TaskPriority;
 
 class ProjectController {
   // Helper method to extract user context

@@ -1,10 +1,6 @@
 import { Request, Response } from 'express';
 import { attendanceService } from '../../services/attendanceService';
-import { $Enums } from '@prisma/client';
-
-// Type aliases for easier use
-type AttendanceStatus = $Enums.AttendanceStatus;
-type RegularizationType = $Enums.RegularizationType;
+import { AttendanceStatus, RegularizationType } from '@prisma/client';
 
 class AttendanceController {
   // Personal Attendance Endpoints
@@ -16,7 +12,7 @@ class AttendanceController {
       if (!employeeId) {
         return res.status(400).json({
           success: false,
-          message: 'Employee ID is required'
+          message: 'Employee ID is required. This user does not have an employee record.'
         });
       }
 
@@ -57,7 +53,7 @@ class AttendanceController {
       if (!employeeId) {
         return res.status(400).json({
           success: false,
-          message: 'Employee ID is required'
+          message: 'Employee ID is required. This user does not have an employee record.'
         });
       }
 
@@ -99,10 +95,24 @@ class AttendanceController {
         : req.user?.employeeId;
 
       if (!employeeId) {
-        return res.status(400).json({
-          success: false,
-          message: 'Employee ID is required'
-        });
+        // If user doesn't have an employeeId (e.g., super admin), return empty data instead of error
+        console.log('⚠️ User has no employeeId, returning empty attendance data');
+        
+        const isToday = req.path.includes('/my-today') || req.path.includes('/today');
+        
+        if (isToday) {
+          return res.status(200).json({
+            success: true,
+            data: null,
+            message: 'No employee record found for this user'
+          });
+        } else {
+          return res.status(200).json({
+            success: true,
+            data: [],
+            message: 'No employee record found for this user'
+          });
+        }
       }
 
       const { startDate, endDate } = req.query;
@@ -382,6 +392,30 @@ class AttendanceController {
   // Dashboard Statistics
   async getAttendanceDashboardStats(req: Request, res: Response) {
     try {
+      // Check if user has employeeId for personal stats
+      const employeeId = req.user?.employeeId;
+      
+      if (!employeeId && (req.path.includes('/my-stats') || req.path.includes('/my-team-stats'))) {
+        // Return empty stats for users without employee records
+        console.log('⚠️ User has no employeeId, returning empty stats');
+        return res.status(200).json({
+          success: true,
+          data: {
+            summary: {
+              totalEmployees: 0,
+              present: 0,
+              absent: 0,
+              halfDay: 0,
+              leave: 0,
+              presentPercentage: 0
+            },
+            pendingRequests: 0,
+            recentActivity: []
+          },
+          message: 'No employee record found for this user'
+        });
+      }
+
       const { date, departmentId } = req.query;
       const targetDate = date ? new Date(date as string) : new Date();
 
@@ -412,6 +446,7 @@ class AttendanceController {
         data: stats
       });
     } catch (error: any) {
+      console.error('❌ Get attendance dashboard stats error:', error);
       res.status(500).json({
         success: false,
         message: error.message || 'Failed to fetch dashboard stats'

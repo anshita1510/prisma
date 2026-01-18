@@ -1,9 +1,7 @@
 import { Request, Response } from 'express';
-import { PrismaClient, $Enums } from '@prisma/client';
+import { PrismaClient, Designation } from '@prisma/client';
 
 const prisma = new PrismaClient();
-
-type Designation = $Enums.Designation;
 
 class EmployeeController {
   // Get all employees

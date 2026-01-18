@@ -1,15 +1,7 @@
-import { PrismaClient, $Enums } from '@prisma/client';
+import { PrismaClient, AuditAction, RequestStatus, AttendanceStatus, RegularizationType } from '@prisma/client';
 import { Request } from 'express';
 
 const prisma = new PrismaClient();
-
-// Type aliases for easier use
-type AttendanceStatus = $Enums.AttendanceStatus;
-type RegularizationType = $Enums.RegularizationType;
-type RequestStatus = $Enums.RequestStatus;
-type AuditAction = $Enums.AuditAction;
-
-const { AttendanceStatus, RegularizationType, RequestStatus, AuditAction } = $Enums;
 
 interface CheckInData {
   employeeId: number;
@@ -580,6 +572,9 @@ class AttendanceService {
       absent: attendances.filter(a => a.status === AttendanceStatus.ABSENT).length,
       late: attendances.filter(a => a.status === AttendanceStatus.LATE).length,
       earlyDeparture: attendances.filter(a => a.status === AttendanceStatus.EARLY_DEPARTURE).length,
+      halfDay: attendances.filter(a => a.status === AttendanceStatus.HALF_DAY).length,
+      leave: attendances.filter(a => a.status === AttendanceStatus.LEAVE).length,
+      presentPercentage: attendances.length > 0 ? Math.round((attendances.filter(a => a.status === AttendanceStatus.PRESENT).length / attendances.length) * 100) : 0,
       totalWorkHours: attendances.reduce((sum, a) => sum + (a.workHours || 0), 0),
       totalOvertime: attendances.reduce((sum, a) => sum + (a.overtime || 0), 0)
     };
@@ -849,22 +844,6 @@ class AttendanceService {
       failureCount: results.filter(r => !r.success).length,
       results
     };
-  }
-
-  private async getEmployeeCompanyId(employeeId: number): Promise<number> {
-    const employee = await prisma.employee.findUnique({
-      where: { id: employeeId },
-      select: { companyId: true }
-    });
-    return employee?.companyId || 1;
-  }
-
-  private async getEmployeeDepartmentId(employeeId: number): Promise<number> {
-    const employee = await prisma.employee.findUnique({
-      where: { id: employeeId },
-      select: { departmentId: true }
-    });
-    return employee?.departmentId || 1;
   }
 
   private async createAuditEntry(data: {

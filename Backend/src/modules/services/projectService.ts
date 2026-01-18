@@ -1,15 +1,7 @@
-import { PrismaClient, $Enums } from '@prisma/client';
+import { PrismaClient, ProjectStatus, ProjectRole, TaskStatus, TaskPriority } from '@prisma/client';
 import { Request } from 'express';
 
 const prisma = new PrismaClient();
-
-// Type aliases for easier use
-type ProjectStatus = $Enums.ProjectStatus;
-type ProjectRole = $Enums.ProjectRole;
-type TaskStatus = $Enums.TaskStatus;
-type TaskPriority = $Enums.TaskPriority;
-
-const { ProjectStatus, ProjectRole, TaskStatus, TaskPriority } = $Enums;
 
 interface CreateProjectData {
   name: string;

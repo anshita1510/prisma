@@ -8,20 +8,19 @@ import {
   Menu,
   X,
   LayoutDashboard,
-  CalendarOff,
-  UserCheck,
-  Briefcase,
   UserPlus,
   ChevronRight,
   LogOut,
-  Target
+  Target,
+  BarChart3,
+  CheckSquare
 } from 'lucide-react';
 
 
 const NAV_ITEMS = [
   { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, href: '/superAdmin' }, 
-  { id: 'leave', name: 'Leave', icon: CalendarOff, href: '/superAdmin/leave' },       
-  { id: 'project', name: 'Project', icon: Briefcase, href: '/superAdmin/project_m' },            
+  { id: 'analytics', name: 'View Analytics', icon: BarChart3, href: '/superAdmin/analytics' },
+  { id: 'tasks', name: 'Tasks', icon: CheckSquare, href: '/superAdmin/tasks' },
   { id: 'create-user', name: 'Create User', icon: UserPlus, href: '/superAdmin/createUser' },  
 ];
 
@@ -65,14 +64,14 @@ export default function Sidebar() {
 
       {/* SIDEBAR ASIDE */}
       <aside className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-blue-600 to-purple-700 text-white transform transition-transform duration-300 ease-in-out
-        lg:translate-x-0 lg:static lg:h-screen
-        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        w-64 bg-gradient-to-b from-blue-600 to-purple-700 text-white flex-shrink-0
+        lg:block lg:fixed lg:inset-y-0 lg:left-0 lg:h-screen
+        ${isOpen ? 'fixed inset-y-0 left-0 z-50 h-screen' : 'hidden lg:block'}
       `}>
-        <div className="flex flex-col h-full border-r border-blue-800/30 shadow-2xl lg:shadow-none">
+        <div className="flex flex-col h-full">
 
           {/* LOGO SECTION */}
-          <div className="p-6 flex items-center justify-between border-b border-blue-600/50">
+          <div className="p-6 flex items-center justify-between border-b border-blue-600/50 flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white text-blue-700 rounded-xl flex items-center justify-center shadow-lg font-bold">
                 <Target size={24} />
@@ -123,14 +122,14 @@ export default function Sidebar() {
           </nav>
 
           {/* USER & LOGOUT SECTION */}
-          <div className="p-4 border-t border-blue-600/50 space-y-3 bg-blue-800/20 mt-auto">
-            <div className="flex items-center gap-3 p-2.5 rounded-xl bg-blue-800/40">
-              <div className="w-9 h-9 rounded-full bg-blue-400 border-2 border-blue-500/50 flex items-center justify-center text-blue-900 font-bold text-xs uppercase">
+          <div className="p-4 border-t border-blue-600/50 bg-blue-800/20 flex-shrink-0">
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-blue-800/40 mb-3">
+              <div className="w-10 h-10 rounded-full bg-blue-400 border-2 border-blue-500/50 flex items-center justify-center text-blue-900 font-bold text-sm uppercase flex-shrink-0">
                 {getUserInitials()}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold truncate">{user?.name || "Loading..."}</p>
-                <p className="text-[10px] text-blue-300 font-bold uppercase tracking-widest">{getRoleDisplay()}</p>
+                <p className="text-xs text-blue-300 font-bold uppercase tracking-widest">{getRoleDisplay()}</p>
               </div>
             </div>
 
@@ -145,11 +144,30 @@ export default function Sidebar() {
         </div>
       </aside>
 
-      {/* Global CSS for hidden scrollbar */}
+      {/* Global CSS for hidden scrollbar and full height sidebar */}
       <style dangerouslySetInnerHTML={{
         __html: `
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        
+        /* Ensure proper layout */
+        html, body {
+          height: 100%;
+          margin: 0;
+          padding: 0;
+        }
+        
+        /* Remove any default margins/padding that might cause white space */
+        * {
+          box-sizing: border-box;
+        }
+        
+        /* Ensure main content can scroll properly */
+        @media (min-width: 1024px) {
+          body {
+            overflow-x: hidden;
+          }
+        }
       `}} />
     </>
   );

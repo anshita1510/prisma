@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Sidebar from '../_components/Sidebar_A';
-import CreateUserForm from '../_components/CreateUserForm';
+import AdminCreateUserWrapper from '../_components/AdminCreateUserWrapper';
 import UserList from '../_components/UserList';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/tabs';
 
@@ -28,7 +28,7 @@ export default function CreateUserPage() {
             </TabsList>
             
             <TabsContent value="create">
-              <CreateUserForm />
+              <AdminCreateUserWrapper />
             </TabsContent>
             
             <TabsContent value="manage">

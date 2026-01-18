@@ -1,11 +1,7 @@
 import { Request, Response } from 'express';
-import { $Enums } from '@prisma/client';
+import { ProjectStatus, ProjectRole } from '@prisma/client';
 import { EnhancedCreateProjectUsecase, EnhancedCreateProjectRequest } from '../../usecase/project/enhancedCreateProject.usecase';
 import { AuthorizationUtil, UserContext } from '../../../shared/utils/authorization.util';
-
-// Type aliases for easier use
-type ProjectStatus = $Enums.ProjectStatus;
-type ProjectRole = $Enums.ProjectRole;
 
 export class EnhancedProjectController {
   
