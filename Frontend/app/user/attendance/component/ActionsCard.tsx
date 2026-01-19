@@ -4,6 +4,7 @@ import { Home, Briefcase, Clock, FileText, LogIn, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAttendance } from '../hooks/useAttendance';
 import { useToast } from '../../../hooks/useToast';
+import { attendanceService, TimeSlot } from '../../../services/attendanceService';
 import api from '../../../../lib/axios';
 
 interface ActionButtonProps {
@@ -45,11 +46,42 @@ export const ActionsCard = ({ currentTime, currentDate }: ActionsCardProps) => {
   const [loading, setLoading] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(true);
   const [todayAttendance, setTodayAttendance] = useState<any>(null);
+  const [currentSessionTime, setCurrentSessionTime] = useState(0);
+  const [totalWorkTime, setTotalWorkTime] = useState(0);
 
   // Check today's attendance status on mount
   useEffect(() => {
     checkTodayStatus();
   }, [currentUser]);
+
+  // Update real-time calculations every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (todayAttendance?.timeSlots) {
+        updateTimeCalculations(todayAttendance.timeSlots);
+      }
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, [todayAttendance]);
+
+  // Initial calculation when attendance data changes
+  useEffect(() => {
+    if (todayAttendance?.timeSlots) {
+      updateTimeCalculations(todayAttendance.timeSlots);
+    }
+  }, [todayAttendance]);
+
+  const updateTimeCalculations = (timeSlots: TimeSlot[]) => {
+    // Calculate total completed work time
+    const completedTime = attendanceService.calculateTotalWorkingHours(timeSlots);
+    
+    // Calculate current session time if checked in
+    const currentSession = attendanceService.calculateCurrentSessionTime(timeSlots);
+    
+    setTotalWorkTime(completedTime);
+    setCurrentSessionTime(currentSession);
+  };
 
   const checkTodayStatus = async () => {
     if (!currentUser?.employeeId) return;
@@ -67,9 +99,12 @@ export const ActionsCard = ({ currentTime, currentDate }: ActionsCardProps) => {
         const hasOpenSlot = timeSlots.some((slot: any) => slot.checkIn && !slot.checkOut);
         
         setIsCheckedIn(hasOpenSlot);
+        updateTimeCalculations(timeSlots);
       } else {
         setIsCheckedIn(false);
         setTodayAttendance(null);
+        setTotalWorkTime(0);
+        setCurrentSessionTime(0);
       }
     } catch (err: any) {
       console.log('Could not fetch today status:', err);
@@ -147,6 +182,16 @@ export const ActionsCard = ({ currentTime, currentDate }: ActionsCardProps) => {
     }
   };
 
+  const getTotalDisplayTime = () => {
+    if (isCheckedIn) {
+      // Show total completed time + current session time
+      return totalWorkTime + (currentSessionTime / 60); // Convert minutes to hours
+    } else {
+      // Show only completed time
+      return totalWorkTime;
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Actions</h2>
@@ -164,7 +209,7 @@ export const ActionsCard = ({ currentTime, currentDate }: ActionsCardProps) => {
       {/* Status indicator */}
       {todayAttendance && (
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center justify-between text-sm mb-2">
+          <div className="flex items-center justify-between text-sm mb-3">
             <span className="text-blue-900 font-medium">Today's Status:</span>
             <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
               isCheckedIn 
@@ -175,43 +220,84 @@ export const ActionsCard = ({ currentTime, currentDate }: ActionsCardProps) => {
             </span>
           </div>
           
-          {/* Total work hours */}
-          {todayAttendance.workHours !== null && todayAttendance.workHours !== undefined && (
-            <div className="mb-2 p-2 bg-white rounded border border-blue-100">
+          {/* Real-time work time display */}
+          <div className="mb-3 p-3 bg-white rounded-lg border border-blue-100">
+            <div className="flex items-center justify-between mb-2">
               <div className="text-xs text-blue-600 font-medium">Total Work Time</div>
-              <div className="text-lg font-bold text-blue-900">
-                {Math.floor(todayAttendance.workHours)}h {Math.round((todayAttendance.workHours % 1) * 60)}m
-              </div>
+              {isCheckedIn && (
+                <div className="text-xs text-green-600 font-medium animate-pulse">● Live</div>
+              )}
+            </div>
+            <div className="text-2xl font-bold text-blue-900 mb-1">
+              {attendanceService.formatWorkingHours(getTotalDisplayTime())}
+            </div>
+            
+            {/* Breakdown */}
+            <div className="text-xs text-blue-700 space-y-1">
+              {totalWorkTime > 0 && (
+                <div>Completed: {attendanceService.formatWorkingHours(totalWorkTime)}</div>
+              )}
+              {isCheckedIn && currentSessionTime > 0 && (
+                <div className="text-green-600">
+                  Current session: {attendanceService.formatDuration(currentSessionTime)}
+                </div>
+              )}
               {todayAttendance.overtime > 0 && (
-                <div className="text-xs text-green-600">
-                  +{todayAttendance.overtime.toFixed(1)}h overtime
+                <div className="text-orange-600 font-medium">
+                  Overtime: {attendanceService.formatWorkingHours(todayAttendance.overtime)}
                 </div>
               )}
             </div>
-          )}
+          </div>
           
           {/* Time slots */}
           {todayAttendance.timeSlots && todayAttendance.timeSlots.length > 0 && (
-            <div className="mt-2 space-y-1">
-              <div className="text-xs text-blue-700 font-medium">Time Entries:</div>
-              {todayAttendance.timeSlots.map((slot: any, index: number) => (
-                <div key={index} className="text-xs text-blue-700 bg-white p-1.5 rounded border border-blue-100">
-                  <span className="font-medium">#{index + 1}</span>
-                  {' '}In: {new Date(slot.checkIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                  {slot.checkOut && (
-                    <>
-                      {' → Out: '}
-                      {new Date(slot.checkOut).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                      <span className="ml-2 text-green-600 font-medium">
-                        ({Math.round((new Date(slot.checkOut).getTime() - new Date(slot.checkIn).getTime()) / (1000 * 60))}m)
-                      </span>
-                    </>
-                  )}
-                  {!slot.checkOut && (
-                    <span className="ml-2 text-orange-600 font-medium">(Active)</span>
-                  )}
-                </div>
-              ))}
+            <div className="space-y-2">
+              <div className="text-xs text-blue-700 font-medium">
+                Time Entries ({todayAttendance.timeSlots.length}):
+              </div>
+              <div className="max-h-32 overflow-y-auto space-y-1">
+                {todayAttendance.timeSlots.map((slot: any, index: number) => {
+                  const duration = slot.checkOut 
+                    ? attendanceService.calculateWorkingHours(slot.checkIn, slot.checkOut)
+                    : attendanceService.calculateCurrentSessionTime([slot]) / 60;
+                  
+                  return (
+                    <div key={index} className="text-xs bg-white p-2 rounded border border-blue-100">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium text-blue-800">Session #{index + 1}</span>
+                        <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                          slot.checkOut 
+                            ? 'bg-gray-100 text-gray-700' 
+                            : 'bg-green-100 text-green-700 animate-pulse'
+                        }`}>
+                          {slot.checkOut ? 'Completed' : 'Active'}
+                        </span>
+                      </div>
+                      
+                      <div className="text-blue-700">
+                        <div>
+                          In: {new Date(slot.checkIn).toLocaleTimeString('en-US', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </div>
+                        {slot.checkOut && (
+                          <div>
+                            Out: {new Date(slot.checkOut).toLocaleTimeString('en-US', { 
+                              hour: '2-digit', 
+                              minute: '2-digit' 
+                            })}
+                          </div>
+                        )}
+                        <div className="font-medium text-blue-800 mt-1">
+                          Duration: {attendanceService.formatWorkingHours(duration)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

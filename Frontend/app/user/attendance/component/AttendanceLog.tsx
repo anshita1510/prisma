@@ -1,20 +1,39 @@
 "use client";
 
 import { Check, AlertCircle, MoreHorizontal, CheckCircle } from 'lucide-react';
-import { AttendanceRecord } from '../types/attendanceTypes';
 import { TimelineBar } from './TimelineBar';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { attendanceService } from '../../../services/attendanceService';
+
+interface BackendTimeSlot {
+  checkIn: string;
+  checkOut?: string;
+}
+
+interface BackendAttendanceRecord {
+  id: number;
+  date: string;
+  status: string;
+  checkIn?: string;
+  checkOut?: string;
+  workHours?: number;
+  overtime?: number;
+  timeSlots?: BackendTimeSlot[];
+  isManuallyEdited: boolean;
+  editReason?: string;
+}
 
 interface AttendanceLogProps {
-  records: AttendanceRecord[];
+  records: BackendAttendanceRecord[];
   selectedMonth: string;
   onMonthChange: (month: string) => void;
 }
 
 const MONTHS = ['30 DAYS', 'DEC', 'NOV', 'OCT', 'SEP', 'AUG', 'JUL'];
 
-const formatDate = (date: Date): string => {
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
   return date.toLocaleDateString('en-US', { 
     weekday: 'short', 
     day: '2-digit', 
@@ -22,42 +41,62 @@ const formatDate = (date: Date): string => {
   });
 };
 
-const StatusBadge = ({ status }: { status: AttendanceRecord['status'] }) => {
-  if (status === 'weekly-off') {
-    return <Badge variant="secondary" className="text-xs font-normal bg-gray-100 text-gray-600">W-OFF</Badge>;
+const getStatusBadge = (status: string) => {
+  switch (status.toUpperCase()) {
+    case 'PRESENT':
+      return <Badge className="bg-green-100 text-green-800 text-xs font-normal">PRESENT</Badge>;
+    case 'LATE':
+      return <Badge className="bg-orange-100 text-orange-800 text-xs font-normal">LATE</Badge>;
+    case 'ABSENT':
+      return <Badge className="bg-red-100 text-red-800 text-xs font-normal">ABSENT</Badge>;
+    case 'HALF_DAY':
+      return <Badge className="bg-yellow-100 text-yellow-800 text-xs font-normal">HALF DAY</Badge>;
+    case 'EARLY_DEPARTURE':
+      return <Badge className="bg-blue-100 text-blue-800 text-xs font-normal">EARLY OUT</Badge>;
+    case 'PARTIAL':
+      return <Badge className="bg-purple-100 text-purple-800 text-xs font-normal">PARTIAL</Badge>;
+    default:
+      return <Badge variant="secondary" className="text-xs font-normal">{status}</Badge>;
   }
-  if (status === 'holiday') {
-    return <Badge className="bg-yellow-100 text-yellow-800 text-xs font-normal">HLDY</Badge>;
-  }
-  return null;
 };
 
-const ArrivalIndicator = ({ status, time }: { status: AttendanceRecord['arrivalStatus']; time?: string }) => {
-  if (status === 'on-time') {
-    return (
-      <div className="flex items-center gap-2 text-green-600">
-        <Check className="w-4 h-4" />
-        <span className="text-sm">On Time</span>
-      </div>
-    );
-  }
-  if (status === 'late' && time) {
+const getArrivalStatus = (record: BackendAttendanceRecord) => {
+  if (!record.checkIn) return null;
+  
+  const checkInTime = new Date(record.checkIn);
+  const hour = checkInTime.getHours();
+  const minute = checkInTime.getMinutes();
+  
+  // Late if after 9:30 AM
+  const isLate = hour > 9 || (hour === 9 && minute > 30);
+  
+  if (isLate) {
+    const lateMinutes = (hour - 9) * 60 + (minute - 30);
     return (
       <div className="flex items-center gap-2 text-orange-600">
-        <Check className="w-4 h-4" />
-        <span className="text-sm">0:02:51 late</span>
+        <AlertCircle className="w-4 h-4" />
+        <span className="text-sm">{Math.floor(lateMinutes / 60)}:{(lateMinutes % 60).toString().padStart(2, '0')} late</span>
       </div>
     );
   }
-  return null;
+  
+  return (
+    <div className="flex items-center gap-2 text-green-600">
+      <Check className="w-4 h-4" />
+      <span className="text-sm">On Time</span>
+    </div>
+  );
 };
 
-const LogStatus = ({ record }: { record: AttendanceRecord }) => {
-  if (record.status === 'present' && record.arrivalStatus === 'on-time') {
+const getLogStatus = (record: BackendAttendanceRecord) => {
+  if (record.status === 'PRESENT') {
     return <CheckCircle className="w-5 h-5 text-green-600" />;
   }
-  if (record.status === 'present' && record.arrivalStatus === 'late') {
+  if (record.status === 'LATE') {
     return <AlertCircle className="w-5 h-5 text-orange-600" />;
+  }
+  if (record.status === 'ABSENT') {
+    return <AlertCircle className="w-5 h-5 text-red-600" />;
   }
   return <MoreHorizontal className="w-5 h-5 text-gray-400" />;
 };
@@ -90,71 +129,93 @@ export const AttendanceLog = ({ records, selectedMonth, onMonthChange }: Attenda
       <div className="grid grid-cols-[140px_1fr_150px_120px_140px_60px] gap-4 px-6 py-3 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wide">
         <div>Date</div>
         <div>Attendance Visual</div>
-        <div>Effective Hours</div>
-        <div>Gross Hours</div>
+        <div>Work Hours</div>
+        <div>Sessions</div>
         <div>Arrival</div>
         <div>Log</div>
       </div>
       
       {/* Records */}
       <div className="divide-y divide-gray-200">
-        {records.map((record) => (
-          <div 
-            key={record.id}
-            className={cn(
-              "grid grid-cols-[140px_1fr_150px_120px_140px_60px] gap-4 px-6 py-4 items-center",
-              (record.status === 'weekly-off' || record.status === 'holiday') && "bg-gray-50"
-            )}
-          >
-            {/* Date */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-900">
-                {formatDate(record.date)}
-              </span>
-              <StatusBadge status={record.status} />
-            </div>
-            
-            {/* Timeline visual */}
-            <div>
-              {record.status === 'present' ? (
-                <TimelineBar slots={record.timeSlots} />
-              ) : record.status === 'weekly-off' ? (
-                <div className="text-sm text-gray-500 text-center">Full day Weekly-off</div>
-              ) : record.status === 'holiday' ? (
-                <div className="text-sm text-gray-500 text-center">Holiday</div>
-              ) : (
-                <div className="text-sm text-gray-500 text-center">No Time Entries Logged</div>
-              )}
-            </div>
-            
-            {/* Effective hours */}
-            <div className="flex items-center gap-2">
-              {record.status === 'present' && (
-                <>
-                  <div className="w-2 h-2 rounded-full bg-teal-500" />
-                  <span className="text-sm text-gray-900">{record.effectiveHours}</span>
-                </>
-              )}
-            </div>
-            
-            {/* Gross hours */}
-            <div className="text-sm text-gray-900">
-              {record.status === 'present' ? record.grossHours : ''}
-            </div>
-            
-            {/* Arrival */}
-            <div>
-              {record.status === 'present' && (
-                <ArrivalIndicator status={record.arrivalStatus} time={record.arrivalTime} />
-              )}
-            </div>
-            
-            {/* Log */}
-            <div className="flex justify-center">
-              <LogStatus record={record} />
-            </div>
+        {records.length === 0 ? (
+          <div className="px-6 py-8 text-center text-gray-500">
+            <div className="text-sm">No attendance records found</div>
+            <div className="text-xs mt-1">Records will appear here once you start checking in</div>
           </div>
-        ))}
+        ) : (
+          records.map((record) => (
+            <div 
+              key={record.id}
+              className="grid grid-cols-[140px_1fr_150px_120px_140px_60px] gap-4 px-6 py-4 items-center hover:bg-gray-50 transition-colors"
+            >
+              {/* Date */}
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium text-gray-900">
+                  {formatDate(record.date)}
+                </span>
+                {getStatusBadge(record.status)}
+              </div>
+              
+              {/* Timeline visual */}
+              <div className="py-2">
+                {record.timeSlots && record.timeSlots.length > 0 ? (
+                  <TimelineBar slots={record.timeSlots} />
+                ) : (
+                  <div className="text-sm text-gray-500 text-center py-2">
+                    No time entries logged
+                  </div>
+                )}
+              </div>
+              
+              {/* Work hours */}
+              <div className="flex flex-col gap-1">
+                {record.workHours !== null && record.workHours !== undefined ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-teal-500" />
+                      <span className="text-sm text-gray-900 font-medium">
+                        {attendanceService.formatWorkingHours(record.workHours)}
+                      </span>
+                    </div>
+                    {record.overtime && record.overtime > 0 && (
+                      <div className="text-xs text-orange-600">
+                        +{attendanceService.formatWorkingHours(record.overtime)} OT
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-sm text-gray-400">-</span>
+                )}
+              </div>
+              
+              {/* Sessions */}
+              <div className="text-sm text-gray-900">
+                {record.timeSlots && record.timeSlots.length > 0 ? (
+                  <div className="flex flex-col gap-1">
+                    <span className="font-medium">{record.timeSlots.length} session{record.timeSlots.length !== 1 ? 's' : ''}</span>
+                    <div className="text-xs text-gray-500">
+                      {record.timeSlots.filter(slot => !slot.checkOut).length > 0 && (
+                        <span className="text-green-600">● Active</span>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <span className="text-gray-400">-</span>
+                )}
+              </div>
+              
+              {/* Arrival */}
+              <div>
+                {getArrivalStatus(record)}
+              </div>
+              
+              {/* Log */}
+              <div className="flex justify-center">
+                {getLogStatus(record)}
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

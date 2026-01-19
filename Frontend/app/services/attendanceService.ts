@@ -15,6 +15,11 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+export interface TimeSlot {
+  checkIn: string;
+  checkOut?: string;
+}
+
 export interface AttendanceRecord {
   id: number;
   date: string;
@@ -23,6 +28,7 @@ export interface AttendanceRecord {
   checkOut?: string;
   workHours?: number;
   overtime?: number;
+  timeSlots?: TimeSlot[];
   isManuallyEdited: boolean;
   editReason?: string;
   employee: {
@@ -212,6 +218,64 @@ export const attendanceService = {
     const diffMs = checkOutTime.getTime() - checkInTime.getTime();
     const diffHours = diffMs / (1000 * 60 * 60);
     return Math.max(0, Math.round(diffHours * 100) / 100);
+  },
+
+  calculateTotalWorkingHours(timeSlots: TimeSlot[]): number {
+    if (!timeSlots || timeSlots.length === 0) return 0;
+    
+    let totalMinutes = 0;
+    timeSlots.forEach(slot => {
+      if (slot.checkIn && slot.checkOut) {
+        const checkInTime = new Date(slot.checkIn);
+        const checkOutTime = new Date(slot.checkOut);
+        const diffMs = checkOutTime.getTime() - checkInTime.getTime();
+        const diffMinutes = diffMs / (1000 * 60);
+        totalMinutes += diffMinutes;
+      }
+    });
+    
+    return Math.round((totalMinutes / 60) * 100) / 100;
+  },
+
+  calculateCurrentSessionTime(timeSlots: TimeSlot[]): number {
+    if (!timeSlots || timeSlots.length === 0) return 0;
+    
+    // Find the last open slot (checked in but not checked out)
+    const openSlot = timeSlots.find(slot => slot.checkIn && !slot.checkOut);
+    if (!openSlot) return 0;
+    
+    const checkInTime = new Date(openSlot.checkIn);
+    const now = new Date();
+    const diffMs = now.getTime() - checkInTime.getTime();
+    const diffMinutes = diffMs / (1000 * 60);
+    
+    return Math.max(0, Math.round(diffMinutes * 100) / 100);
+  },
+
+  formatDuration(minutes: number): string {
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.round(minutes % 60);
+    
+    if (hours === 0) {
+      return `${mins}m`;
+    } else if (mins === 0) {
+      return `${hours}h`;
+    } else {
+      return `${hours}h ${mins}m`;
+    }
+  },
+
+  formatWorkingHours(hours: number): string {
+    const wholeHours = Math.floor(hours);
+    const minutes = Math.round((hours % 1) * 60);
+    
+    if (wholeHours === 0) {
+      return `${minutes}m`;
+    } else if (minutes === 0) {
+      return `${wholeHours}h`;
+    } else {
+      return `${wholeHours}h ${minutes}m`;
+    }
   },
 
   calculateOvertime(workHours: number, standardHours: number = 9): number {
