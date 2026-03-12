@@ -1,4 +1,4 @@
-# 🚀 Enterprise HR Management System (KEKA Clone)
+# 🚀 Enterprise HR Management System (PRIMA Clone)
 
 > A comprehensive, production-ready HR Management System with attendance tracking, leave management, project management, and role-based access control.
 
@@ -494,7 +494,7 @@ nano .env  # or use your preferred editor
 ```bash
 # Create PostgreSQL database
 psql -U postgres
-CREATE DATABASE tikr_database;
+CREATE DATABASE PRIMA_database;
 \q
 
 # Generate Prisma Client
@@ -533,7 +533,7 @@ node --version  # Should be v20+
 npm --version   # Should be v10+
 
 # Check PostgreSQL connection
-psql -U postgres -d tikr_database -c "SELECT version();"
+psql -U postgres -d PRIMA_database -c "SELECT version();"
 
 # Check Prisma
 cd Backend
@@ -560,7 +560,7 @@ PORT=5004
 # ============================================
 # PostgreSQL Connection String
 # Format: postgresql://USER:PASSWORD@HOST:PORT/DATABASE?schema=SCHEMA
-DATABASE_URL="postgresql://postgres:your_password@localhost:5432/tikr_database?schema=public"
+DATABASE_URL="postgresql://postgres:your_password@localhost:5432/PRIMA_database?schema=public"
 
 # ============================================
 # JWT CONFIGURATION
@@ -1136,4 +1136,4 @@ Deepak Singla
 
 ---
 
-**Made with ❤️ by the Team Tikr**
+**Made with ❤️ by the Team PRIMA**
