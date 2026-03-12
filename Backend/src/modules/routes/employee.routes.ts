@@ -213,7 +213,7 @@ router.get(
  */
 router.post(
   '/',
-  authorizeRoles(['SUPER_ADMIN', 'ADMIN']),
+  authorizeRoles(['SUPER_ADMIN', 'ADMIN', 'MANAGER']),
   employeeController.createEmployee
 );
 

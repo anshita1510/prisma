@@ -11,6 +11,7 @@ export default function SetPasswordPage(): JSX.Element {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
 
   useEffect(() => {
     // Check if user came from OTP verification
@@ -18,6 +19,8 @@ export default function SetPasswordPage(): JSX.Element {
     if (!resetEmail) {
       // If no email found, redirect to forgot password
       router.push("/Forget_pass");
+    } else {
+      setEmail(resetEmail);
     }
   }, [router]);
 
@@ -41,7 +44,7 @@ export default function SetPasswordPage(): JSX.Element {
     }
 
     try {
-      await resetPasswordAPI(newPassword, confirmPassword);
+      await resetPasswordAPI(email, newPassword, confirmPassword);
       setSuccess("Password reset successfully!");
       
       // Clear stored email
@@ -65,7 +68,7 @@ export default function SetPasswordPage(): JSX.Element {
       <div className="flex flex-1 flex-col justify-center px-8 py-12 sm:px-12 lg:flex-none lg:w-1/2 xl:w-[40%]">
         <div className="mx-auto w-full max-w-sm">
           <div className="mb-10">
-            <h1 className="text-4xl font-black tracking-tight text-green-600">Tikr.</h1>
+            <h1 className="text-4xl font-black tracking-tight text-green-600">PRIMA.</h1>
             <h2 className="mt-6 text-2xl font-bold leading-9 tracking-tight text-gray-900">
               Set New Password
             </h2>
@@ -145,7 +148,7 @@ export default function SetPasswordPage(): JSX.Element {
         <div className="absolute inset-0 bg-green-900/40 backdrop-blur-[2px] flex flex-col justify-end p-20 text-white">
           <blockquote className="space-y-2">
             <p className="text-3xl font-medium">
-              "Tikr has completely transformed how our team tracks productivity and stays organized."
+              "PRIMA has completely transformed how our team tracks productivity and stays organized."
             </p>
             <footer className="text-lg opacity-80">— The Management Team</footer>
           </blockquote>

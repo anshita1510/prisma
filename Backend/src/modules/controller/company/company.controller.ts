@@ -205,36 +205,60 @@ export class CompanyController {
         });
       }
 
-      const companies = await prisma.company.findMany({
-        where: {
-          isActive: true
-        },
-        select: {
-          id: true,
-          name: true,
-          code: true,
-          _count: {
-            select: {
-              users: true,
-              employees: true
-            }
-          }
-        },
-        orderBy: {
-          name: 'asc'
-        }
-      });
+ const companies = await prisma.company.findMany({
+  where: {
+    // isActive: true
+  },
+  select: {
+    id: true,
+    name: true,
+    code: true,
+    isActive: true,
+    // Director + Admin user include karo
+    users: {
+      where: {
+      role: "ADMIN",
+      OR: [
+      { designation: "Director" },
+      { designation: "DIRECTOR" }
+    ]
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        designation: true,
+        role: true
+      }
+    },
 
-      return res.json({
-        success: true,
-        companies: companies.map(company => ({
-          id: company.id,
-          name: company.name,
-          code: company.code,
-          userCount: company._count.users,
-          employeeCount: company._count.employees
-        }))
-      });
+    _count: {
+      select: {
+        users: true,
+        employees: true
+      }
+    }
+  },
+  orderBy: {
+    name: 'asc'
+  }
+});
+
+return res.json({
+  success: true,
+  companies: companies.map(company => ({
+    id: company.id,
+    name: company.name,
+    code: company.code,
+    isActive: company.isActive,
+    userCount: company._count.users,
+    employeeCount: company._count.employees,
+
+    // Agar sirf ek Director/Admin chahiye to first element le sakte ho
+    directorAdmin: company.users.length > 0 ? company.users[0] : null
+  }))
+});
     } catch (error: any) {
       console.error('Error fetching companies:', error);
       return res.status(500).json({

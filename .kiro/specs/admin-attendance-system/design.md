@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Admin Attendance System is a comprehensive enterprise-grade module within TIKR that manages the dual nature of Admin users as both system operators and regular employees. The system enforces strict separation of duties, maintains comprehensive audit trails, and provides robust attendance management capabilities while ensuring compliance with organizational policies and regulatory requirements.
+The Admin Attendance System is a comprehensive enterprise-grade module within PRIMA that manages the dual nature of Admin users as both system operators and regular employees. The system enforces strict separation of duties, maintains comprehensive audit trails, and provides robust attendance management capabilities while ensuring compliance with organizational policies and regulatory requirements.
 
 ## Architecture
 

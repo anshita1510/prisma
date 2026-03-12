@@ -40,8 +40,8 @@ export const verifyOtpAPI = (email: string, otp: string) =>
     body: JSON.stringify({ email, otp }),
   });
 
-export const resetPasswordAPI = (newPassword: string, confirmPassword: string) => 
+export const resetPasswordAPI = (email: string, newPassword: string, confirmPassword: string) => 
   apiCall('/reset-password', {
     method: 'POST',
-    body: JSON.stringify({ newPassword, confirmPassword }),
+    body: JSON.stringify({ email, newPassword, confirmPassword }),
   });

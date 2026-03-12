@@ -2,12 +2,12 @@
 
 ## Introduction
 
-This specification defines the complete attendance behavior, permissions, and limitations for the Admin role in TIKR, an enterprise-grade Project Management System. Admins serve dual roles as system operators and regular employees, requiring both personal attendance capabilities and organizational management responsibilities.
+This specification defines the complete attendance behavior, permissions, and limitations for the Admin role in PRIMA, an enterprise-grade Project Management System. Admins serve dual roles as system operators and regular employees, requiring both personal attendance capabilities and organizational management responsibilities.
 
 ## Glossary
 
 - **Admin**: System operator with HR/Operations/People Ops responsibilities who must also perform personal attendance actions
-- **TIKR**: Enterprise-grade Project Management System
+- **PRIMA**: Enterprise-grade Project Management System
 - **Check-in/Check-out**: Daily attendance recording actions
 - **Regularization Request**: Request to correct attendance discrepancies or missed punches
 - **Attendance Lock**: Finalization of attendance data for a specific period, making it immutable
@@ -106,7 +106,7 @@ This specification defines the complete attendance behavior, permissions, and li
 
 ### Requirement 8: Integration and Data Management
 
-**User Story:** As an Admin, I want seamless integration with other TIKR modules and external systems, so that I can maintain data consistency and operational efficiency.
+**User Story:** As an Admin, I want seamless integration with other PRIMA modules and external systems, so that I can maintain data consistency and operational efficiency.
 
 #### Acceptance Criteria
 

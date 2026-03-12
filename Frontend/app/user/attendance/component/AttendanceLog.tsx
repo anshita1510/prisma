@@ -6,9 +6,10 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { attendanceService } from '../../../services/attendanceService';
 
-interface BackendTimeSlot {
+type BackendTimeSlot = {
   checkIn: string;
   checkOut?: string;
+  // ...other fields
 }
 
 interface BackendAttendanceRecord {

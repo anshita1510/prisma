@@ -92,7 +92,6 @@ export default function OurWorkSection() {
                 </div>
                 <h3 className="text-xl font-semibold mb-2">{card.title}</h3>
                 <p className="text-gray-600 mb-4">{card.subtitle}</p>
-                <span className="text-blue-600 font-medium">Learn more →</span>
               </button>
             );
           })}

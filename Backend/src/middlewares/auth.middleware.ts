@@ -1,8 +1,8 @@
 // Backend/src/modules/middlewares/auth.middleware.ts
 import { Request, Response, NextFunction } from 'express';
-import { Role, PrismaClient } from '@prisma/client';
+import { Role, PrismaClient, Designation } from '@prisma/client';
 import jwt from 'jsonwebtoken';
-import { AuthUser } from '../types/express'; // Import the AuthUser type
+import { AuthUser } from '../types/express';
 
 const prisma = new PrismaClient();
 
@@ -18,8 +18,7 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
   try {
     console.log("🔍 Auth middleware: Processing request to", req.path);
     console.log("🔍 Auth middleware: Method", req.method);
-    
-    // Get token from header or cookie
+
     const authHeader = req.headers.authorization;
     const cookieToken = req.cookies?.auth_token;
 
@@ -30,7 +29,7 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
     let token: string | undefined;
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.substring(7); // Remove 'Bearer ' prefix
+      token = authHeader.substring(7);
       console.log("🔍 Auth middleware: Using Bearer token");
     } else if (cookieToken) {
       token = cookieToken;
@@ -46,7 +45,6 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
       });
     }
 
-    // Verify token
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET || 'your-secret-key'
@@ -58,7 +56,6 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
       email: decoded.email
     });
 
-    // Check token expiration
     if (decoded.exp && decoded.exp * 1000 < Date.now()) {
       console.log("❌ Auth middleware: Token expired");
       return res.status(401).json({
@@ -68,18 +65,19 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
       });
     }
 
-    // Attach user info to request
+    // ✅ FIX 1: Added designation: null to satisfy Express.User type
     req.user = {
       id: decoded.id,
       role: decoded.role,
-      email: decoded.email
+      email: decoded.email,
+      designation: null,
     };
 
     console.log("✅ Auth middleware: User authenticated", req.user);
     next();
   } catch (error) {
     console.error('❌ Auth middleware error:', error);
-    
+
     if (error instanceof jwt.TokenExpiredError) {
       return res.status(401).json({
         success: false,
@@ -87,7 +85,7 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
         code: 'TOKEN_EXPIRED'
       });
     }
-    
+
     if (error instanceof jwt.JsonWebTokenError) {
       return res.status(401).json({
         success: false,
@@ -95,7 +93,7 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
         code: 'INVALID_TOKEN'
       });
     }
-    
+
     return res.status(401).json({
       success: false,
       message: 'Authentication failed',
@@ -104,17 +102,15 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
   }
 };
 
-// Enhanced auth middleware that includes employee and company info
 export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Get token from header or cookie
     const authHeader = req.headers.authorization;
     const cookieToken = req.cookies?.auth_token;
 
     let token: string | undefined;
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.substring(7); // Remove 'Bearer ' prefix
+      token = authHeader.substring(7);
     } else if (cookieToken) {
       token = cookieToken;
     }
@@ -127,13 +123,11 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
       });
     }
 
-    // Verify token
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET || 'your-secret-key'
     ) as JwtPayload;
 
-    // Check token expiration
     if (decoded.exp && decoded.exp * 1000 < Date.now()) {
       return res.status(401).json({
         success: false,
@@ -142,28 +136,21 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
       });
     }
 
-    // Get user with employee and company info
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      include: {
-        employee: {
-          select: {
-            id: true,
-            name: true,
-            designation: true,
-            companyId: true,
-            departmentId: true,
-            isActive: true
-          }
-        },
-        company: {
-          select: {
-            id: true,
-            name: true
-          }
+    // In authenticateToken middleware, replace the prisma.user.findUnique call with:
+    const user = await Promise.race([
+      prisma.user.findUnique({
+        where: { id: decoded.id },
+        include: {
+          employee: {
+            select: { id: true, name: true, designation: true, companyId: true, departmentId: true, isActive: true }
+          },
+          company: { select: { id: true, name: true } }
         }
-      }
-    });
+      }),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('DB_TIMEOUT: prisma.user.findUnique took >5s')), 5000)
+      )
+    ]) as any;
 
     if (!user) {
       return res.status(401).json({
@@ -181,7 +168,6 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
       });
     }
 
-    // Get companyId from employee or user record
     const companyId = user.employee?.companyId || user.companyId;
 
     if (!companyId && user.role !== 'SUPER_ADMIN') {
@@ -192,22 +178,22 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
       });
     }
 
-    // Attach enhanced user info to request
+    // ✅ FIX 2: Changed undefined to null using ?? null
     req.user = {
       id: user.id,
       role: user.role,
       email: user.email,
       employeeId: user.employee?.id,
       companyId: companyId || undefined,
-      designation: user.employee?.designation,
+      designation: (user.employee?.designation as Designation) ?? null,
       isActive: user.employee?.isActive || user.isActive,
-      departmentId: user.employee?.departmentId
+      departmentId: user.employee?.departmentId ?? undefined,
     };
 
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);
-    
+
     if (error instanceof jwt.TokenExpiredError) {
       return res.status(401).json({
         success: false,
@@ -215,7 +201,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
         code: 'TOKEN_EXPIRED'
       });
     }
-    
+
     if (error instanceof jwt.JsonWebTokenError) {
       return res.status(401).json({
         success: false,
@@ -223,7 +209,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
         code: 'INVALID_TOKEN'
       });
     }
-    
+
     return res.status(401).json({
       success: false,
       message: 'Authentication failed',
@@ -232,7 +218,6 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
   }
 };
 
-// Role-based middleware
 export const authorize = (...roles: Role[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const user = req.user as AuthUser | undefined;
@@ -259,7 +244,6 @@ export const authorize = (...roles: Role[]) => {
   };
 };
 
-// Middleware to check if user is active
 export const requireActiveUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const user = req.user as AuthUser | undefined;

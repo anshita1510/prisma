@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth/AuthContext";
+import HRMSChatbot from "@/components/HRMSChatbot";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -9,7 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "TIKR - Task & Project Management",
+  title: "PRIMA - Task & Project Management",
   description: "Comprehensive task and project management system with role-based access control",
   keywords: ["task management", "project management", "team collaboration", "productivity"],
 };
@@ -24,6 +25,7 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <AuthProvider>
           {children}
+          <HRMSChatbot />
         </AuthProvider>
       </body>
     </html>

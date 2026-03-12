@@ -3,7 +3,7 @@
 # Script to create an admin user via API
 # Usage: ./create-admin.sh
 
-echo "🔐 Keka Clone - Create Admin User"
+echo "🔐 PRIMA Clone - Create Admin User"
 echo "=================================="
 echo ""
 

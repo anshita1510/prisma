@@ -1,26 +1,37 @@
-import { Role } from '@prisma/client';
-import { User as PrismaUser } from '@prisma/client';
+import { Role, Designation } from '@prisma/client';
 
-// Export the AuthUser interface so it can be used in other files
+/**
+ * Authenticated User interface
+ * This extends Passport's Express.User
+ */
 export interface AuthUser {
   id: number;
   role: Role;
   email: string;
   employeeId?: number;
   companyId?: number;
-  designation?: string;
+  designation?: Designation | null;
   isActive?: boolean;
   departmentId?: number;
 }
 
 declare global {
   namespace Express {
-    // Extend the existing User interface from Passport
     interface User extends AuthUser {}
   }
 }
 
-// Type guard to check if user exists and has required properties
+/**
+ * Type guard for safe runtime checking
+ */
 export function isAuthUser(user: any): user is AuthUser {
-  return user && typeof user.id === 'number' && typeof user.role === 'string';
+  return (
+    user &&
+    typeof user.id === 'number' &&
+    typeof user.email === 'string' &&
+    typeof user.role === 'string'
+  );
 }
+
+export {};
+  

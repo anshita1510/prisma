@@ -4,12 +4,12 @@ const options: swaggerJsdoc.Options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Keka Clone API Documentation',
+      title: 'PRIMA Clone API Documentation',
       version: '1.0.0',
-      description: 'Complete API documentation for Keka Clone - HR Management System',
+      description: 'Complete API documentation for PRIMA Clone - HR Management System',
       contact: {
         name: 'API Support',
-        email: 'support@keka.com'
+        email: 'support@PRIMA.com'
       }
     },
     servers: [

@@ -190,9 +190,9 @@ const generateMockAttendance = (): AttendanceRecord[] => {
       date,
       status: 'present',
       timeSlots: [
-        { start: arrivalTime.substring(0, 5), end: '13:00', type: 'work' },
-        { start: '13:00', end: '14:00', type: 'break' },
-        { start: '14:00', end: departureTime.substring(0, 5), type: 'work' },
+        { start: arrivalTime.substring(0, 5), end: '13:00', type: 'work', startTime: arrivalTime.substring(0, 5), endTime: '13:00', checkIn: arrivalTime, checkOut: '13:00' },
+        { start: '13:00', end: '14:00', type: 'break', startTime: '13:00', endTime: '14:00', checkIn: '13:00', checkOut: '14:00' },
+        { start: '14:00', end: departureTime.substring(0, 5), type: 'work', startTime: '14:00', endTime: departureTime.substring(0, 5), checkIn: '14:00', checkOut: departureTime },
       ],
       effectiveHours: `${Math.floor(effectiveMinutes / 60)}h ${effectiveMinutes % 60}m`,
       grossHours: `${Math.floor(grossMinutes / 60)}h ${grossMinutes % 60}m`,

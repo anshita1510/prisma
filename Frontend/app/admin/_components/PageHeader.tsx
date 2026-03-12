@@ -25,7 +25,7 @@ export default function PageHeader({ title, subtitle, showBackButton = true, chi
     } else if (pathname.startsWith('/admin')) {
       return 'Admin Panel';
     }
-    return 'TIKR';
+    return 'PRIMA';
   };
 
   return (

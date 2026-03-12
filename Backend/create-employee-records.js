@@ -29,8 +29,8 @@ async function createEmployeeRecords() {
       console.log('🏢 Creating default company...');
       company = await prisma.company.create({
         data: {
-          name: 'Tikr Technologies',
-          code: 'TIKR',
+          name: 'PRIMA Technologies',
+          code: 'PRIMA',
           isActive: true
         }
       });

@@ -32,20 +32,20 @@ export const AttendancePage = () => {
 
   // Live clock
   const [currentTime, setCurrentTime] = useState<string>('');
-  
+
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
       setCurrentTime(
-        now.toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
-          minute: '2-digit', 
+        now.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
           second: '2-digit',
-          hour12: timeFormat === '12h' 
+          hour12: timeFormat === '12h'
         })
       );
     };
-    
+
     updateTime();
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
@@ -72,8 +72,8 @@ export const AttendancePage = () => {
             </svg>
           </div>
           <p className="text-gray-600 mb-4">Error loading attendance data: {error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
           >
             Retry
@@ -92,7 +92,7 @@ export const AttendancePage = () => {
           <TimingsCard currentTime={currentTime} currentDate={currentDate} />
           <ActionsCard currentTime={currentTime} currentDate={currentDate} />
         </div>
-        
+
         {/* Logs section */}
         <div className="bg-white rounded-lg shadow-sm">
           <LogsTabs
@@ -103,21 +103,30 @@ export const AttendancePage = () => {
             viewMode={viewMode}
             onViewModeChange={setViewMode}
           />
-          
+
           {activeTab === 'log' && (
             <AttendanceLog
-              records={records}
-              selectedMonth={selectedMonth}
-              onMonthChange={setSelectedMonth}
-            />
+              records={records.map(record => ({
+                ...record,
+                id: typeof record.id === 'string' ? parseInt(record.id, 10) : record.id,
+                date: record.date instanceof Date ? record.date.toISOString().split('T')[0] : record.date,
+                timeSlots: record.timeSlots.map(slot => ({
+                  ...slot,
+                  checkIn: slot.checkIn ?? slot.startTime ?? null, // map your TimeSlot field → checkIn
+                  checkOut: slot.checkOut ?? slot.endTime ?? null, // map your TimeSlot field → checkOut
+                })),
+                isManuallyEdited: false,
+              }))} selectedMonth={''} onMonthChange={function (month: string): void {
+                throw new Error('Function not implemented.');
+              }} />
           )}
-          
+
           {activeTab === 'calendar' && (
             <div className="p-8 text-center text-gray-500">
               Calendar view coming soon
             </div>
           )}
-          
+
           {activeTab === 'requests' && (
             <div className="p-8 text-center text-gray-500">
               Attendance requests coming soon

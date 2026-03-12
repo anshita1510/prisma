@@ -797,7 +797,7 @@ export class UserController {
 
       // Send invitation email
       const emailContent = `
-        <h2>Account Setup - Tikr Task Management</h2>
+        <h2>Account Setup - PRIMA Task Management</h2>
         <p>Hello ${user.firstName} ${user.lastName},</p>
         <p>Your account invitation has been resent. Please use the following credentials to set up your account:</p>
         <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
@@ -806,12 +806,12 @@ export class UserController {
           <p><strong>OTP:</strong> ${otp}</p>
         </div>
         <p>Please log in and set your permanent password. This OTP will expire in 10 minutes.</p>
-        <p>Best regards,<br>Tikr Team</p>
+        <p>Best regards,<br>PRIMA Team</p>
       `;
 
       await sendEmailUseCase.execute({
         to: user.email,
-        subject: "Account Setup - Tikr Task Management",
+        subject: "Account Setup - PRIMA Task Management",
         html: emailContent
       });
 
@@ -834,12 +834,12 @@ export class UserController {
     try {
       const apiDocumentation = {
         info: {
-          title: "Tikr API Documentation",
+          title: "PRIMA API Documentation",
           version: "1.0.0",
-          description: "Complete API documentation for Tikr Task Management System",
+          description: "Complete API documentation for PRIMA Task Management System",
           contact: {
-            name: "Tikr Development Team",
-            email: "dev@tikr.com"
+            name: "PRIMA Development Team",
+            email: "dev@PRIMA.com"
           }
         },
         baseUrl: process.env.API_BASE_URL || "http://localhost:3001",
@@ -1069,8 +1069,8 @@ export class UserController {
 
       const postmanCollection = {
         info: {
-          name: "Tikr API Collection",
-          description: "Complete API collection for Tikr Task Management System",
+          name: "PRIMA API Collection",
+          description: "Complete API collection for PRIMA Task Management System",
           schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
         },
         variable: [
@@ -1320,7 +1320,7 @@ export class UserController {
       };
 
       res.setHeader('Content-Type', 'application/json');
-      res.setHeader('Content-Disposition', 'attachment; filename="tikr-api-collection.json"');
+      res.setHeader('Content-Disposition', 'attachment; filename="PRIMA-api-collection.json"');
       return res.json(postmanCollection);
     } catch (error: any) {
       return res.status(500).json({ error: error.message });

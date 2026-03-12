@@ -28,7 +28,7 @@ export function inviteEmployeeTemplate({
         If you did not request this invitation, please ignore this email.
       </p>
 
-      <p>Thanks,<br/>Team Tikr</p>
+      <p>Thanks,<br/>Team PRIMA</p>
     </div>
   `;
 }

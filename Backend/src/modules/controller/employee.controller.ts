@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient, Designation } from '@prisma/client';
+import { PrismaClient, Designation, Prisma, Role, Status } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -184,145 +184,93 @@ class EmployeeController {
     try {
       const {
         name,
+        firstName,
+        lastName,
         email,
         phone,
         designation,
-        role = 'EMPLOYEE',
+        role,
         status = 'ACTIVE',
-        location,
         departmentId,
         managerId,
-        password
+        password,
+        companyId
       } = req.body;
 
-      const userContext = (req as any).user;
+      const userContext = req.user;
 
       if (!userContext) {
-        return res.status(401).json({
-          success: false,
-          message: 'Authentication required',
-          error: 'UNAUTHORIZED'
-        });
+        return res.status(401).json({ success: false, message: 'Authentication required' });
       }
 
-      // Validate required fields
-      if (!name || !email || !designation) {
-        return res.status(400).json({
-          success: false,
-          message: 'Name, email, and designation are required'
-        });
+      // ✅ Support both name formats from Flutter and web
+      const resolvedFirstName: string = firstName?.trim() || name?.trim().split(' ')[0] || '';
+      const resolvedLastName: string = lastName?.trim() || name?.trim().split(' ').slice(1).join(' ') || resolvedFirstName;
+      const resolvedName: string = name?.trim() || `${resolvedFirstName} ${resolvedLastName}`.trim();
+
+      // ... rest of your role/companyId logic unchanged ...
+
+      // Replace old name validation
+      if (!resolvedName || !email || !designation) {
+        return res.status(400).json({ success: false, message: 'Name, email, and designation are required' });
       }
 
-      // Check if email already exists
-      const existingUser = await prisma.user.findUnique({
-        where: { email }
-      });
+      // ... rest of validation unchanged ...
 
-      if (existingUser) {
-        return res.status(400).json({
-          success: false,
-          message: 'Email already exists'
-        });
-      }
-
-      // Generate employee code
-      const employeeCount = await prisma.employee.count({
-        where: { companyId: userContext.companyId }
-      });
-      const employeeCode = `EMP${String(employeeCount + 1).padStart(4, '0')}`;
-
-      // Extract first and last name
-      const nameParts = name.trim().split(' ');
-      const firstName = nameParts[0];
-      const lastName = nameParts.slice(1).join(' ') || firstName;
-
-      // Create user first
-      const user = await prisma.user.create({
-        data: {
-          email,
-          firstName,
-          lastName,
-          phone: phone || '',
-          designation: designation,
-          role: role as any,
-          status: status as any,
-          password: password || 'temp123', // Temporary password
-          isActive: true,
-          companyId: userContext.companyId
-        }
-      });
-
-      // Create employee
-      const employee = await prisma.employee.create({
-        data: {
-          userId: user.id,
-          name,
-          designation: designation as Designation,
-          employeeCode,
-          companyId: userContext.companyId,
-          departmentId: departmentId || userContext.departmentId || 1,
-          managerId: managerId || null,
-          isActive: true
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              email: true,
-              phone: true,
-              role: true,
-              status: true,
-              isActive: true
-            }
-          },
-          department: {
-            select: {
-              id: true,
-              name: true
-            }
-          },
-          company: {
-            select: {
-              id: true,
-              name: true
-            }
+      const result = await prisma.$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            email: email.toLowerCase(),
+            firstName: resolvedFirstName,   // ✅ use resolved
+            lastName: resolvedLastName,     // ✅ use resolved
+            phone: phone || '',
+            designation: designation.toUpperCase() as Designation,
+            role: Role[role.toUpperCase() as keyof typeof Role] || Role.EMPLOYEE,
+            status: (status.toUpperCase() as Status) || Status.ACTIVE,
+            password: password || 'temp123',
+            isActive: true,
+            companyId: companyId || userContext.companyId
           }
-        }
+        });
+
+        const employeeData: Prisma.EmployeeUncheckedCreateInput = {
+          name: resolvedName,             // ✅ use resolved
+          designation: designation.toUpperCase() as Designation,
+          employeeCode: `EMP${Date.now()}` + Math.floor(Math.random() * 1000),
+          isActive: true,
+          userId: user.id,
+          companyId: companyId || userContext.companyId,
+          ...(departmentId && { departmentId: parseInt(departmentId) }),
+          ...(managerId && { managerId: parseInt(managerId) })
+        };
+
+        return await tx.employee.create({
+          data: employeeData,
+          include: {
+            user: { select: { id: true, email: true, phone: true, role: true, status: true, isActive: true } },
+            department: { select: { id: true, name: true } },
+            company: { select: { id: true, name: true } }
+          }
+        });
       });
 
-      console.log(`✅ Employee created: ${employee.name} (ID: ${employee.id}, Code: ${employee.employeeCode})`);
-
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
         message: 'Employee created successfully',
-        data: {
-          id: employee.id,
-          employeeId: employee.id,
-          name: employee.name,
-          email: employee.user?.email,
-          phone: employee.user?.phone,
-          designation: employee.designation,
-          role: employee.user?.role,
-          status: employee.user?.status || 'ACTIVE',
-          location: location || 'Not specified',
-          employeeCode: employee.employeeCode,
-          companyId: employee.companyId,
-          departmentId: employee.departmentId,
-          isActive: employee.isActive,
-          user: employee.user,
-          department: employee.department,
-          company: employee.company
-        }
+        data: result
       });
+
     } catch (error: any) {
-      console.error('Error creating employee:', error);
-      res.status(500).json({
-        success: false,
-        message: error.message || 'Failed to create employee'
-      });
+      console.error('❌ Error creating employee:', error.code, error.message);
+      if (error.code === 'P2002') {
+        return res.status(400).json({ success: false, message: 'Email already exists' });
+      }
+      if (error.code === 'P2003') {
+        return res.status(400).json({ success: false, message: 'Invalid department, company, or manager reference', details: error.meta });
+      }
+      return res.status(500).json({ success: false, message: error.message || 'Failed to create employee' });
     }
   };
-
   // Update employee
   updateEmployee = async (req: Request, res: Response) => {
     try {

@@ -4,7 +4,7 @@ import { EnhancedCreateProjectUsecase, EnhancedCreateProjectRequest } from '../.
 import { AuthorizationUtil, UserContext } from '../../../shared/utils/authorization.util';
 
 export class EnhancedProjectController {
-  
+
   /**
    * Extract user context from authenticated request
    */
@@ -17,7 +17,7 @@ export class EnhancedProjectController {
       id: req.user.id,
       employeeId: req.user.employeeId,
       role: req.user.role,
-      designation: req.user.designation,
+      designation: req.user.designation ?? undefined,  // ✅ converts null → undefined
       isActive: req.user.isActive || true,
       companyId: req.user.companyId,
       departmentId: req.user.departmentId
@@ -30,7 +30,7 @@ export class EnhancedProjectController {
   createEnhancedProject = async (req: Request, res: Response) => {
     try {
       console.log('🚀 Enhanced project creation request received');
-      
+
       // Extract and validate user context
       const userContext = this.extractUserContext(req);
       if (!userContext) {
@@ -105,7 +105,7 @@ export class EnhancedProjectController {
       // Handle response based on result
       if (result.success) {
         console.log('✅ Enhanced project created successfully:', result.data?.project.id);
-        
+
         res.status(201).json({
           success: true,
           message: result.message,
@@ -134,7 +134,7 @@ export class EnhancedProjectController {
         });
       } else {
         console.log('❌ Enhanced project creation failed:', result.message);
-        
+
         res.status(400).json({
           success: false,
           message: result.message,
@@ -150,7 +150,7 @@ export class EnhancedProjectController {
 
     } catch (error: any) {
       console.error('💥 Error in enhanced project creation:', error);
-      
+
       res.status(500).json({
         success: false,
         message: 'Internal server error during project creation',
@@ -171,7 +171,7 @@ export class EnhancedProjectController {
     try {
       const { projectId } = req.params;
       const userContext = this.extractUserContext(req);
-      
+
       if (!userContext) {
         return res.status(401).json({
           success: false,
@@ -198,7 +198,7 @@ export class EnhancedProjectController {
 
       // Get project with enhanced details
       const project = await this.getProjectWithEnhancedDetails(parseInt(projectId));
-      
+
       // Get user permissions for this project
       const userPermissions = await AuthorizationUtil.getUserPermissions(
         userContext,
@@ -239,7 +239,7 @@ export class EnhancedProjectController {
     try {
       const { companyId, departmentId, role, skills, availability } = req.query;
       const userContext = this.extractUserContext(req);
-      
+
       if (!userContext) {
         return res.status(401).json({
           success: false,
@@ -249,7 +249,7 @@ export class EnhancedProjectController {
       }
 
       const finalCompanyId = companyId ? parseInt(companyId as string) : userContext.companyId;
-      
+
       if (!finalCompanyId) {
         return res.status(400).json({
           success: false,
@@ -267,7 +267,7 @@ export class EnhancedProjectController {
       let filteredEmployees = employees;
 
       if (role) {
-        filteredEmployees = filteredEmployees.filter(emp => 
+        filteredEmployees = filteredEmployees.filter(emp =>
           emp.user.role === role || emp.designation === role
         );
       }
@@ -319,7 +319,7 @@ export class EnhancedProjectController {
       const { projectId } = req.params;
       const { teamMembers } = req.body;
       const userContext = this.extractUserContext(req);
-      
+
       if (!userContext) {
         return res.status(401).json({
           success: false,
@@ -387,7 +387,7 @@ export class EnhancedProjectController {
     try {
       const { projectId } = req.params;
       const userContext = this.extractUserContext(req);
-      
+
       if (!userContext) {
         return res.status(401).json({
           success: false,
@@ -437,7 +437,7 @@ export class EnhancedProjectController {
 
   private processTeamMembers(teamMembers: any[]): any[] {
     if (!Array.isArray(teamMembers)) return [];
-    
+
     return teamMembers.map(member => ({
       employeeId: parseInt(member.employeeId),
       role: member.role as ProjectRole,
@@ -447,7 +447,7 @@ export class EnhancedProjectController {
 
   private processMilestones(milestones: any[]): any[] {
     if (!Array.isArray(milestones)) return [];
-    
+
     return milestones.map(milestone => ({
       name: milestone.name,
       description: milestone.description,
@@ -458,7 +458,7 @@ export class EnhancedProjectController {
   private canBeProjectManager(employee: any): boolean {
     const managerRoles = ['ADMIN', 'MANAGER'];
     const managerDesignations = ['MANAGER', 'TECH_LEAD', 'SENIOR_ENGINEER'];
-    
+
     return (
       managerRoles.includes(employee.user.role) ||
       managerDesignations.includes(employee.designation)
@@ -472,17 +472,17 @@ export class EnhancedProjectController {
 
   private getRecommendedRoles(employee: any): ProjectRole[] {
     const roles: ProjectRole[] = [];
-    
+
     if (this.canBeProjectManager(employee)) {
       roles.push('MANAGER');
     }
-    
+
     if (this.canBeTeamLead(employee)) {
       roles.push('MEMBER');
     } else {
       roles.push('VIEWER', 'MEMBER');
     }
-    
+
     return roles;
   }
 

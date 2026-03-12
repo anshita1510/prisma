@@ -59,7 +59,7 @@ export default function Sidebar() {
             <ArrowLeft size={20} />
           </button>
           <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center font-bold text-white">T</div>
-          <span className="font-semibold text-lg tracking-tight">Tikr</span>
+          <span className="font-semibold text-lg tracking-tight">PRIMA</span>
         </div>
         <button onClick={toggleSidebar} className="p-2 hover:bg-blue-600/80 rounded-md transition-colors">
           <Menu size={24} />
@@ -93,7 +93,7 @@ export default function Sidebar() {
                 <Target size={20} />
               </div>
               {isHovered && (
-                <span className="font-bold text-lg tracking-tight uppercase animate-fade-in">Tikr</span>
+                <span className="font-bold text-lg tracking-tight uppercase animate-fade-in">PRIMA</span>
               )}
             </div>
             {isHovered && (

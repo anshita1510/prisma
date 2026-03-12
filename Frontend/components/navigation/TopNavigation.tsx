@@ -335,7 +335,7 @@ export default function TopNavigation() {
           {/* Logo/Brand */}
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <h1 className="text-xl font-bold text-gray-900">TIKR</h1>
+              <h1 className="text-xl font-bold text-gray-900">PRIMA</h1>
             </div>
           </div>
 

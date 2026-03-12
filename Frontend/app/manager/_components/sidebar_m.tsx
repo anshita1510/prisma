@@ -40,7 +40,7 @@ const Sidebar = () => {
         <div className="flex items-center justify-between">
           {!isCollapsed && (
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Tikr</h2>
+              <h2 className="text-xl font-bold text-gray-900">PRIMA</h2>
               <p className="text-sm text-gray-500">Manager Portal</p>
             </div>
           )}

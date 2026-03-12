@@ -8,11 +8,11 @@ async function main(): Promise<void> {
 
   // 1️⃣ Create Company
   const company = await prisma.company.upsert({
-    where: { code: 'TIKR' },
+    where: { code: 'PRIMA' },
     update: {},
     create: {
-      name: 'Tikr Technologies',
-      code: 'TIKR',
+      name: 'PRIMA Technologies',
+      code: 'PRIMA',
       isActive: true,
     },
   })
@@ -38,10 +38,10 @@ async function main(): Promise<void> {
 
   // 4️⃣ Create SUPER ADMIN User
   const superAdminUser = await prisma.user.upsert({
-    where: { email: 'superadmin@tikr.com' },
+    where: { email: 'superadmin@PRIMA.com' },
     update: {},
     create: {
-      email: 'superadmin@tikr.com',
+      email: 'superadmin@PRIMA.com',
       firstName: 'Super',
       lastName: 'Admin',
       phone: '+1234567890',
@@ -79,10 +79,10 @@ async function main(): Promise<void> {
 
   // 7️⃣ Create ADMIN + MANAGER User for testing
   const adminManagerUser = await prisma.user.upsert({
-    where: { email: 'admin@tikr.com' },
+    where: { email: 'admin@PRIMA.com' },
     update: {},
     create: {
-      email: 'admin@tikr.com',
+      email: 'admin@PRIMA.com',
       firstName: 'Admin',
       lastName: 'Manager',
       phone: '+1234567891',
@@ -112,11 +112,11 @@ async function main(): Promise<void> {
 
   console.log('✅ Seeding completed successfully')
   console.log('👤 SUPER ADMIN LOGIN:')
-  console.log('📧 Email: superadmin@tikr.com')
+  console.log('📧 Email: superadmin@PRIMA.com')
   console.log('🔑 Password: Admin@123')
   console.log('')
   console.log('👤 ADMIN MANAGER LOGIN:')
-  console.log('📧 Email: admin@tikr.com')
+  console.log('📧 Email: admin@PRIMA.com')
   console.log('🔑 Password: Admin@123')
 }
 

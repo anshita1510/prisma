@@ -164,14 +164,14 @@ export class InviteEmployeeUsecase {
     // Send email asynchronously without waiting for it to complete
     this.sendEmailUseCase.execute({
       to: data.email,
-      subject: "Welcome to Tikr - Your Account is Ready!",
+      subject: "Welcome to PRIMA - Your Account is Ready!",
       html: `
         <!DOCTYPE html>
         <html lang="en">
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Welcome to Tikr</title>
+          <title>Welcome to PRIMA</title>
         </head>
         <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f7fa;">
           <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
@@ -181,7 +181,7 @@ export class InviteEmployeeUsecase {
               <div style="background-color: rgba(255, 255, 255, 0.1); border-radius: 50%; width: 80px; height: 80px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
                 <span style="font-size: 36px; color: white; font-weight: bold;">T</span>
               </div>
-              <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 300;">Welcome to Tikr</h1>
+              <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 300;">Welcome to PRIMA</h1>
               <p style="color: rgba(255, 255, 255, 0.9); margin: 10px 0 0; font-size: 16px;">Your journey starts here</p>
             </div>
 
@@ -256,7 +256,7 @@ export class InviteEmployeeUsecase {
               <p style="color: #718096; margin: 0 0 10px; font-size: 14px;">Need help? Contact our support team</p>
               <p style="color: #a0aec0; margin: 0; font-size: 12px;">
                 Best regards,<br/>
-                <strong style="color: #4a5568;">The Tikr Team</strong>
+                <strong style="color: #4a5568;">The PRIMA Team</strong>
               </p>
               <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
                 <p style="color: #a0aec0; margin: 0; font-size: 11px;">

@@ -1,42 +1,85 @@
 import { Request, Response, NextFunction } from 'express';
-import { Role } from '@prisma/client';
+import { Role, Designation } from '@prisma/client';
 
-export const authorizeRoles = (allowedRoles: Role[]) => {
+/**
+ * Extend Express Request type
+ */
+declare global {
+  namespace Express {
+    interface User {
+      id: number;
+      email: string;
+      role: Role;
+      designation: Designation | null;
+      companyId?: number;
+      isActive?: boolean;
+      employeeId?: number | undefined;
+      departmentId?: number | undefined;
+    }
+
+    interface Request {
+      user?: User;
+    }
+  }
+}
+
+/**
+ * Flexible Authorization Options
+ */
+interface AccessOptions {
+  roles?: Role[];
+  designations?: Designation[];
+}
+
+/**
+ * Main Authorization Middleware
+ * Supports:
+ *  - Role based access
+ *  - Designation based access
+ *  - OR logic between them
+ */
+
+export const authorize = (options: AccessOptions) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const user = req.user;
 
-    console.log("🔍 Role middleware: Checking roles for", req.path);
-    console.log("🔍 Role middleware: User", user);
-    console.log("🔍 Role middleware: Allowed roles", allowedRoles);
+    console.log('🔐 AUTH CHECK ------------------------');
+    console.log('Path:', req.originalUrl);
+    console.log('Raw user object:', JSON.stringify(user, null, 2));
+    console.log('options.roles:', options.roles);
+    console.log('options.designations:', options.designations);
 
     if (!user) {
-      console.log("❌ Role middleware: No user found");
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication required'
-      });
+      return res.status(401).json({ success: false, message: 'Authentication required' });
     }
 
-    if (!allowedRoles.includes(user.role)) {
-      console.log("❌ Role middleware: User role not allowed", {
-        userRole: user.role,
-        allowedRoles
-      });
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Insufficient permissions.'
-      });
-    }
+    const userRole = user.role?.toUpperCase() as Role;
+    const userDesignation = user.designation?.toUpperCase() as Designation;
 
-    console.log("✅ Role middleware: Access granted");
-    next();
+    console.log('userRole (after toUpperCase):', userRole);
+    console.log('userDesignation (after toUpperCase):', userDesignation);
+    console.log('roleAllowed check:', options.roles?.includes(userRole));
+    console.log('designationAllowed check:', options.designations?.includes(userDesignation));
+    // ... rest of function
   };
 };
-
-export const requireRole = (role: Role) => {
-  return authorizeRoles([role]);
+/**
+ * Backward compatible role-only middleware
+ */
+export const authorizeRoles = (allowedRoles: Role[]) => {
+  return authorize({ roles: allowedRoles });
 };
 
+/**
+ * Require single role
+ */
+export const requireRole = (role: Role) => {
+  return authorize({ roles: [role] });
+};
+
+/**
+ * Require any role
+ */
 export const requireAnyRole = (...roles: Role[]) => {
-  return authorizeRoles(roles);
+  return authorize({ roles });
 };

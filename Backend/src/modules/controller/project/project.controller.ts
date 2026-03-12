@@ -3,6 +3,7 @@ import { projectService } from '../../services/projectService';
 import { ProjectStatus, ProjectRole, TaskStatus, TaskPriority } from '@prisma/client';
 import { CreateProjectUsecase } from '../../usecase/project/createProject.usecase';
 import { AuthorizationUtil, UserContext } from '../../../shared/utils/authorization.util';
+import { prisma } from '../../../config/db';
 
 class ProjectController {
   // Helper method to extract user context
@@ -15,7 +16,7 @@ class ProjectController {
       id: req.user.id,
       employeeId: req.user.employeeId,
       role: req.user.role,
-      designation: req.user.designation,
+      designation: req.user.designation ?? undefined,  // ✅ converts null → undefined
       isActive: req.user.isActive || true,
       companyId: req.user.companyId,
       departmentId: req.user.departmentId
@@ -544,13 +545,56 @@ class ProjectController {
         parentTaskId
       } = req.body;
 
-      // Get createdById from authenticated user if not provided
-      const finalCreatedById = createdById || req.user?.employeeId;
+      const userContext = req.user;
 
-      if (!title || !projectId || !finalCreatedById) {
+      if (!userContext) {
+        return res.status(401).json({ success: false, message: 'Authentication required' });
+      }
+
+      // ✅ FIX: Get createdById from body OR employeeId from user context
+      const finalCreatedById = createdById
+        ? parseInt(createdById.toString())
+        : userContext.employeeId;
+
+      console.log('📝 createTask called');
+      console.log('title:', title);
+      console.log('projectId:', projectId);
+      console.log('userContext.employeeId:', userContext.employeeId);
+      console.log('finalCreatedById:', finalCreatedById);
+
+      if (!title) {
+        return res.status(400).json({ success: false, message: 'Task title is required' });
+      }
+
+      if (!projectId) {
+        return res.status(400).json({ success: false, message: 'Project ID is required' });
+      }
+
+      // ✅ FIX: If employeeId is missing, fetch it from DB
+      let resolvedCreatedById = finalCreatedById;
+      if (!resolvedCreatedById) {
+        console.log('⚠️ employeeId missing from token, fetching from DB...');
+        const employee = await prisma.employee.findUnique({
+          where: { userId: userContext.id },
+          select: { id: true }
+        });
+
+        if (!employee) {
+          return res.status(400).json({
+            success: false,
+            message: 'Employee record not found for authenticated user',
+            code: 'NO_EMPLOYEE_RECORD'
+          });
+        }
+        resolvedCreatedById = employee.id;
+        console.log('✅ Resolved employeeId from DB:', resolvedCreatedById);
+      }
+
+      if (!resolvedCreatedById) {
         return res.status(400).json({
           success: false,
-          message: 'Title and project ID are required. User must be authenticated.'
+          message: 'Unable to determine creator ID',
+          code: 'INVALID_CREATOR'
         });
       }
 
@@ -560,7 +604,7 @@ class ProjectController {
         code,
         projectId: parseInt(projectId),
         assignedToId: assignedToId ? parseInt(assignedToId) : undefined,
-        createdById: parseInt(finalCreatedById.toString()),
+        createdById: resolvedCreatedById,
         status: status as TaskStatus,
         priority: priority as TaskPriority,
         dueDate: dueDate ? new Date(dueDate) : undefined,
@@ -570,13 +614,26 @@ class ProjectController {
         parentTaskId: parentTaskId ? parseInt(parentTaskId) : undefined
       }, req);
 
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
         message: 'Task created successfully',
         data: task
       });
+
     } catch (error: any) {
-      res.status(400).json({
+      console.error('❌ Error creating task:', error);
+      console.error('Error code:', error.code);
+      console.error('Error meta:', error.meta);
+
+      if (error.code === 'P2003') {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid project, employee, or milestone reference',
+          details: error.meta
+        });
+      }
+
+      return res.status(400).json({
         success: false,
         message: error.message || 'Failed to create task'
       });
@@ -701,7 +758,7 @@ class ProjectController {
       }
 
       const finalCompanyId = companyId ? parseInt(companyId as string) : userContext.companyId;
-      
+
       if (!finalCompanyId) {
         return res.status(400).json({
           success: false,

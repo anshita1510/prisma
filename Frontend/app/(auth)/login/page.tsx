@@ -359,8 +359,8 @@ export default function LoginPage(): JSX.Element {
   const generatePostmanCollection = () => {
     const collection = {
       info: {
-        name: "Tikr API Collection - Keka Auth",
-        description: "Complete API collection for Tikr with Keka-style authentication",
+        name: "PRIMA API Collection - PRIMA Auth",
+        description: "Complete API collection for PRIMA with PRIMA-style authentication",
         schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
       },
       variable: [
@@ -419,7 +419,7 @@ export default function LoginPage(): JSX.Element {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'tikr-keka-auth-collection.json';
+    a.download = 'PRIMA-PRIMA-auth-collection.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -490,7 +490,7 @@ export default function LoginPage(): JSX.Element {
   const renderEmailStep = () => (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900">Welcome to Tikr</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Welcome to PRIMA</h2>
         <p className="mt-2 text-sm text-gray-600">
           Enter your email to continue
         </p>
@@ -736,7 +736,7 @@ export default function LoginPage(): JSX.Element {
         <div className="mx-auto w-full max-w-sm">
           <div className="mb-10">
             <div className="flex items-center justify-between mb-6">
-              <h1 className="text-4xl font-black tracking-tight text-blue-600">Tikr.</h1>
+              <h1 className="text-4xl font-black tracking-tight text-blue-600">PRIMA.</h1>
               <Dialog open={showPostmanDialog} onOpenChange={setShowPostmanDialog}>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -748,10 +748,10 @@ export default function LoginPage(): JSX.Element {
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                       <Server className="w-5 h-5" />
-                      Tikr API Documentation - Keka Auth
+                      PRIMA API Documentation - PRIMA Auth
                     </DialogTitle>
                     <DialogDescription>
-                      Test endpoints, download Postman collection, and explore the Keka-style authentication API
+                      Test endpoints, download Postman collection, and explore the PRIMA-style authentication API
                     </DialogDescription>
                   </DialogHeader>
                   
@@ -829,7 +829,7 @@ export default function LoginPage(): JSX.Element {
                             Download Postman Collection
                           </CardTitle>
                           <CardDescription>
-                            Get the complete API collection for Postman with Keka-style authentication
+                            Get the complete API collection for Postman with PRIMA-style authentication
                           </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -839,7 +839,7 @@ export default function LoginPage(): JSX.Element {
                           </Button>
                           
                           <div className="bg-blue-50 p-4 rounded-lg">
-                            <h4 className="font-medium mb-2">Keka-style Authentication Flow:</h4>
+                            <h4 className="font-medium mb-2">PRIMA-style Authentication Flow:</h4>
                             <ol className="text-sm space-y-1 list-decimal list-inside">
                               <li>Call /check-user with email to determine auth provider</li>
                               <li>Based on response, use appropriate login method</li>
@@ -869,7 +869,7 @@ export default function LoginPage(): JSX.Element {
                             Live API Testing
                           </CardTitle>
                           <CardDescription>
-                            Test Keka-style authentication endpoints directly from the browser
+                            Test PRIMA-style authentication endpoints directly from the browser
                           </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -955,13 +955,13 @@ export default function LoginPage(): JSX.Element {
         <div className="absolute inset-0 bg-gradient-to-r from-blue-900/80 via-purple-800/60 to-transparent backdrop-blur-[2px] flex flex-col justify-end p-20 text-white">
           <blockquote className="space-y-2">
             <p className="text-3xl font-medium">
-              "Tikr's smart authentication system makes login seamless across all platforms."
+              "PRIMA's smart authentication system makes login seamless across all platforms."
             </p>
             <footer className="text-lg opacity-80">— The Development Team</footer>
           </blockquote>
           
           <div className="mt-8 p-4 bg-white/10 backdrop-blur-md rounded-lg border border-white/20">
-            <h3 className="text-lg font-semibold mb-2">Keka-Style Authentication</h3>
+            <h3 className="text-lg font-semibold mb-2">PRIMA-Style Authentication</h3>
             <ul className="text-sm space-y-1 opacity-90">
               <li>• Email-first login flow</li>
               <li>• Smart provider detection</li>

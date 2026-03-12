@@ -47,7 +47,7 @@ export default function Sidebar() {
       <div className="lg:hidden flex items-center justify-between bg-gradient-to-r from-blue-600 to-purple-600 p-4 text-white fixed top-0 left-0 right-0 z-40 shadow-md">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center font-bold text-white">T</div>
-          <span className="font-semibold text-lg tracking-tight">Tikr</span>
+          <span className="font-semibold text-lg tracking-tight">PRIMA</span>
         </div>
         <button onClick={toggleSidebar} className="p-2 hover:bg-blue-600/80 rounded-md transition-colors">
           <Menu size={24} />
@@ -76,7 +76,7 @@ export default function Sidebar() {
               <div className="w-10 h-10 bg-white text-blue-700 rounded-xl flex items-center justify-center shadow-lg font-bold">
                 <Target size={24} />
               </div>
-              <span className="font-bold text-xl tracking-tight uppercase">Tikr</span>
+              <span className="font-bold text-xl tracking-tight uppercase">PRIMA</span>
             </div>
             <button onClick={() => setIsOpen(false)} className="lg:hidden p-1.5 hover:bg-blue-600 rounded-full">
               <X size={20} />

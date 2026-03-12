@@ -10,6 +10,10 @@ export type AttendanceStatus =
 export type ArrivalStatus = 'on-time' | 'late' | 'early' | 'no-entry';
 
 export interface TimeSlot {
+  checkOut: any;
+  endTime: any;
+  startTime: any;
+  checkIn: any;
   start: string; // HH:mm format
   end: string;
   type: 'work' | 'break' | 'overtime';

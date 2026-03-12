@@ -15,7 +15,7 @@ export default function LoginPage(){
       <div className="w-full max-w-md bg-white/80 backdrop-blur-md rounded-2xl shadow-2xl p-8">
         {/* Logo / Brand */}
         <div className="flex justify-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Tikr</h1>
+          <h1 className="text-3xl font-bold text-gray-900">PRIMA</h1>
         </div>
 
         {/* Heading */}

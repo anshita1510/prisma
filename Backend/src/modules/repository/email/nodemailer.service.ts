@@ -31,7 +31,7 @@ export class NodemailerService implements EmailService {
       });
       
       const mailOptions = {
-        from: `"Tikr Team" <${process.env.SMTP_USER}>`,
+        from: `"PRIMA Team" <${process.env.SMTP_USER}>`,
         to: data.to,
         subject: data.subject,
         html: data.html,

@@ -88,7 +88,7 @@ export class CreateSuperAdminUsecase {
         <p><b>Temporary Password:</b> ${rawPassword}</p>
         <p><strong>Please change your password after logging in.</strong></p>
         <br/>
-        <p>Thank you,<br/>Team Tikr</p>
+        <p>Thank you,<br/>Team PRIMA</p>
       `,
     });
 

@@ -1,10 +1,12 @@
 "use client"
 import React, { useState } from "react";
+import { Users, DollarSign, Target, UserPlus } from "lucide-react";
 
 const FEATURES = {
   people: {
     title: "People Data & Analytics",
     description: "Connect all your people data in one place and gain powerful insights for better decisions.",
+    icon: Users,
     preview: {
       name: "People Analytics",
       role: "Insights Dashboard",
@@ -14,6 +16,7 @@ const FEATURES = {
   payroll: {
     title: "Payroll & Expense Tracking",
     description: "Automate payroll and expenses with complete accuracy and compliance.",
+    icon: DollarSign,
     preview: {
       name: "Payroll System",
       role: "Salary & Expenses",
@@ -23,6 +26,7 @@ const FEATURES = {
   performance: {
     title: "Performance & Culture",
     description: "Set goals, track performance, and build a strong company culture.",
+    icon: Target,
     preview: {
       name: "Performance",
       role: "Goals & Reviews",
@@ -32,6 +36,7 @@ const FEATURES = {
   hiring: {
     title: "Hiring & Onboarding",
     description: "Hire faster and onboard employees with personalized workflows.",
+    icon: UserPlus,
     preview: {
       name: "Hiring",
       role: "Recruitment",
@@ -94,7 +99,12 @@ export default function OurWorkSection() {
           {/* Right Dynamic Preview */}
           <div className="bg-white rounded-2xl shadow-lg p-6">
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-16 h-16 rounded-full bg-gray-200" />
+              <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
+                {React.createElement(current.icon, { 
+                  size: 28, 
+                  className: "text-blue-600" 
+                })}
+              </div>
               <div>
                 <h4 className="font-semibold text-gray-900">
                   {current.preview.name}
