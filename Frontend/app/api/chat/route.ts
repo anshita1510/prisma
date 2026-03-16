@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const client = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 const SYSTEM_PROMPT = `You are PRIMA HR Assistant, an intelligent HR chatbot for PRIMA — an HRMS platform.
 
@@ -25,17 +25,23 @@ export async function POST(req: NextRequest) {
   try {
     const { messages } = await req.json();
 
-    const response = await client.messages.create({
-      model: "claude-3-5-sonnet-20241022",
-      max_tokens: 1024,
-      system: SYSTEM_PROMPT,
-      messages,
+    const model = client.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      systemInstruction: SYSTEM_PROMPT,
     });
 
-    const reply = response.content
-      .filter((b) => b.type === "text")
-      .map((b) => (b as { type: "text"; text: string }).text)
-      .join("\n");
+    // Convert messages to Gemini format
+    // Gemini uses "model" instead of "assistant" and requires alternating roles
+    const history = messages.slice(0, -1).map((m: { role: string; content: string }) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
+
+    const lastMessage = messages[messages.length - 1].content;
+
+    const chat = model.startChat({ history });
+    const result = await chat.sendMessage(lastMessage);
+    const reply = result.response.text();
 
     return NextResponse.json({ reply });
   } catch (err) {
