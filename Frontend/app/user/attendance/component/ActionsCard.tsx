@@ -11,7 +11,7 @@ interface ActionButtonProps {
   icon: React.ReactNode;
   label: string;
   onClick?: () => void;
-  variant?: 'default' | 'primary' | 'success';
+  variant?: 'default' | 'PRIMAry' | 'success';
   disabled?: boolean;
 }
 
@@ -22,7 +22,7 @@ const ActionButton = ({ icon, label, onClick, variant = 'default', disabled = fa
     className={`flex items-center gap-2 text-sm transition-colors py-2 px-3 rounded-md w-full ${
       disabled 
         ? 'text-gray-400 cursor-not-allowed bg-gray-100' 
-        : variant === 'primary'
+        : variant === 'PRIMAry'
         ? 'text-white bg-purple-600 hover:bg-purple-700 shadow-sm'
         : variant === 'success'
         ? 'text-white bg-green-600 hover:bg-green-700 shadow-sm'
@@ -315,7 +315,7 @@ export const ActionsCard = ({ currentTime, currentDate }: ActionsCardProps) => {
             icon={<LogIn className="w-4 h-4" />} 
             label={loading ? "Checking in..." : "Check In"}
             onClick={handleCheckIn}
-            variant="primary"
+            variant="PRIMAry"
             disabled={loading}
           />
         ) : (

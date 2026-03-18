@@ -22,11 +22,11 @@ interface CreateUserFormData {
   companyId?: string | number;
 }
 
-export default function CreateUserForm({ 
-  currentUserRole, 
-  currentUserCompany, 
-  onSuccess, 
-  onError 
+export default function CreateUserForm({
+  currentUserRole,
+  currentUserCompany,
+  onSuccess,
+  onError
 }: CreateUserFormProps) {
   const [formData, setFormData] = useState<CreateUserFormData>({
     email: '',
@@ -65,7 +65,7 @@ export default function CreateUserForm({
 
   const loadCompanies = async () => {
     if (currentUserRole !== 'SUPER_ADMIN') return;
-    
+
     setLoadingCompanies(true);
     try {
       const response = await userService.getCompanies();
@@ -93,8 +93,8 @@ export default function CreateUserForm({
   };
 
   const validateForm = (): boolean => {
-    if (!formData.email || !formData.firstName || !formData.lastName || 
-        !formData.phone || !formData.designation) {
+    if (!formData.email || !formData.firstName || !formData.lastName ||
+      !formData.phone || !formData.designation) {
       onError?.('Please fill in all required fields');
       return false;
     }
@@ -116,11 +116,11 @@ export default function CreateUserForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     console.log('🔍 Form submission started');
     console.log('🔍 Current form data:', JSON.stringify(formData, null, 2));
     console.log('🔍 Current user role:', currentUserRole);
-    
+
     if (!validateForm()) {
       console.log('❌ Form validation failed');
       return;
@@ -148,12 +148,12 @@ export default function CreateUserForm({
       console.log('🔍 Final user data to send:', JSON.stringify(userData, null, 2));
 
       const response = await userService.createUser(userData);
-      
+
       if (response.success) {
         onSuccess?.(`User created successfully! An invitation email has been sent to ${formData.email}.`);
         resetForm();
       }
-      
+
     } catch (err: any) {
       console.error('❌ Form submission error:', err);
       onError?.(err.message || 'Failed to create user');
@@ -186,8 +186,8 @@ export default function CreateUserForm({
         <div>
           <h2 className="text-xl font-semibold text-gray-900">Create New User</h2>
           <p className="text-sm text-gray-600">
-            {currentUserRole === 'SUPER_ADMIN' 
-              ? 'Add a new user to any company in the system.' 
+            {currentUserRole === 'SUPER_ADMIN'
+              ? 'Add a new user to any company in the system.'
               : `Add a new user to ${currentUserCompany?.name || 'your company'}.`
             }
           </p>
@@ -257,7 +257,7 @@ export default function CreateUserForm({
             name="phone"
             value={formData.phone}
             onChange={handleInputChange}
-            placeholder="+1 (555) 123-4567"
+            placeholder="+91 9592003120"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             required
           />
@@ -291,7 +291,7 @@ export default function CreateUserForm({
                 </span>
                 <ChevronDown className="w-4 h-4 text-gray-400" />
               </button>
-              
+
               {showCompanyDropdown && (
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                   {loadingCompanies ? (

@@ -2,14 +2,12 @@
 
 import { SuperAdminRoute } from '@/lib/auth/ProtectedRoute';
 
-export default function SuperAdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <SuperAdminRoute>
-      {children}
+      <div style={{ backgroundColor: 'var(--bg-color)', minHeight: '100vh' }}>
+        {children}
+      </div>
     </SuperAdminRoute>
   );
 }

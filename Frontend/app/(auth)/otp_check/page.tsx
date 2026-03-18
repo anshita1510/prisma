@@ -1,17 +1,27 @@
 "use client";
 
-import { useState, FormEvent, JSX, useEffect } from "react";
+import { useState, FormEvent, JSX, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { verifyOtpAPI, forgotPasswordAPI } from "../../../lib/api";
+import { Loader2, ArrowLeft, Sun, Moon } from "lucide-react";
+import { motion } from "framer-motion";
+import { useTheme } from "@/lib/theme/ThemeContext";
+import Image from "next/image";
+
+import PageWrapper from "../login/_components/PageWrapper";
+import RightPanel from "../login/_components/RightPanel";
+import { FloatingInput, ToastContainer, Toast } from "../_components/SharedAuth";
 
 export default function OTPVerificationPage(): JSX.Element {
   const router = useRouter();
+  const { resolvedTheme, toggleTheme } = useTheme();
+
   const [email, setEmail] = useState<string>("");
   const [otp, setOtp] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
-  const [success, setSuccess] = useState<string>("");
   const [resendLoading, setResendLoading] = useState<boolean>(false);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [shake, setShake] = useState<boolean>(false);
 
   useEffect(() => {
     // Get email from localStorage
@@ -24,23 +34,39 @@ export default function OTPVerificationPage(): JSX.Element {
     }
   }, [router]);
 
+  const addToast = useCallback((type: Toast["type"], message: string) => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, type, message }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+  }, []);
+
+  const dismissToast = useCallback((id: number) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
   const handleVerifyOTP = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
+    if (!otp || otp.length < 6) {
+      setShake(true);
+      setTimeout(() => setShake(false), 600);
+      return;
+    }
+
     setLoading(true);
-    setError("");
-    setSuccess("");
 
     try {
       await verifyOtpAPI(email, otp);
-      setSuccess("OTP verified successfully!");
-      
+      addToast("success", "OTP verified successfully!");
+
       // Redirect to set password page after 1 second
       setTimeout(() => {
         router.push("/set_pass");
       }, 1000);
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      addToast("error", err instanceof Error ? err.message : "Something went wrong");
+      setShake(true);
+      setTimeout(() => setShake(false), 600);
     } finally {
       setLoading(false);
     }
@@ -48,129 +74,187 @@ export default function OTPVerificationPage(): JSX.Element {
 
   const handleResendOTP = async (): Promise<void> => {
     setResendLoading(true);
-    setError("");
-    setSuccess("");
 
     try {
       await forgotPasswordAPI(email);
-      setSuccess("OTP resent successfully!");
+      addToast("success", "OTP resent successfully!");
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      addToast("error", err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setResendLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-white">
-      {/* --- Left Half: The Form --- */}
-      <div className="flex flex-1 flex-col justify-center px-8 py-12 sm:px-12 lg:flex-none lg:w-1/2 xl:w-[40%]">
-        <div className="mx-auto w-full max-w-sm">
-          <div className="mb-10">
-            <h1 className="text-4xl font-black tracking-tight text-green-600">PRIMA.</h1>
-            <h2 className="mt-6 text-2xl font-bold leading-9 tracking-tight text-gray-900">
-              Verify OTP
-            </h2>
-            <p className="mt-2 text-sm text-gray-500">
-              Enter the 6-digit OTP sent to your email address.
-            </p>
-          </div>
+    <div
+      className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-4 py-8 sm:px-6"
+      style={{
+        backgroundColor: "var(--bg-color)",
+        backgroundImage: [
+          "radial-gradient(ellipse at 20% 20%, rgba(37,99,235,0.07) 0%, transparent 55%)",
+          "radial-gradient(ellipse at 80% 80%, rgba(124,58,237,0.07) 0%, transparent 55%)",
+        ].join(", "),
+      }}
+    >
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
-          {error && (
-            <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 animate-shake">
-              {error}
-            </div>
-          )}
+      {/* Ambient blobs */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+        <div className="absolute left-[8%] top-[10%] h-64 w-64 animate-pulse rounded-full blur-3xl opacity-20"
+          style={{ background: "radial-gradient(circle, rgba(96,165,250,0.5), transparent)" }} />
+        <div className="absolute right-[10%] top-[30%] h-48 w-48 animate-pulse rounded-full blur-3xl opacity-15 [animation-delay:1s]"
+          style={{ background: "radial-gradient(circle, rgba(168,85,247,0.5), transparent)" }} />
+        <div className="absolute bottom-[15%] left-1/3 h-56 w-56 animate-pulse rounded-full blur-3xl opacity-10 [animation-delay:2s]"
+          style={{ background: "radial-gradient(circle, rgba(167,139,250,0.5), transparent)" }} />
+      </div>
 
-          {success && (
-            <div className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-600">
-              {success}
-            </div>
-          )}
+      <PageWrapper>
+        <div
+          className="flex items-center justify-center gap-3 px-6 py-4 sm:hidden"
+          style={{
+            backgroundColor: "var(--card-bg)",
+            borderBottom: "1px solid var(--card-border)",
+            borderRadius: "24px 24px 0 0",
+          }}
+        >
+          <Image
+            src="/prima-logo.svg"
+            alt="PRIMA"
+            width={28}
+            height={28}
+            style={{ borderRadius: '6px' }}
+          />
+          <span
+            className="text-xl font-black tracking-[0.14em]"
+            style={{
+              background: "linear-gradient(135deg, #2563eb, #7c3aed)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
+            PRIMA
+          </span>
+          <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+            Smart workforce management
+          </span>
+        </div>
 
-          <form className="space-y-5" onSubmit={handleVerifyOTP}>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700">Email Address</label>
-              <input
-                type="email"
-                required
-                value={email}
-                readOnly
-                className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 shadow-sm bg-gray-50 text-gray-600 outline-none"
-                placeholder="name@company.com"
-              />
-            </div>
+        <div
+          className="mx-auto flex w-full max-w-[1024px] overflow-hidden sm:min-h-[600px]"
+          style={{
+            backgroundColor: "var(--card-bg)",
+            border: "1px solid var(--card-border)",
+            borderRadius: "24px",
+            boxShadow: "var(--shadow-lg)",
+          }}
+        >
+          <div className="flex w-full flex-col justify-center px-8 py-10 sm:px-12 lg:w-[55%]">
 
-            <div>
-              <div className="flex items-center justify-between">
-                <label className="block text-sm font-semibold text-gray-700">OTP</label>
-              </div>
-              <input
-                type="text"
-                required
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                maxLength={6}
-                className="mt-1 block w-full rounded-xl border border-gray-300 px-4 py-3 shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all outline-none text-center text-lg tracking-widest"
-                placeholder="000000"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative flex w-full justify-center rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-70 transition-all active:scale-[0.98]"
-            >
-              {loading ? (
-                <span className="flex items-center gap-2">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Verifying OTP...
+            {/* Header row */}
+            <div className="mb-8 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <Image
+                  src="/prima-logo.svg"
+                  alt="PRIMA"
+                  width={32}
+                  height={32}
+                  style={{ borderRadius: '8px' }}
+                />
+                <span
+                  className="text-2xl font-black tracking-[0.14em]"
+                  style={{
+                    background: "linear-gradient(135deg, #2563eb, #7c3aed)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                  }}
+                >
+                  PRIMA
                 </span>
-              ) : (
-                "Verify OTP"
-              )}
-            </button>
+              </div>
 
-            <div className="text-center space-y-2">
-              <button
-                type="button"
-                onClick={handleResendOTP}
-                disabled={resendLoading}
-                className="text-sm text-green-600 hover:text-green-700 font-medium disabled:opacity-50"
+            </div>
+
+            {/* Title */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="mb-8"
+            >
+              <h1 className="text-2xl font-bold" style={{ color: "var(--text-color)" }}>
+                Verify OTP
+              </h1>
+              <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
+                Enter the 6-digit OTP sent to your email address.
+              </p>
+            </motion.div>
+
+            {/* Form */}
+            <motion.form
+              onSubmit={handleVerifyOTP}
+              animate={shake ? { x: [-8, 8, -6, 6, -4, 4, 0] } : { x: 0 }}
+              transition={{ duration: 0.5 }}
+              className="flex flex-col gap-4"
+              noValidate
+            >
+              <FloatingInput
+                id="email" label="Email Address" type="email" value={email}
+                readOnly disabled
+              />
+
+              <FloatingInput
+                id="otp" label="OTP" type="text" value={otp}
+                onChange={v => setOtp(v.replace(/\D/g, '').slice(0, 6))}
+                autoFocus autoComplete="one-time-code" disabled={loading}
+                maxLength={6}
+              />
+
+              <motion.button
+                type="submit"
+                disabled={loading || otp.length < 6}
+                whileHover={{ scale: 1.01, y: -1 }}
+                whileTap={{ scale: 0.98 }}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+                style={{
+                  background: "linear-gradient(135deg, #2563eb, #7c3aed)",
+                  boxShadow: "0 8px 24px rgba(124,58,237,0.35)",
+                }}
               >
-                {resendLoading ? "Resending..." : "Resend OTP"}
-              </button>
-              <div>
+                {loading
+                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Verifying OTP...</>
+                  : "Verify OTP"}
+              </motion.button>
+
+              <div className="mt-4 flex flex-col items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleResendOTP}
+                  disabled={resendLoading}
+                  className="text-sm font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--primary-color)", padding: 0 }}
+                >
+                  {resendLoading ? "Resending..." : "Resend OTP"}
+                </button>
                 <button
                   type="button"
                   onClick={() => router.push("/Forget_pass")}
-                  className="text-sm text-gray-600 hover:text-gray-700"
+                  className="inline-flex items-center gap-2 text-sm font-medium transition-opacity hover:opacity-80"
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 0 }}
                 >
+                  <ArrowLeft className="h-4 w-4" />
                   Back to Forgot Password
                 </button>
               </div>
-            </div>
-          </form>
-        </div>
-      </div>
+            </motion.form>
 
-      {/* --- Right Half: Visual/Interactive Panel --- */}
-      <div className="relative hidden w-0 flex-1 lg:block">
-        <img
-          className="absolute inset-0 h-full w-full object-cover"
-          src="https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=2070"
-          alt="Office Background"
-        />
-        <div className="absolute inset-0 bg-green-900/40 backdrop-blur-[2px] flex flex-col justify-end p-20 text-white">
-          <blockquote className="space-y-2">
-            <p className="text-3xl font-medium">
-              "PRIMA has completely transformed how our team tracks productivity and stays organized."
-            </p>
-            <footer className="text-lg opacity-80">— The Management Team</footer>
-          </blockquote>
+          </div>
+
+          <div className="hidden lg:flex lg:w-[45%]">
+            <RightPanel />
+          </div>
         </div>
-      </div>
+      </PageWrapper>
     </div>
   );
 }

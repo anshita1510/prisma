@@ -1,8 +1,0 @@
-{
-  "devDependencies": {
-    "@types/node": "^25.3.0"
-  },
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.78.0"
-  }
-}

@@ -20,7 +20,7 @@ const ROLES = [
 
 const DESIGNATIONS = [
   'INTERN',
-  'SOFTWARE_ENGINEER', 
+  'SOFTWARE_ENGINEER',
   'SENIOR_ENGINEER',
   'TECH_LEAD',
   'MANAGER',
@@ -50,7 +50,7 @@ export default function CreateUserForm() {
     const checkAuth = () => {
       const token = localStorage.getItem('token');
       const user = localStorage.getItem('user');
-      
+
       if (token && user) {
         try {
           const parsedUser = JSON.parse(user);
@@ -76,11 +76,11 @@ export default function CreateUserForm() {
       if (result.success) {
         setCurrentUser(result.user);
         setIsAuthenticated(true);
-        setMessage({ 
-          type: 'success', 
-          text: 'Successfully logged in as admin!' 
+        setMessage({
+          type: 'success',
+          text: 'Successfully logged in as admin!'
         });
-        
+
         // Test the debug endpoint
         await testDebugEndpoint();
       } else {
@@ -88,19 +88,19 @@ export default function CreateUserForm() {
         const demoResult = authService.createDemoSession();
         setCurrentUser(demoResult.user);
         setIsAuthenticated(true);
-        setMessage({ 
-          type: 'success', 
-          text: 'Demo admin session created!' 
+        setMessage({
+          type: 'success',
+          text: 'Demo admin session created!'
         });
-        
+
         // Test the debug endpoint
         await testDebugEndpoint();
       }
     } catch (error) {
       console.error('Quick login failed:', error);
-      setMessage({ 
-        type: 'error', 
-        text: 'Quick login failed. Please try manual login.' 
+      setMessage({
+        type: 'error',
+        text: 'Quick login failed. Please try manual login.'
       });
     } finally {
       setLoading(false);
@@ -118,10 +118,10 @@ export default function CreateUserForm() {
           'Content-Type': 'application/json'
         }
       });
-      
+
       const data = await response.json();
       console.log('Debug endpoint response:', data);
-      
+
       if (response.ok) {
         console.log('✅ Authentication working correctly');
       } else {
@@ -188,14 +188,14 @@ export default function CreateUserForm() {
 
   const handleInputChange = (field: keyof CreateUserData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    
+
     // Clear error for this field when user starts typing
     if (errors[field]) {
       const newErrors = { ...errors };
       delete newErrors[field];
       setErrors(newErrors);
     }
-    
+
     // Clear general message when user makes changes
     if (message) {
       setMessage(null);
@@ -204,7 +204,7 @@ export default function CreateUserForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -216,9 +216,9 @@ export default function CreateUserForm() {
       // Check if user is authenticated
       const token = localStorage.getItem('token');
       if (!token) {
-        setMessage({ 
-          type: 'error', 
-          text: 'You must be logged in to create users. Please log in first.' 
+        setMessage({
+          type: 'error',
+          text: 'You must be logged in to create users. Please log in first.'
         });
         setLoading(false);
         return;
@@ -229,9 +229,9 @@ export default function CreateUserForm() {
       if (storedUser) {
         const user = JSON.parse(storedUser);
         if (!['ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
-          setMessage({ 
-            type: 'error', 
-            text: 'You do not have permission to create users. Admin access required.' 
+          setMessage({
+            type: 'error',
+            text: 'You do not have permission to create users. Admin access required.'
           });
           setLoading(false);
           return;
@@ -240,15 +240,15 @@ export default function CreateUserForm() {
 
       console.log('Creating user with data:', formData);
       console.log('Auth token present:', !!token);
-      
+
       const result = await userService.createUser(formData);
-      
+
       if (result.success) {
-        setMessage({ 
-          type: 'success', 
-          text: result.message || 'User created successfully! An invitation email has been sent.' 
+        setMessage({
+          type: 'success',
+          text: result.message || 'User created successfully! An invitation email has been sent.'
         });
-        
+
         // Reset form on success
         setFormData({
           email: '',
@@ -261,22 +261,22 @@ export default function CreateUserForm() {
         });
         setErrors({});
       } else {
-        setMessage({ 
-          type: 'error', 
-          text: result.message || 'Failed to create user. Please try again.' 
+        setMessage({
+          type: 'error',
+          text: result.message || 'Failed to create user. Please try again.'
         });
       }
     } catch (error: any) {
       console.error('Form submission error:', error);
-      
+
       // More detailed error handling
       let errorMessage = 'An unexpected error occurred. Please try again.';
-      
+
       if (error.response) {
         // Server responded with error status
         const status = error.response.status;
         const serverMessage = error.response.data?.error || error.response.data?.message;
-        
+
         if (status === 401) {
           errorMessage = 'Authentication failed. Please log in again.';
         } else if (status === 403) {
@@ -289,9 +289,9 @@ export default function CreateUserForm() {
       } else if (error.request) {
         errorMessage = 'Network error. Please check your connection and try again.';
       }
-      
-      setMessage({ 
-        type: 'error', 
+
+      setMessage({
+        type: 'error',
         text: errorMessage
       });
     } finally {
@@ -332,7 +332,7 @@ export default function CreateUserForm() {
               <p className="text-sm text-orange-700">
                 Current status: {currentUser ? `Logged in as ${currentUser.name} (${currentUser.role})` : 'Not logged in'}
               </p>
-              <Button 
+              <Button
                 onClick={handleQuickLogin}
                 disabled={loading}
                 className="bg-orange-600 hover:bg-orange-700"
@@ -459,7 +459,7 @@ export default function CreateUserForm() {
               <Input
                 id="phone"
                 type="tel"
-                placeholder="+1 (555) 123-4567"
+                placeholder="+91 9592003120"
                 value={formData.phone}
                 onChange={(e) => handleInputChange('phone', e.target.value)}
                 className={errors.phone ? 'border-red-500 focus:border-red-500' : ''}
@@ -507,11 +507,11 @@ export default function CreateUserForm() {
                   <Briefcase className="w-4 h-4" />
                   <span>Designation *</span>
                 </Label>
-                <Select 
-                  value={formData.designation} 
+                <Select
+                  value={formData.designation}
                   onValueChange={(value) => handleInputChange('designation', value)}
                 >
-                  <SelectTrigger 
+                  <SelectTrigger
                     className={errors.designation ? 'border-red-500 focus:border-red-500' : ''}
                     disabled={loading}
                   >
@@ -538,11 +538,11 @@ export default function CreateUserForm() {
                   <Shield className="w-4 h-4" />
                   <span>Role *</span>
                 </Label>
-                <Select 
-                  value={formData.role} 
+                <Select
+                  value={formData.role}
                   onValueChange={(value) => handleInputChange('role', value as CreateUserData['role'])}
                 >
-                  <SelectTrigger 
+                  <SelectTrigger
                     className={errors.role ? 'border-red-500 focus:border-red-500' : ''}
                     disabled={loading}
                   >
@@ -570,8 +570,8 @@ export default function CreateUserForm() {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="flex-1 bg-blue-600 hover:bg-blue-700"
                 disabled={loading}
               >
@@ -587,10 +587,10 @@ export default function CreateUserForm() {
                   </>
                 )}
               </Button>
-              
-              <Button 
-                type="button" 
-                variant="outline" 
+
+              <Button
+                type="button"
+                variant="outline"
                 onClick={handleReset}
                 disabled={loading}
                 className="flex-1 sm:flex-none"

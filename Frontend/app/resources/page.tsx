@@ -1,366 +1,220 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowLeft, BookOpen, Video, FileText, Download, ExternalLink, Clock, Search } from "lucide-react";
 import { useState } from "react";
+import PageLayout from "../components/PageLayout";
+import { BookOpen, Video, FileText, Download, Clock, Search } from "lucide-react";
+
+const resources = [
+  {
+    category: "Getting Started",
+    items: [
+      { title: "Quick Start Guide", description: "Get up and running with PRIMA in under 10 minutes", type: "Guide", icon: BookOpen, readTime: "5 min read", keywords: ["quick", "start", "guide", "setup"] },
+      { title: "Setup Walkthrough Video", description: "Step-by-step video tutorial for initial setup", type: "Video", icon: Video, readTime: "12 min watch", keywords: ["setup", "video", "tutorial"] },
+      { title: "Best Practices Checklist", description: "Essential tips for optimal PRIMA implementation", type: "Checklist", icon: FileText, readTime: "3 min read", keywords: ["best practices", "checklist", "tips"] },
+    ],
+  },
+  {
+    category: "User Guides",
+    items: [
+      { title: "Employee Management", description: "Complete guide to managing employee profiles and data", type: "Guide", icon: BookOpen, readTime: "8 min read", keywords: ["employee", "management", "profiles"] },
+      { title: "Attendance Tracking", description: "Master attendance features and reporting", type: "Guide", icon: BookOpen, readTime: "6 min read", keywords: ["attendance", "tracking", "time"] },
+      { title: "Leave Management", description: "Configure and manage leave policies effectively", type: "Guide", icon: BookOpen, readTime: "7 min read", keywords: ["leave", "vacation", "policies"] },
+    ],
+  },
+  {
+    category: "Advanced Features",
+    items: [
+      { title: "API Documentation", description: "Complete API reference for developers", type: "Documentation", icon: FileText, readTime: "Reference", keywords: ["api", "documentation", "developers"] },
+      { title: "Custom Integrations", description: "Build custom integrations with third-party tools", type: "Guide", icon: BookOpen, readTime: "15 min read", keywords: ["integrations", "custom", "third-party"] },
+      { title: "Advanced Analytics", description: "Leverage powerful reporting and analytics features", type: "Guide", icon: BookOpen, readTime: "10 min read", keywords: ["analytics", "reporting", "data"] },
+    ],
+  },
+];
+
+const downloads = [
+  { title: "PRIMA Mobile App", description: "Download our mobile app for iOS and Android", platforms: ["iOS", "Android"] },
+  { title: "Implementation Template", description: "Excel template for planning your PRIMA rollout", platforms: ["Excel"] },
+  { title: "Security Whitepaper", description: "Detailed overview of our security measures", platforms: ["PDF"] },
+];
+
+type ResourceItem = { title: string; description: string; type: string; icon: React.ElementType; readTime: string; keywords: string[]; category?: string };
 
 export default function ResourcesPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const resources = [
-    {
-      category: "Getting Started",
-      items: [
-        {
-          title: "Quick Start Guide",
-          description: "Get up and running with PRIMA in under 10 minutes",
-          type: "Guide",
-          icon: <BookOpen className="w-5 h-5" />,
-          readTime: "5 min read",
-          link: "/resources/quick-start",
-          keywords: ["quick", "start", "guide", "setup", "getting started", "begin"]
-        },
-        {
-          title: "Setup Walkthrough Video",
-          description: "Step-by-step video tutorial for initial setup",
-          type: "Video",
-          icon: <Video className="w-5 h-5" />,
-          readTime: "12 min watch",
-          link: "/resources/setup-video",
-          keywords: ["setup", "video", "tutorial", "walkthrough", "installation"]
-        },
-        {
-          title: "Best Practices Checklist",
-          description: "Essential tips for optimal PRIMA implementation",
-          type: "Checklist",
-          icon: <FileText className="w-5 h-5" />,
-          readTime: "3 min read",
-          link: "/resources/best-practices",
-          keywords: ["best practices", "checklist", "tips", "optimization", "implementation"]
-        }
-      ]
-    },
-    {
-      category: "User Guides",
-      items: [
-        {
-          title: "Employee Management",
-          description: "Complete guide to managing employee profiles and data",
-          type: "Guide",
-          icon: <BookOpen className="w-5 h-5" />,
-          readTime: "8 min read",
-          link: "/resources/employee-management",
-          keywords: ["employee", "management", "profiles", "data", "hr", "staff"]
-        },
-        {
-          title: "Attendance Tracking",
-          description: "Master attendance features and reporting",
-          type: "Guide",
-          icon: <BookOpen className="w-5 h-5" />,
-          readTime: "6 min read",
-          link: "/resources/attendance-tracking",
-          keywords: ["attendance", "tracking", "time", "reporting", "clock in", "clock out"]
-        },
-        {
-          title: "Leave Management",
-          description: "Configure and manage leave policies effectively",
-          type: "Guide",
-          icon: <BookOpen className="w-5 h-5" />,
-          readTime: "7 min read",
-          link: "/resources/leave-management",
-          keywords: ["leave", "vacation", "policies", "time off", "absence", "holidays"]
-        }
-      ]
-    },
-    {
-      category: "Advanced Features",
-      items: [
-        {
-          title: "API Documentation",
-          description: "Complete API reference for developers",
-          type: "Documentation",
-          icon: <FileText className="w-5 h-5" />,
-          readTime: "Reference",
-          link: "/resources/api-docs",
-          keywords: ["api", "documentation", "developers", "integration", "reference", "endpoints"]
-        },
-        {
-          title: "Custom Integrations",
-          description: "Build custom integrations with third-party tools",
-          type: "Guide",
-          icon: <BookOpen className="w-5 h-5" />,
-          readTime: "15 min read",
-          link: "/resources/integrations",
-          keywords: ["integrations", "custom", "third-party", "tools", "connect", "sync"]
-        },
-        {
-          title: "Advanced Analytics",
-          description: "Leverage powerful reporting and analytics features",
-          type: "Guide",
-          icon: <BookOpen className="w-5 h-5" />,
-          readTime: "10 min read",
-          link: "/resources/analytics",
-          keywords: ["analytics", "reporting", "data", "insights", "metrics", "dashboard"]
-        }
-      ]
-    }
-  ];
+  const [query, setQuery] = useState("");
 
-  // Search functionality
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    
-    if (query.trim() === "") {
-      setSearchResults([]);
-      return;
-    }
+  const allItems: ResourceItem[] = resources.flatMap((cat) =>
+    cat.items.map((item) => ({ ...item, category: cat.category }))
+  );
 
-    const allItems = resources.flatMap(category => 
-      category.items.map(item => ({
-        ...item,
-        category: category.category
-      }))
-    );
-
-    const filtered = allItems.filter(item => {
-      const searchTerm = query.toLowerCase();
-      return (
-        item.title.toLowerCase().includes(searchTerm) ||
-        item.description.toLowerCase().includes(searchTerm) ||
-        item.type.toLowerCase().includes(searchTerm) ||
-        item.category.toLowerCase().includes(searchTerm) ||
-        item.keywords.some(keyword => keyword.toLowerCase().includes(searchTerm))
-      );
-    });
-
-    setSearchResults(filtered);
-  };
-
-  const downloads = [
-    {
-      title: "PRIMA Mobile App",
-      description: "Download our mobile app for iOS and Android",
-      platforms: ["iOS", "Android"],
-      icon: <Download className="w-6 h-6" />
-    },
-    {
-      title: "Implementation Template",
-      description: "Excel template for planning your PRIMA rollout",
-      platforms: ["Excel"],
-      icon: <Download className="w-6 h-6" />
-    },
-    {
-      title: "Security Whitepaper",
-      description: "Detailed overview of our security measures",
-      platforms: ["PDF"],
-      icon: <Download className="w-6 h-6" />
-    }
-  ];
+  const filtered = query.trim()
+    ? allItems.filter((item) => {
+        const q = query.toLowerCase();
+        return (
+          item.title.toLowerCase().includes(q) ||
+          item.description.toLowerCase().includes(q) ||
+          item.type.toLowerCase().includes(q) ||
+          item.keywords.some((k) => k.includes(q))
+        );
+      })
+    : [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/20">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Link 
-              href="/" 
-              className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
+    <PageLayout title="Resources">
+      {/* Hero */}
+      <div className="text-center mb-16">
+        <div className="premium-badge mb-6">Documentation & Guides</div>
+        <h1 className="text-5xl font-bold mb-6 leading-tight" style={{ color: 'var(--text-color)' }}>
+          Everything you need<br />
+          <span className="gradient-text">to succeed with PRIMA</span>
+        </h1>
+        <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--text-muted)' }}>
+          From quick start guides to advanced tutorials, we've got you covered.
+        </p>
+        <div className="accent-line" />
+      </div>
+
+      {/* Search */}
+      <div className="max-w-xl mx-auto mb-16">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search resources..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full px-5 py-4 pl-12 rounded-2xl text-sm outline-none transition-all"
+            style={{
+              backgroundColor: 'var(--input-bg)',
+              border: '1px solid var(--card-border)',
+              color: 'var(--text-color)',
+              boxShadow: 'var(--shadow-sm)',
+            }}
+            onFocus={e => (e.currentTarget.style.borderColor = 'var(--PRIMAry-color)')}
+            onBlur={e => (e.currentTarget.style.borderColor = 'var(--card-border)')}
+          />
+          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+          {query && (
+            <button
+              onClick={() => setQuery("")}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-sm"
+              style={{ color: 'var(--text-muted)' }}
             >
-              <ArrowLeft size={20} />
-              <span>Back to Home</span>
-            </Link>
-            <h1 className="text-xl font-semibold text-gray-900">Resources</h1>
-            <div className="w-24"></div>
-          </div>
+              ✕
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        
-        {/* Hero Section */}
-        <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold text-gray-900 mb-6">
-            Resources & Documentation
-          </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Everything you need to get the most out of PRIMA. From quick start guides 
-            to advanced tutorials, we've got you covered.
-          </p>
+      {/* Search Results */}
+      {query && (
+        <div className="mb-16">
+          <h2 className="text-xl font-bold mb-6" style={{ color: 'var(--text-color)' }}>
+            {filtered.length} result{filtered.length !== 1 ? "s" : ""} for "{query}"
+          </h2>
+          {filtered.length > 0 ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filtered.map((item) => (
+                <ResourceCard key={item.title} item={item} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16">
+              <Search size={40} className="mx-auto mb-4" style={{ color: 'var(--text-muted)', opacity: 0.4 }} />
+              <p style={{ color: 'var(--text-muted)' }}>No results found. Try different keywords.</p>
+            </div>
+          )}
         </div>
+      )}
 
-        {/* Search Bar */}
-        <div className="max-w-2xl mx-auto mb-12">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search resources..."
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="w-full px-6 py-4 pl-12 bg-white/60 backdrop-blur-sm border border-white/20 rounded-2xl shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            {searchQuery && (
-              <button
-                onClick={() => handleSearch("")}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Search Results */}
-        {searchQuery && (
-          <div className="mb-16">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              Search Results for "{searchQuery}" ({searchResults.length} found)
-            </h2>
-            {searchResults.length > 0 ? (
+      {/* Categories */}
+      {!query && (
+        <div className="space-y-14 mb-16">
+          {resources.map((cat) => (
+            <div key={cat.category}>
+              <h2 className="text-2xl font-bold mb-6" style={{ color: 'var(--text-color)' }}>{cat.category}</h2>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {searchResults.map((item, index) => (
-                  <Link
-                    key={index}
-                    href={item.link}
-                    className="group bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-lg hover:shadow-xl transition-all hover:scale-105"
-                  >
-                    <div className="flex items-start gap-4 mb-4">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 group-hover:bg-blue-200 transition-colors">
-                        {item.icon}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
-                            {item.type}
-                          </span>
-                          <span className="text-xs font-medium text-purple-600 bg-purple-100 px-2 py-1 rounded-full">
-                            {item.category}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-gray-500 mb-2">
-                          <Clock className="w-3 h-3" />
-                          <span>{item.readTime}</span>
-                        </div>
-                        <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                          {item.title}
-                        </h3>
-                      </div>
-                    </div>
-                    <p className="text-gray-600 text-sm">{item.description}</p>
-                  </Link>
+                {cat.items.map((item) => (
+                  <ResourceCard key={item.title} item={item} />
                 ))}
               </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Search className="w-8 h-8 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No results found</h3>
-                <p className="text-gray-600">
-                  Try searching with different keywords or browse our categories below.
-                </p>
-              </div>
-            )}
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
+      )}
 
-        {/* Resource Categories - Only show when not searching */}
-        {!searchQuery && (
-          <div className="space-y-12 mb-16">
-            {resources.map((category, categoryIndex) => (
-              <div key={categoryIndex}>
-                <h2 className="text-3xl font-bold text-gray-900 mb-8">{category.category}</h2>
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {category.items.map((item, itemIndex) => (
-                    <Link
-                      key={itemIndex}
-                      href={item.link}
-                      className="group bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-lg hover:shadow-xl transition-all hover:scale-105"
-                    >
-                      <div className="flex items-start gap-4 mb-4">
-                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 group-hover:bg-blue-200 transition-colors">
-                          {item.icon}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
-                              {item.type}
-                            </span>
-                            <div className="flex items-center gap-1 text-xs text-gray-500">
-                              <Clock className="w-3 h-3" />
-                              <span>{item.readTime}</span>
-                            </div>
-                          </div>
-                          <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                            {item.title}
-                          </h3>
-                        </div>
-                      </div>
-                      <p className="text-gray-600 text-sm">{item.description}</p>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Downloads Section */}
+      {/* Downloads */}
+      {!query && (
         <div className="mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 mb-8">Downloads</h2>
+          <h2 className="text-2xl font-bold mb-6" style={{ color: 'var(--text-color)' }}>Downloads</h2>
           <div className="grid md:grid-cols-3 gap-6">
-            {downloads.map((download, index) => (
-              <div
-                key={index}
-                className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-lg"
-              >
+            {downloads.map((d) => (
+              <div key={d.title} className="premium-card p-6">
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-green-600">
-                    {download.icon}
+                  <div className="icon-box w-10 h-10" style={{ backgroundColor: 'rgba(5,150,105,0.12)', color: '#059669' }}>
+                    <Download size={18} />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">{download.title}</h3>
-                    <div className="flex gap-2 mt-1">
-                      {download.platforms.map((platform, platformIndex) => (
-                        <span
-                          key={platformIndex}
-                          className="text-xs font-medium text-gray-600 bg-gray-100 px-2 py-1 rounded-full"
-                        >
-                          {platform}
-                        </span>
+                    <h3 className="font-semibold text-sm" style={{ color: 'var(--text-color)' }}>{d.title}</h3>
+                    <div className="flex gap-1 mt-1">
+                      {d.platforms.map((p) => (
+                        <span key={p} className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-muted)' }}>{p}</span>
                       ))}
                     </div>
                   </div>
                 </div>
-                <p className="text-gray-600 text-sm mb-4">{download.description}</p>
-                <button className="w-full bg-gray-900 text-white py-2 px-4 rounded-lg hover:bg-gray-800 transition-colors">
+                <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>{d.description}</p>
+                <button className="btn-outline-theme w-full text-sm" style={{ borderRadius: '10px', padding: '8px 16px' }}>
                   Download
                 </button>
               </div>
             ))}
           </div>
         </div>
+      )}
 
-        {/* Help Section */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white text-center">
+      {/* CTA */}
+      <div className="cta-section text-center">
+        <div className="relative z-10">
           <h2 className="text-3xl font-bold mb-4">Need More Help?</h2>
-          <p className="text-blue-100 mb-8 max-w-2xl mx-auto">
-            Can't find what you're looking for? Our support team is here to help you 
-            get the most out of PRIMA.
+          <p className="mb-8 max-w-xl mx-auto" style={{ color: 'rgba(255,255,255,0.75)' }}>
+            Can't find what you're looking for? Our support team is here to help.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-white text-blue-600 px-8 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors">
+            <button className="bg-white font-semibold px-8 py-3 rounded-full hover:opacity-90 transition-opacity" style={{ color: '#6d28d9' }}>
               Contact Support
             </button>
-            <button className="border border-white/30 text-white px-8 py-3 rounded-lg font-medium hover:bg-white/10 transition-colors">
+            <button className="btn-outline-theme" style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#fff' }}>
               Schedule Demo
             </button>
           </div>
         </div>
-
       </div>
+    </PageLayout>
+  );
+}
+
+function ResourceCard({ item }: { item: ResourceItem }) {
+  const Icon = item.icon;
+  return (
+    <div className="premium-card p-6 cursor-pointer">
+      <div className="flex items-start gap-4 mb-3">
+        <div className="icon-box w-10 h-10 flex-shrink-0">
+          <Icon size={18} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span className="premium-badge text-xs">{item.type}</span>
+            {item.category && (
+              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{item.category}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-1 text-xs mb-2" style={{ color: 'var(--text-muted)' }}>
+            <Clock size={11} />
+            {item.readTime}
+          </div>
+          <h3 className="font-semibold text-sm" style={{ color: 'var(--text-color)' }}>{item.title}</h3>
+        </div>
+      </div>
+      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{item.description}</p>
     </div>
   );
 }

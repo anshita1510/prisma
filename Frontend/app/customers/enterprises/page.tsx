@@ -1,121 +1,81 @@
-import Link from "next/link";
-import { ArrowLeft, Building, Globe, Shield, Zap } from "lucide-react";
+import PageLayout from "../../components/PageLayout";
+import { Building, Globe, Shield, Zap } from "lucide-react";
+
+const features = [
+  { icon: Globe, title: "Global Scale", description: "Support for unlimited employees across multiple countries and regions.", color: "#6d28d9" },
+  { icon: Shield, title: "Enterprise Security", description: "SOC 2 compliance, SSO, and advanced security features built in.", color: "#dc2626" },
+  { icon: Zap, title: "Custom Workflows", description: "Tailored workflows to match your unique business processes.", color: "#2563eb" },
+  { icon: Building, title: "Dedicated Support", description: "24/7 dedicated support with SLA guarantees and a named CSM.", color: "#059669" },
+];
 
 export default function EnterprisesPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/20">
-      {/* Header */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Link 
-              href="/" 
-              className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
+    <PageLayout title="For Enterprises">
+      {/* Hero */}
+      <div className="text-center mb-20">
+        <div className="premium-badge mb-6">Enterprise Solutions</div>
+        <h1 className="text-5xl font-bold mb-6 leading-tight" style={{ color: 'var(--text-color)' }}>
+          HR at enterprise scale,<br />
+          <span className="gradient-text">without the complexity</span>
+        </h1>
+        <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--text-muted)' }}>
+          Comprehensive HR platform for large organizations. Advanced security, custom workflows,
+          and dedicated support for enterprise-scale operations.
+        </p>
+        <div className="accent-line" />
+      </div>
+
+      {/* Features */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
+        {features.map(({ icon: Icon, title, description, color }) => (
+          <div key={title} className="premium-card p-6 text-center">
+            <div
+              className="icon-box w-12 h-12 mx-auto mb-4"
+              style={{ backgroundColor: `${color}18`, color }}
             >
-              <ArrowLeft size={20} />
-              <span>Back to Home</span>
-            </Link>
-            <h1 className="text-xl font-semibold text-gray-900">For Enterprises</h1>
-            <div className="w-24"></div>
+              <Icon size={22} />
+            </div>
+            <h3 className="font-semibold mb-2" style={{ color: 'var(--text-color)' }}>{title}</h3>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{description}</p>
           </div>
+        ))}
+      </div>
+
+      {/* Stats */}
+      <div className="cta-section mb-20">
+        <div className="text-center mb-10 relative z-10">
+          <h2 className="text-3xl font-bold mb-3">Trusted by Fortune 500 Companies</h2>
+          <p style={{ color: 'rgba(255,255,255,0.75)' }}>
+            Leading enterprises worldwide rely on PRIMA for mission-critical HR operations.
+          </p>
+        </div>
+        <div className="grid md:grid-cols-3 gap-8 text-center relative z-10">
+          {[
+            { value: "500+", label: "Enterprise Customers" },
+            { value: "10M+", label: "Employees Managed" },
+            { value: "99.99%", label: "Uptime SLA" },
+          ].map(({ value, label }) => (
+            <div key={label}>
+              <div className="text-4xl font-bold mb-2">{value}</div>
+              <div style={{ color: 'rgba(255,255,255,0.75)' }}>{label}</div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        
-        {/* Hero Section */}
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-100 rounded-full mb-6">
-            <Building className="w-8 h-8 text-purple-600" />
-          </div>
-          <h1 className="text-5xl font-bold text-gray-900 mb-6">
-            Enterprise HR Solutions
-          </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Comprehensive HR platform for large organizations. Advanced security, 
-            custom workflows, and dedicated support for enterprise-scale operations.
-          </p>
+      {/* CTA */}
+      <div className="text-center">
+        <h2 className="text-3xl font-bold mb-4" style={{ color: 'var(--text-color)' }}>
+          Ready for Enterprise-Grade HR?
+        </h2>
+        <p className="mb-8" style={{ color: 'var(--text-muted)' }}>
+          Join Fortune 500 companies using PRIMA for their global HR operations.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <button className="btn-PRIMAry-gradient">Contact Sales</button>
+          <button className="btn-outline-theme">Request Enterprise Demo</button>
         </div>
-
-        {/* Enterprise Features */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
-          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-lg text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-purple-100 rounded-full mb-4 text-purple-600">
-              <Globe className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Global Scale</h3>
-            <p className="text-gray-600 text-sm">Support for unlimited employees across multiple countries</p>
-          </div>
-          
-          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-lg text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mb-4 text-red-600">
-              <Shield className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Enterprise Security</h3>
-            <p className="text-gray-600 text-sm">SOC 2 compliance, SSO, and advanced security features</p>
-          </div>
-          
-          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-lg text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mb-4 text-blue-600">
-              <Zap className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Custom Workflows</h3>
-            <p className="text-gray-600 text-sm">Tailored workflows to match your business processes</p>
-          </div>
-          
-          <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-lg text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mb-4 text-green-600">
-              <Building className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Dedicated Support</h3>
-            <p className="text-gray-600 text-sm">24/7 dedicated support with SLA guarantees</p>
-          </div>
-        </div>
-
-        {/* Enterprise Stats */}
-        <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl p-8 text-white mb-16">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold mb-4">Trusted by Fortune 500 Companies</h2>
-            <p className="text-purple-100 mb-8 max-w-2xl mx-auto">
-              Leading enterprises worldwide rely on PRIMA for their mission-critical HR operations.
-            </p>
-            <div className="grid md:grid-cols-3 gap-8 text-center">
-              <div>
-                <div className="text-4xl font-bold mb-2">500+</div>
-                <div className="text-purple-100">Enterprise Customers</div>
-              </div>
-              <div>
-                <div className="text-4xl font-bold mb-2">10M+</div>
-                <div className="text-purple-100">Employees Managed</div>
-              </div>
-              <div>
-                <div className="text-4xl font-bold mb-2">99.99%</div>
-                <div className="text-purple-100">Uptime SLA</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* CTA Section */}
-        <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Ready for Enterprise-Grade HR?
-          </h2>
-          <p className="text-gray-600 mb-8">
-            Join Fortune 500 companies using PRIMA for their global HR operations.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-3 rounded-lg font-medium hover:from-purple-700 hover:to-indigo-700 transition-colors">
-              Contact Sales
-            </button>
-            <button className="border border-gray-300 text-gray-700 px-8 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors">
-              Request Enterprise Demo
-            </button>
-          </div>
-        </div>
-
       </div>
-    </div>
+    </PageLayout>
   );
 }

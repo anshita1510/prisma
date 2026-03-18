@@ -63,9 +63,9 @@ class AnalyticsService {
   /**
    * Get analytics data for charts (SuperAdmin only)
    */
-  async getAnalyticsData(period: TimePeriod = 'monthly'): Promise<AnalyticsResponse> {
+  async getAnalyticsData(period: TimePeriod = 'monthly', offset: number = 0): Promise<AnalyticsResponse> {
     try {
-      const response = await api.get(`/api/analytics/data?period=${period}`);
+      const response = await api.get(`/api/analytics/data?period=${period}&offset=${offset}`);
       return response.data;
     } catch (error: any) {
       console.error("Get analytics data error:", error);

@@ -6,7 +6,8 @@ import { Role } from '@prisma/client';
 export const getAnalyticsData = async (req: Request, res: Response) => {
   try {
     const user = req.user as AuthUser;
-    const { period = 'monthly' } = req.query;
+    const { period = 'monthly', offset = '0' } = req.query;
+    const offsetNum = parseInt(offset as string) || 0;
 
     // Only SuperAdmin can access analytics
     if (user.role !== 'SUPER_ADMIN') {
@@ -17,22 +18,34 @@ export const getAnalyticsData = async (req: Request, res: Response) => {
       });
     }
 
-    console.log('🔍 Analytics - Getting data for period:', period);
+    console.log('🔍 Analytics - Getting data for period:', period, 'offset:', offsetNum);
 
     // Calculate date ranges based on period
     const now = new Date();
-    let startDate: Date;
+    let startDate: Date = new Date();
+    let endDate: Date = new Date();
+
+    function getMonday(d: Date) {
+      d = new Date(d);
+      var day = d.getDay(), diff = d.getDate() - day + (day === 0 ? -6 : 1);
+      return new Date(d.setDate(diff));
+    }
 
     switch (period) {
       case 'weekly':
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // 7 days ago
+        const thisMonday = getMonday(now);
+        thisMonday.setHours(0, 0, 0, 0);
+        startDate = new Date(thisMonday.getTime() - (offsetNum * 7 * 24 * 60 * 60 * 1000));
+        endDate = new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000 - 1);
         break;
       case 'yearly':
-        startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()); // 1 year ago
+        startDate = new Date(now.getFullYear() - offsetNum, 0, 1);
+        endDate = new Date(now.getFullYear() - offsetNum, 11, 31, 23, 59, 59, 999);
         break;
       case 'monthly':
       default:
-        startDate = new Date(now.getFullYear(), now.getMonth() - 11, 1); // 12 months ago
+        startDate = new Date(now.getFullYear(), now.getMonth() - offsetNum, 1);
+        endDate = new Date(now.getFullYear(), now.getMonth() - offsetNum + 1, 0, 23, 59, 59, 999);
         break;
     }
 
@@ -53,8 +66,8 @@ export const getAnalyticsData = async (req: Request, res: Response) => {
     });
 
     // Group users by time period
-    const userRegistrations = groupDataByPeriod(users, period as string, 'createdAt').map(item => ({
-      period: item.period,
+    const userRegistrations = groupDataByPeriod(users, period as string, 'createdAt', startDate).map(item => ({
+      period: item.periodLabel,
       total: item.data.length,
       admins: item.data.filter((u: any) => [Role.ADMIN, Role.SUPER_ADMIN].includes(u.role)).length,
       managers: item.data.filter((u: any) => u.role === Role.MANAGER).length,
@@ -77,8 +90,8 @@ export const getAnalyticsData = async (req: Request, res: Response) => {
       }
     });
 
-    const companyRegistrations = groupDataByPeriod(companies, period as string, 'createdAt').map(item => ({
-      period: item.period,
+    const companyRegistrations = groupDataByPeriod(companies, period as string, 'createdAt', startDate).map(item => ({
+      period: item.periodLabel,
       total: item.data.length,
       active: item.data.filter((c: any) => c.isActive).length
     }));
@@ -100,7 +113,8 @@ export const getAnalyticsData = async (req: Request, res: Response) => {
     const userActivity = await prisma.user.findMany({
       where: {
         updatedAt: {
-          gte: startDate
+          gte: startDate,
+          lte: endDate
         }
       },
       select: {
@@ -111,8 +125,8 @@ export const getAnalyticsData = async (req: Request, res: Response) => {
       }
     });
 
-    const activityTrends = groupDataByPeriod(userActivity, period as string, 'updatedAt').map(item => ({
-      period: item.period,
+    const activityTrends = groupDataByPeriod(userActivity, period as string, 'updatedAt', startDate).map(item => ({
+      period: item.periodLabel,
       activity: item.data.length
     }));
 
@@ -245,30 +259,53 @@ export const getDetailedAnalytics = async (req: Request, res: Response) => {
   }
 };
 
-// Helper function to group data by time period
-function groupDataByPeriod(data: any[], period: string, dateField: string) {
-  const grouped = new Map();
+// Helper function to strictly bucket data based on the requested period types
+function groupDataByPeriod(data: any[], period: string, dateField: string, startDate: Date) {
+  const buckets: { key: string, label: string, data: any[] }[] = [];
+
+  if (period === 'weekly') {
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    days.forEach((d, i) => {
+      const dateStr = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      buckets.push({ key: dateStr, label: d, data: [] });
+    });
+  } else if (period === 'monthly') {
+    buckets.push({ key: 'W1', label: 'W1', data: [] });
+    buckets.push({ key: 'W2', label: 'W2', data: [] });
+    buckets.push({ key: 'W3', label: 'W3', data: [] });
+    buckets.push({ key: 'W4', label: 'W4', data: [] });
+  } else {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    months.forEach((m, i) => {
+      buckets.push({ key: i.toString(), label: m, data: [] });
+    });
+  }
 
   data.forEach(item => {
     const date = new Date(item[dateField]);
-    let key: string;
+    let targetKey: string | undefined;
 
     if (period === 'weekly') {
-      key = date.toISOString().split('T')[0]; // YYYY-MM-DD
+      targetKey = date.toISOString().split('T')[0];
     } else if (period === 'monthly') {
-      key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
+      const day = date.getDate();
+      if (day <= 7) targetKey = 'W1';
+      else if (day <= 14) targetKey = 'W2';
+      else if (day <= 21) targetKey = 'W3';
+      else targetKey = 'W4';
     } else {
-      key = date.getFullYear().toString(); // YYYY
+      targetKey = date.getMonth().toString();
     }
 
-    if (!grouped.has(key)) {
-      grouped.set(key, []);
+    const bucket = buckets.find(b => b.key === targetKey);
+    if (bucket) {
+      bucket.data.push(item);
     }
-    grouped.get(key).push(item);
   });
 
-  // Convert to array and sort
-  return Array.from(grouped.entries())
-    .map(([period, data]) => ({ period, data }))
-    .sort((a, b) => a.period.localeCompare(b.period));
+  return buckets.map(b => ({
+    period: b.key,
+    periodLabel: b.label,
+    data: b.data
+  }));
 }

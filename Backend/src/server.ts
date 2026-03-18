@@ -38,7 +38,7 @@ app.use(helmet({
 // app.use(cors({
 //   origin: function (origin, callback) {
 //     const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001'];
-    
+
 //     // Allow requests with no origin (like mobile apps or curl requests)
 //     if (!origin || allowedOrigins.includes(origin)) {
 //       callback(null, true);
@@ -61,7 +61,7 @@ app.use(cors({
       'http://127.0.0.1:3000',
       'http://127.0.0.1:3001'
     ];
-    
+
     // Allow whitelisted origins or any other origin (no restriction)
     callback(null, true);
   },
@@ -113,7 +113,7 @@ app.use('/api/auth', passportGoogleRoutes); // Use Passport routes
 
 // Test endpoint to verify OAuth routes are loaded
 app.get('/api/auth/test', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'OAuth routes are working with Passport!',
     availableRoutes: [
       'GET /api/auth/google',
@@ -208,3 +208,4 @@ app.listen(5004, "0.0.0.0", () => {
 });
 
 export default app;
+// Trigger nodemon restart

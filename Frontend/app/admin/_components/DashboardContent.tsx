@@ -45,8 +45,8 @@ const DashboardContent = () => {
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="flex items-center gap-4 p-3 rounded-lg bg-muted/50">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Users className="w-5 h-5 text-primary" />
+                  <div className="w-10 h-10 rounded-full bg-PRIMAry/10 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-PRIMAry" />
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium">Team member checked in</p>

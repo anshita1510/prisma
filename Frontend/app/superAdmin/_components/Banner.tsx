@@ -1,80 +1,95 @@
-"use client"
-import React, { useEffect, useState } from 'react';
-import { authService } from '@/app/services/authService';
-import { formatRole } from '@/app/utils/roleFormatter';
+"use client";
+import { useState } from "react";
+import Link from "next/link";
+import { RefreshCw } from "lucide-react";
 
-const App: React.FC = () => {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const imageUrl = "https://images.unsplash.com/photo-1615412704911-55d589229864?w=1200&auto=format&fit=crop&q=80";
+export default function DashboardBanner({ onRefresh, isRefreshing, user }: { onRefresh?: () => void, isRefreshing?: boolean, user?: any }) {
+  const [hovered, setHovered] = useState(false);
 
-  useEffect(() => {
-    setIsLoaded(true);
-    const currentUser = authService.getStoredUser();
-    setUser(currentUser);
-  }, []);
+  // Parse name logically (fallback to split string if firstName and lastName aren't specifically available)
+  let displayName = "Super Admin";
+  if (user) {
+    if (user.firstName) {
+      displayName = `${user.firstName}${user.lastName ? ` ${user.lastName}` : ''}`;
+    } else if (user.name) {
+      // e.g "Anshita Bharwal" -> "Anshita Bharwal"
+      displayName = user.name;
+    }
+  }
 
   return (
-    /* FIX: 
-       - pt-20: Mobile par 80px space dega (Navbar ke niche lane ke liye)
-       - lg:pt-6: PC par space kam kar dega (kyunki wahan navbar fixed nahi hai)
-    */
-    <div className="w-full p-6 pt-20 lg:pt-6 bg-gray-50  flex items-start justify-center">
-      
-      <div className="relative w-full max-w-6xl h-[160px] md:h-[220px] overflow-hidden bg-gradient-to-r from-blue-900 to-purple-900 shadow-md rounded-2xl group">
-        
-        {/* Background Image */}
-        <div 
-          className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-3000 ease-out ${
-            isLoaded ? 'scale-100' : 'scale-110'
-          }`}
-          style={{ backgroundImage: `url('${imageUrl}')` }}
-        />
-        
-        {/* Blue-Purple Opacity Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/80 via-purple-800/60 to-transparent mix-blend-multiply"></div>
+    <div className="relative overflow-hidden flex items-end"
+      style={{
+        backgroundColor: 'var(--card-bg)',
+        minHeight: '170px',
+        borderBottom: '1px solid var(--card-border)',
+      }}>
+      {/* Dot Grid overlay */}
+      <div className="absolute inset-0 z-0 opacity-[0.04] dark:opacity-[0.02]"
+        style={{ backgroundImage: 'radial-gradient(var(--text-color) 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
 
-        {/* Content Container */}
-        <div 
-          className={`relative z-10 h-full flex flex-col justify-center px-8 md:px-16 transition-all duration-1000 delay-300 ${
-            isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'
-          }`}
-        >
-          <div className="w-8 h-1 bg-blue-400 mb-3 rounded-full"></div>
-          
-          <h1 className="text-white font-bold tracking-tight text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-1">
-            Welcome {user?.name || 'Super Admin'}! 👋
-          </h1>
-          
-          <p className="text-blue-50/80 text-xs md:text-base font-medium tracking-wide max-w-md line-clamp-1 md:line-clamp-none">
-            Great to see you again. Manage your entire organization from here.
+      {/* Dynamic Ambient Glows */}
+      <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full pointer-events-none blur-[80px] opacity-60"
+        style={{ background: 'radial-gradient(circle, var(--primary-subtle) 0%, transparent 70%)' }} />
+      <div className="absolute -bottom-32 -left-10 w-80 h-80 rounded-full pointer-events-none blur-[80px] opacity-60"
+        style={{ background: 'radial-gradient(circle, var(--accent-subtle) 0%, transparent 70%)' }} />
+
+      <div className="relative z-10 px-6 py-6 md:px-8 w-full flex items-end justify-between flex-wrap gap-4">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight mb-2 text-[color:var(--text-color)]">
+            Welcome {displayName} <span className="inline-block hover:animate-pulse cursor-default">👋</span>
+          </h2>
+          <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+            Manage your entire organization from here.
           </p>
-
-          {user && (
-            <div className="mt-2 flex items-center space-x-3">
-              <span className="bg-white/20 text-white px-2 py-1 rounded-md text-xs font-medium">
-                {formatRole(user.role)}
-              </span>
-              <span className="text-blue-50/60 text-xs">•</span>
-              <span className="text-blue-50/80 text-xs">{user.designation || 'Super Administrator'}</span>
-            </div>
-          )}
-
-          <div className="mt-4">
-            <button className="bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/30 text-white px-4 py-1.5 rounded-lg text-xs md:text-sm font-semibold transition-all">
-              View Analytics
-            </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider"
+              style={{ backgroundColor: 'var(--badge-bg)', color: 'var(--badge-text)', border: '1px solid var(--primary-subtle)' }}>
+              Super Admin
+            </span>
+            <span style={{ color: 'var(--text-muted)' }}>›</span>
+            <span className="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider"
+              style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-color)', border: '1px solid var(--card-border)' }}>
+              Director
+            </span>
+            <Link href="/superAdmin/analytics"
+              className="px-3 py-1 rounded-md text-xs font-medium transition-all duration-150"
+              style={{
+                border: '1px solid var(--primary-subtle)',
+                color: 'var(--primary-color)',
+                backgroundColor: hovered ? 'var(--primary-subtle)' : 'transparent',
+              }}
+              onMouseEnter={() => setHovered(true)}
+              onMouseLeave={() => setHovered(false)}
+            >
+              View Analytics →
+            </Link>
           </div>
         </div>
 
-        {/* Minimal UI Elements */}
-        <div className="absolute top-4 right-6 flex space-x-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></div>
-          <div className="w-1.5 h-1.5 rounded-full bg-white/10"></div>
-        </div>
+        <button
+          onClick={onRefresh}
+          disabled={isRefreshing}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${isRefreshing ? 'opacity-70 cursor-not-allowed' : 'hover:opacity-90'
+            }`}
+          style={{ backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--card-border)', color: 'var(--text-muted)' }}
+          onMouseEnter={e => {
+            if (!isRefreshing) {
+              (e.currentTarget as HTMLElement).style.color = 'var(--primary-color)';
+              (e.currentTarget as HTMLElement).style.borderColor = 'var(--primary-color)';
+            }
+          }}
+          onMouseLeave={e => {
+            if (!isRefreshing) {
+              (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)';
+              (e.currentTarget as HTMLElement).style.borderColor = 'var(--card-border)';
+            }
+          }}
+        >
+          <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
+          {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
+        </button>
       </div>
     </div>
   );
-};
-
-export default App;
+}

@@ -9,18 +9,18 @@ interface StatRowProps {
   label: string;
   avgHours: string;
   onTimePercent: number;
-  variant?: 'primary' | 'secondary';
+  variant?: 'PRIMAry' | 'secondary';
 }
 
-const StatRow = ({ icon, label, avgHours, onTimePercent, variant = 'primary' }: StatRowProps) => (
+const StatRow = ({ icon, label, avgHours, onTimePercent, variant = 'PRIMAry' }: StatRowProps) => (
   <div className={cn(
     "flex items-center justify-between py-3 px-4 rounded-lg",
-    variant === 'primary' ? "bg-yellow-50" : "bg-blue-50"
+    variant === 'PRIMAry' ? "bg-yellow-50" : "bg-blue-50"
   )}>
     <div className="flex items-center gap-3">
       <div className={cn(
         "w-8 h-8 rounded-full flex items-center justify-center",
-        variant === 'primary' ? "bg-yellow-400 text-white" : "bg-blue-500 text-white"
+        variant === 'PRIMAry' ? "bg-yellow-400 text-white" : "bg-blue-500 text-white"
       )}>
         {icon}
       </div>
@@ -63,7 +63,7 @@ export const AttendanceStats = ({ myStats, teamStats }: AttendanceStatsProps) =>
           label="Me"
           avgHours={myStats.avgHoursPerDay}
           onTimePercent={myStats.onTimeArrivalPercent}
-          variant="primary"
+          variant="PRIMAry"
         />
         <StatRow
           icon={<Users className="w-4 h-4" />}

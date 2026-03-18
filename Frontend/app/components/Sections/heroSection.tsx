@@ -1,170 +1,214 @@
-"use client"
-import React from "react";
+"use client";
 import Link from "next/link";
 import { BarChart3, Zap, DollarSign, Target, TrendingUp } from "lucide-react";
 import ParticleBackground from "../ParticleBackground";
 
+const logos = [
+  { name: "Google",     src: "https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg" },
+  { name: "Microsoft",  src: "https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" },
+  { name: "Amazon",     src: "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg" },
+  { name: "Netflix",    src: "https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg" },
+  { name: "Spotify",    src: "https://upload.wikimedia.org/wikipedia/commons/1/19/Spotify_logo_without_text.svg" },
+  { name: "Salesforce", src: "https://upload.wikimedia.org/wikipedia/commons/f/f9/Salesforce.com_logo.svg" },
+  { name: "Uber",       src: "https://cdn.iconscout.com/icon/free/png-512/free-uber-logo-icon-svg-download-png-2284862.png?f=webp&w=512" },
+];
+
+const cardBase: React.CSSProperties = {
+  backgroundColor: 'var(--card-bg)',
+  border: '1px solid var(--card-border)',
+  borderRadius: '24px',
+  transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+};
+
 export default function HeroSection() {
   return (
-    <section className="w-full pt-24 md:pt-32 pb-24 relative overflow-hidden">
-      {/* Particle Background */}
-      <div className="absolute inset-0 z-0">
+    <section
+      style={{
+        backgroundColor: 'var(--bg-color)',
+        backgroundImage: 'radial-gradient(ellipse at 60% 40%, rgba(96,165,250,0.07) 0%, transparent 65%)',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        paddingTop: '72px',
+      }}
+    >
+      {/* Particle layer */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
         <ParticleBackground />
       </div>
 
-      {/* Futuristic Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-50/80 via-blue-50/40 to-purple-50/30 z-[2]"></div>
-      
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 opacity-20 z-[3]">
-        <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-full blur-xl animate-pulse"></div>
-        <div className="absolute top-40 right-20 w-24 h-24 bg-gradient-to-r from-pink-400/20 to-orange-400/20 rounded-full blur-xl animate-pulse [animation-delay:1s]"></div>
-        <div className="absolute bottom-20 left-1/4 w-40 h-40 bg-gradient-to-r from-purple-400/20 to-blue-400/20 rounded-full blur-xl animate-pulse [animation-delay:2s]"></div>
+      {/* Animated blobs */}
+      <div className="absolute inset-0 z-[1] pointer-events-none overflow-hidden">
+        <div className="absolute top-20 left-10 w-48 h-48 rounded-full blur-3xl opacity-20 animate-pulse"
+          style={{ background: 'radial-gradient(circle, rgba(96,165,250,0.5), transparent)' }} />
+        <div className="absolute top-40 right-20 w-36 h-36 rounded-full blur-3xl opacity-15 animate-pulse [animation-delay:1s]"
+          style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.5), transparent)' }} />
+        <div className="absolute bottom-32 left-1/4 w-56 h-56 rounded-full blur-3xl opacity-10 animate-pulse [animation-delay:2s]"
+          style={{ background: 'radial-gradient(circle, rgba(167,139,250,0.5), transparent)' }} />
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 md:px-16 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-20 items-center">
+      {/* Main content — flex-1 so it fills space above slider */}
+      <div className="flex-1 flex items-center relative z-10 w-full">
+        <div className="max-w-7xl mx-auto px-6 md:px-16 w-full py-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
 
-          {/* LEFT CONTENT */}
-          <div className="relative z-20">
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent leading-tight drop-shadow-sm">
-              Everything you need to
-              <br />
-              build a great company
-            </h1>
+            {/* LEFT */}
+            <div>
+              <h1 className="font-bold leading-[1.1] tracking-tight"
+                style={{ color: 'var(--text-color)', fontSize: 'clamp(2.6rem, 5vw, 4rem)' }}>
+                Everything you need to
+                <br />
+                <span style={{ color: 'var(--PRIMAry-color)' }}>build a great company</span>
+              </h1>
 
-            <p className="mt-6 text-lg text-gray-700 max-w-xl drop-shadow-sm">
-              PRIMA is your people enabler. From automation of people
-              processes to creating an engaged and driven culture, PRIMA
-              is all you need to build a good to great company.
-            </p>
+              <p className="mt-6 text-lg leading-relaxed max-w-lg" style={{ color: 'var(--text-muted)' }}>
+                PRIMA is your people enabler. From automation of people processes to creating
+                an engaged and driven culture, PRIMA is all you need to build a good to great company.
+              </p>
 
-            <div className="mt-10 flex flex-wrap gap-4">
-              <Link href="/login">
-                <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-7 py-3 rounded-full font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-400 shadow-lg hover:shadow-xl hover:scale-105 backdrop-blur-sm">
-                  Log in
+              <div className="mt-10 flex flex-wrap gap-4">
+                <Link href="/login">
+                  <button className="text-white px-8 py-3.5 rounded-full font-semibold text-base transition-all duration-300 hover:scale-105"
+                    style={{ background: 'linear-gradient(135deg, #2563eb, #7c3aed)', boxShadow: '0 8px 24px rgba(124,58,237,0.35)' }}>
+                    Log In
+                  </button>
+                </Link>
+                <button className="group px-8 py-3.5 rounded-full font-semibold text-base transition-all duration-300 flex items-center gap-2"
+                  style={{ border: '1px solid var(--card-border)', backgroundColor: 'var(--card-bg)', color: 'var(--text-color)' }}>
+                  Take a tour
+                  <span className="group-hover:translate-x-1 transition-transform duration-300 inline-block">→</span>
                 </button>
-              </Link>
-
-              <button className="group border border-gray-300/80 px-7 py-3 rounded-full font-medium hover:bg-white/90 hover:border-blue-300 transition-all duration-300 flex items-center gap-2 backdrop-blur-md bg-white/60 shadow-lg">
-                Take a tour
-                <span className="transform group-hover:translate-x-1 transition-transform duration-300">
-                  →
-                </span>
-              </button>
-            </div>
-
-            {/* Ratings */}
-            <div className="mt-12 flex gap-12">
-              <div className="backdrop-blur-md bg-white/50 rounded-2xl p-4 border border-white/30 shadow-lg">
-                <p className="font-semibold text-gray-900">⭐ 4.5</p>
-                <p className="text-sm text-gray-600">rating on G2</p>
               </div>
-              <div className="backdrop-blur-md bg-white/50 rounded-2xl p-4 border border-white/30 shadow-lg">
-                <p className="font-semibold text-gray-900">⭐ 4.4</p>
-                <p className="text-sm text-gray-600">rating on Capterra</p>
-              </div>
-            </div>
-          </div>
 
-          {/* RIGHT FLOATING BUBBLES */}
-          <div className="relative flex justify-center min-h-[500px] z-20">
-            
-            {/* Automation Bubble */}
-            <div className="absolute top-0 left-8 animate-bounce [animation-duration:6s] [animation-delay:0s]">
-              <div className="group relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-400/40 to-cyan-400/40 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
-                <div className="relative backdrop-blur-lg bg-gradient-to-br from-white/60 to-white/20 border border-white/40 rounded-3xl p-6 shadow-2xl hover:shadow-blue-500/30 transition-all duration-500 hover:-translate-y-2 hover:scale-105 w-48">
-                  <div className="flex items-center justify-between mb-4">
-                    <Zap className="w-8 h-8 text-blue-600 drop-shadow-sm" />
-                    <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
+              <div className="mt-10 flex gap-4 flex-wrap">
+                {[{ score: '4.5', platform: 'G2' }, { score: '4.4', platform: 'Capterra' }].map(r => (
+                  <div key={r.platform} className="rounded-2xl px-5 py-3"
+                    style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--card-border)', boxShadow: '0 4px 16px rgba(0,0,0,0.12)' }}>
+                    <p className="font-semibold text-sm" style={{ color: 'var(--text-color)' }}>⭐ {r.score}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>rating on {r.platform}</p>
                   </div>
-                  <p className="text-sm text-gray-700 mb-2 font-medium">Automation</p>
-                  <div className="h-16 bg-gradient-to-br from-blue-100/60 to-cyan-100/60 rounded-2xl mb-3 flex items-center justify-center backdrop-blur-sm">
-                    <BarChart3 className="w-8 h-8 text-blue-600" />
-                  </div>
-                  <p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent drop-shadow-sm">234</p>
-                </div>
+                ))}
               </div>
             </div>
 
-            {/* Analytics Bubble */}
-            <div className="absolute top-16 right-4 animate-bounce [animation-duration:8s] [animation-delay:1s]">
-              <div className="group relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-400/40 to-pink-400/40 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
-                <div className="relative backdrop-blur-lg bg-gradient-to-br from-white/60 to-white/20 border border-white/40 rounded-3xl p-6 shadow-2xl hover:shadow-purple-500/30 transition-all duration-500 hover:-translate-y-2 hover:scale-105 w-44">
-                  <div className="flex items-center justify-between mb-4">
-                    <TrendingUp className="w-8 h-8 text-purple-600 drop-shadow-sm" />
-                    <div className="w-3 h-3 bg-purple-400 rounded-full animate-pulse shadow-lg shadow-purple-400/50"></div>
-                  </div>
-                  <p className="text-sm text-gray-700 mb-2 font-medium">Analytics</p>
-                  <div className="h-12 bg-gradient-to-br from-purple-100/60 to-pink-100/60 rounded-2xl mb-3 flex items-center justify-center backdrop-blur-sm">
-                    <div className="flex gap-1">
-                      <div className="w-2 h-6 bg-gradient-to-t from-purple-400 to-purple-600 rounded-full shadow-sm"></div>
-                      <div className="w-2 h-8 bg-gradient-to-t from-purple-400 to-purple-600 rounded-full shadow-sm"></div>
-                      <div className="w-2 h-4 bg-gradient-to-t from-purple-400 to-purple-600 rounded-full shadow-sm"></div>
+            {/* RIGHT — 5 floating cards in a staggered 2-col grid */}
+            <div className="relative w-full" style={{ minHeight: '460px' }}>
+
+              {/* Row 1: Automation + Analytics */}
+              <div className="flex gap-4 justify-center mb-4">
+
+                {/* Automation */}
+                <div className="animate-bounce [animation-duration:6s]">
+                  <div style={{ ...cardBase, padding: '22px', width: '170px', boxShadow: '0 20px 50px rgba(59,130,246,0.28), 0 4px 16px rgba(0,0,0,0.35)' }}>
+                    <div className="flex items-center justify-between mb-4">
+                      <Zap className="w-8 h-8 text-blue-500" />
+                      <div className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse" />
                     </div>
+                    <p className="text-xs font-medium mb-3" style={{ color: 'var(--text-muted)' }}>Automation</p>
+                    <div className="h-14 rounded-xl mb-3 flex items-center justify-center"
+                      style={{ backgroundColor: 'rgba(0,0,0,0.25)' }}>
+                      <BarChart3 className="w-8 h-8 text-blue-500" />
+                    </div>
+                    <p className="text-2xl font-bold text-blue-500">234</p>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Payroll Bubble - Larger */}
-            <div className="absolute top-32 left-1/2 transform -translate-x-1/2 animate-bounce [animation-duration:10s] [animation-delay:2s]">
-              <div className="group relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/40 to-teal-400/40 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
-                <div className="relative backdrop-blur-lg bg-gradient-to-br from-white/60 to-white/20 border border-white/40 rounded-3xl p-8 shadow-2xl hover:shadow-emerald-500/30 transition-all duration-500 hover:-translate-y-2 hover:scale-105 w-56">
-                  <div className="flex items-center justify-between mb-4">
-                    <DollarSign className="w-10 h-10 text-emerald-600 drop-shadow-sm" />
-                    <div className="w-3 h-3 bg-emerald-400 rounded-full animate-pulse shadow-lg shadow-emerald-400/50"></div>
+                {/* Analytics */}
+                <div className="animate-bounce [animation-duration:8s] [animation-delay:0.8s] mt-6">
+                  <div style={{ ...cardBase, padding: '22px', width: '170px', boxShadow: '0 20px 50px rgba(168,85,247,0.25), 0 4px 16px rgba(0,0,0,0.35)' }}>
+                    <div className="flex items-center justify-between mb-4">
+                      <TrendingUp className="w-8 h-8 text-purple-500" />
+                      <div className="w-2.5 h-2.5 bg-purple-400 rounded-full animate-pulse" />
+                    </div>
+                    <p className="text-xs font-medium mb-3" style={{ color: 'var(--text-muted)' }}>Analytics</p>
+                    <div className="h-14 rounded-xl mb-3 flex items-center justify-center gap-1"
+                      style={{ backgroundColor: 'rgba(0,0,0,0.25)' }}>
+                      <div className="w-2 h-5 bg-purple-500 rounded-full" />
+                      <div className="w-2 h-8 bg-purple-500 rounded-full" />
+                      <div className="w-2 h-4 bg-purple-500 rounded-full" />
+                      <div className="w-2 h-6 bg-purple-500 rounded-full" />
+                    </div>
+                    <p className="text-2xl font-bold text-purple-500">1.2k</p>
                   </div>
-                  <p className="text-sm text-gray-700 mb-4 font-medium">Payroll</p>
-                  <div className="h-20 bg-gradient-to-br from-emerald-100/60 to-teal-100/60 rounded-2xl flex items-center justify-center backdrop-blur-sm">
-                    <div className="text-center">
-                      <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center mb-2 mx-auto shadow-lg">
-                        <DollarSign className="w-6 h-6 text-white" />
+                </div>
+
+              </div>
+
+              {/* Row 2: Payroll (wide, center) */}
+              <div className="flex justify-center mb-4">
+                <div className="animate-bounce [animation-duration:10s] [animation-delay:1.5s]">
+                  <div style={{ ...cardBase, padding: '24px', width: '220px', boxShadow: '0 24px 60px rgba(34,197,94,0.25), 0 4px 20px rgba(0,0,0,0.35)' }}>
+                    <div className="flex items-center justify-between mb-4">
+                      <DollarSign className="w-9 h-9 text-emerald-500" />
+                      <div className="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-pulse" />
+                    </div>
+                    <p className="text-xs font-medium mb-3" style={{ color: 'var(--text-muted)' }}>Payroll</p>
+                    <div className="h-16 rounded-xl flex items-center justify-center"
+                      style={{ backgroundColor: 'rgba(0,0,0,0.25)' }}>
+                      <div className="text-center">
+                        <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center mb-1 mx-auto"
+                          style={{ boxShadow: '0 0 18px rgba(34,197,94,0.55)' }}>
+                          <DollarSign className="w-5 h-5 text-white" />
+                        </div>
+                        <p className="text-xs text-emerald-400 font-semibold">Active</p>
                       </div>
-                      <p className="text-xs text-emerald-600 font-medium">Active</p>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Objectives Bubble */}
-            <div className="absolute bottom-16 left-12 animate-bounce [animation-duration:7s] [animation-delay:0.5s]">
-              <div className="group relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-orange-400/40 to-red-400/40 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
-                <div className="relative backdrop-blur-lg bg-gradient-to-br from-white/60 to-white/20 border border-white/40 rounded-3xl p-6 shadow-2xl hover:shadow-orange-500/30 transition-all duration-500 hover:-translate-y-2 hover:scale-105 w-40">
-                  <div className="flex items-center justify-between mb-4">
-                    <Target className="w-8 h-8 text-orange-600 drop-shadow-sm" />
-                    <div className="w-3 h-3 bg-orange-400 rounded-full animate-pulse shadow-lg shadow-orange-400/50"></div>
+              {/* Row 3: Objectives + Expense */}
+              <div className="flex gap-4 justify-center">
+
+                {/* Objectives */}
+                <div className="animate-bounce [animation-duration:7s] [animation-delay:0.4s]">
+                  <div style={{ ...cardBase, padding: '22px', width: '170px', boxShadow: '0 20px 50px rgba(249,115,22,0.25), 0 4px 16px rgba(0,0,0,0.35)' }}>
+                    <div className="flex items-center justify-between mb-4">
+                      <Target className="w-8 h-8 text-orange-500" />
+                      <div className="w-2.5 h-2.5 bg-orange-400 rounded-full animate-pulse" />
+                    </div>
+                    <p className="text-xs font-medium mb-3" style={{ color: 'var(--text-muted)' }}>Objectives</p>
+                    <p className="text-2xl font-bold text-orange-500">$20M</p>
                   </div>
-                  <p className="text-sm text-gray-700 mb-2 font-medium">Objectives</p>
-                  <p className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent drop-shadow-sm">$20M</p>
                 </div>
+
+                {/* Expense */}
+                <div className="animate-bounce [animation-duration:9s] [animation-delay:1.2s] mt-6">
+                  <div style={{ ...cardBase, padding: '22px', width: '170px', boxShadow: '0 20px 50px rgba(236,72,153,0.25), 0 4px 16px rgba(0,0,0,0.35)' }}>
+                    <div className="flex items-center justify-between mb-4">
+                      <TrendingUp className="w-8 h-8 text-pink-500" />
+                      <div className="w-2.5 h-2.5 bg-pink-400 rounded-full animate-pulse" />
+                    </div>
+                    <p className="text-xs font-medium mb-3" style={{ color: 'var(--text-muted)' }}>Expense</p>
+                    <p className="text-2xl font-bold text-pink-500">234</p>
+                  </div>
+                </div>
+
               </div>
             </div>
-
-            {/* Expense Bubble */}
-            <div className="absolute bottom-8 right-8 animate-bounce [animation-duration:9s] [animation-delay:1.5s]">
-              <div className="group relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-pink-400/40 to-rose-400/40 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-500"></div>
-                <div className="relative backdrop-blur-lg bg-gradient-to-br from-white/60 to-white/20 border border-white/40 rounded-3xl p-6 shadow-2xl hover:shadow-pink-500/30 transition-all duration-500 hover:-translate-y-2 hover:scale-105 w-40">
-                  <div className="flex items-center justify-between mb-4">
-                    <TrendingUp className="w-8 h-8 text-pink-600 drop-shadow-sm" />
-                    <div className="w-3 h-3 bg-pink-400 rounded-full animate-pulse shadow-lg shadow-pink-400/50"></div>
-                  </div>
-                  <p className="text-sm text-gray-700 mb-2 font-medium">Expense</p>
-                  <p className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent drop-shadow-sm">234</p>
-                </div>
-              </div>
-            </div>
-
           </div>
-
         </div>
       </div>
+
+      {/* Slider — pinned at bottom of hero viewport */}
+      <div className="relative z-10 w-full overflow-hidden py-5"
+        style={{ borderTop: '1px solid var(--card-border)' }}>
+        <div className="flex w-max gap-10 px-6"
+          style={{ animation: 'heroSlide 22s linear infinite' }}>
+          {[...logos, ...logos].map((logo, i) => (
+            <img key={i} src={logo.src} alt={logo.name}
+              className="h-6 md:h-7 w-auto object-contain"
+              style={{ opacity: 0.5 }} />
+          ))}
+        </div>
+        <style>{`
+          @keyframes heroSlide {
+            0%   { transform: translateX(-50%); }
+            100% { transform: translateX(0%); }
+          }
+        `}</style>
+      </div>
+
     </section>
   );
 }

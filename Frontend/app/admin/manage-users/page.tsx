@@ -146,7 +146,7 @@ export default function ManageUsersPage() {
         <div className="lg:ml-16 min-h-screen pt-16 lg:pt-0">
           <div className="p-4 sm:p-6 max-w-7xl mx-auto">
             <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-PRIMAry"></div>
             </div>
           </div>
         </div>

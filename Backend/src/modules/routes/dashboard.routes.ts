@@ -51,6 +51,7 @@ const dashboardController = new DashboardController();
  *         description: Unauthorized
  */
 router.get('/stats', authenticateToken, authorize(Role.SUPER_ADMIN), dashboardController.getDashboardStats);
+router.post('/seed', authenticateToken, authorize(Role.SUPER_ADMIN), dashboardController.seedDatabase);
 
 /**
  * @swagger
@@ -72,10 +73,10 @@ router.get('/test', async (req, res) => {
   try {
     const { PrismaClient } = require('@prisma/client');
     const prisma = new PrismaClient();
-    
+
     const totalUsers = await prisma.user.count();
     const totalCompanies = await prisma.company.count();
-    
+
     res.json({
       success: true,
       message: 'Dashboard test endpoint',

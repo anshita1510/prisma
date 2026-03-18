@@ -1,17 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Target } from "lucide-react";
+import { ChevronDown } from "lucide-react";
+import Image from "next/image";
 
 interface MenuItemProps {
   label: string;
-  items: string[];
+  items: { label: string; href: string }[];
 }
 
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdown, setDropdown] = useState<string | null>(null);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const handleLoginClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
@@ -30,25 +38,47 @@ export default function Navbar() {
       onMouseEnter={() => setDropdown(label)}
       onMouseLeave={() => setDropdown(null)}
     >
-      <button className="flex items-center gap-1 text-gray-700 hover:text-gray-900">
+      <button
+        className="flex items-center gap-1.5 text-sm font-medium transition-colors duration-200"
+        style={{ color: dropdown === label ? 'var(--text-color)' : 'var(--text-muted)' }}
+      >
         {label}
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        <ChevronDown
+          size={14}
+          style={{
+            transform: dropdown === label ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 0.2s ease',
+            opacity: 0.7,
+          }}
+        />
       </button>
 
       {dropdown === label && (
-        // pt-6 creates an invisible bridge so the mouse doesn't leave the div
-        // when moving from the button down to the dropdown items
-        <div className="absolute left-0 top-full w-48 pt-6">
-          <div className="rounded-xl border bg-white shadow-lg">
-            {items.map((item: string) => (
+        <div className="absolute left-0 top-full w-52 pt-5">
+          <div
+            className="rounded-2xl overflow-hidden"
+            style={{
+              backgroundColor: 'var(--card-bg)',
+              border: '1px solid var(--card-border)',
+              boxShadow: 'var(--shadow-lg)',
+            }}
+          >
+            {items.map((item) => (
               <Link
-                key={item}
-                href={`/${label.toLowerCase()}/${item.toLowerCase()}`}
-                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                key={item.href}
+                href={item.href}
+                className="flex items-center gap-3 px-4 py-3 text-sm transition-colors duration-150"
+                style={{ color: 'var(--text-muted)' }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--PRIMAry-subtle)';
+                  (e.currentTarget as HTMLElement).style.color = 'var(--PRIMAry-color)';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                  (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)';
+                }}
               >
-                {item}
+                {item.label}
               </Link>
             ))}
           </div>
@@ -58,25 +88,73 @@ export default function Navbar() {
   );
 
   return (
-    <nav className="fixed z-50 mt-4 w-full bg-white">
+    <nav
+      className="fixed z-50 w-full transition-all duration-300"
+      style={{
+        backgroundColor: scrolled ? 'var(--nav-bg)' : 'transparent',
+        backdropFilter: scrolled ? 'blur(20px)' : 'none',
+        WebkitBackdropFilter: scrolled ? 'blur(20px)' : 'none',
+        borderBottom: scrolled ? '1px solid var(--nav-border)' : '1px solid transparent',
+        boxShadow: scrolled ? 'var(--shadow-sm)' : 'none',
+      }}
+    >
       <div className="mx-auto max-w-7xl px-6 md:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-white text-blue-700 rounded-xl flex items-center justify-center shadow-lg font-bold border-2 border-blue-600">
-              <Target size={20} />
+          <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
+            <div className="relative w-9 h-9 transition-transform duration-200 group-hover:scale-105">
+              <Image
+                src="/prima-logo.svg"
+                alt="PRIMA"
+                width={36}
+                height={36}
+                className="w-full h-full"
+                style={{ borderRadius: '10px' }}
+              />
             </div>
-            <span className="font-bold text-lg tracking-tight uppercase text-gray-800">PRIMA</span>
+            <span
+              className="font-bold text-[15px] tracking-[0.18em] uppercase"
+              style={{ color: 'var(--text-color)', letterSpacing: '0.18em' }}
+            >
+              PRIMA
+            </span>
           </Link>
 
           {/* Desktop Menu */}
-          <div className="hidden items-center gap-8 md:flex">
-            <MenuItem label="Products" items={["HRMS", "Payroll", "Analytics"]} />
-            <MenuItem label="Customers" items={["Startups", "SMEs", "Enterprises"]} />
-            <Link href="/pricing" className="text-gray-700 hover:text-gray-900">Pricing</Link>
-            <Link href="/about" className="text-gray-700 hover:text-gray-900">About</Link>
-            <Link href="/resources" className="text-gray-700 hover:text-gray-900">Resources</Link>
-            <Link href="/careers" className="text-gray-700 hover:text-gray-900">Careers</Link>
+          <div className="hidden items-center gap-7 md:flex">
+            <MenuItem
+              label="Products"
+              items={[
+                { label: "HRMS", href: "/products/hrms" },
+                { label: "Payroll", href: "/products/payroll" },
+                { label: "Analytics", href: "/products/analytics" },
+              ]}
+            />
+            <MenuItem
+              label="Customers"
+              items={[
+                { label: "Startups", href: "/customers/startups" },
+                { label: "SMEs", href: "/customers/smes" },
+                { label: "Enterprises", href: "/customers/enterprises" },
+              ]}
+            />
+            {[
+              { label: "Pricing", href: "/pricing" },
+              { label: "About", href: "/about" },
+              { label: "Resources", href: "/resources" },
+              { label: "Careers", href: "/careers" },
+            ].map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-sm font-medium transition-colors duration-200"
+                style={{ color: 'var(--text-muted)' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-color)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
 
           {/* Right Actions */}
@@ -84,7 +162,10 @@ export default function Navbar() {
             <a
               href="/login?logout=true"
               onClick={handleLoginClick}
-              className="text-gray-700 hover:text-gray-900 cursor-pointer"
+              className="text-sm font-medium transition-colors duration-200 cursor-pointer"
+              style={{ color: 'var(--text-muted)' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-color)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
             >
               Login
             </a>
@@ -92,16 +173,25 @@ export default function Navbar() {
               href="https://www.PRIMA.com/signup"
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-full bg-blue-600 px-5 py-2 text-white hover:bg-blue-700 inline-block text-center"
+              className="btn-PRIMAry-gradient text-sm"
+              style={{ padding: '8px 20px', borderRadius: '999px', textDecoration: 'none', display: 'inline-block' }}
             >
               Get free trial
             </a>
           </div>
 
           {/* Mobile Button */}
-          <button className="text-gray-700 md:hidden" onClick={() => setMobileOpen(!mobileOpen)}>
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          <button
+            className="md:hidden p-2 rounded-lg transition-colors"
+            style={{ color: 'var(--text-muted)', backgroundColor: 'var(--PRIMAry-subtle)' }}
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label="Toggle menu"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {mobileOpen
+                ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              }
             </svg>
           </button>
         </div>
@@ -109,36 +199,81 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {mobileOpen && (
-        <div className="absolute left-0 top-16 w-full space-y-4 bg-white px-6 py-4 shadow-lg md:hidden">
-          <details>
-            <summary className="cursor-pointer text-gray-700">Products</summary>
-            <div className="ml-4 mt-2 space-y-2 text-sm text-gray-600">
-              <Link href="/products/hrms" className="block hover:text-blue-600">HRMS</Link>
-              <Link href="/products/payroll" className="block hover:text-blue-600">Payroll</Link>
-              <Link href="/products/analytics" className="block hover:text-blue-600">Analytics</Link>
-            </div>
-          </details>
-          <details>
-            <summary className="cursor-pointer text-gray-700">Customers</summary>
-            <div className="ml-4 mt-2 space-y-2 text-sm text-gray-600">
-              <Link href="/customers/startups" className="block hover:text-blue-600">Startups</Link>
-              <Link href="/customers/smes" className="block hover:text-blue-600">SMEs</Link>
-              <Link href="/customers/enterprises" className="block hover:text-blue-600">Enterprises</Link>
-            </div>
-          </details>
-          <Link href="/pricing" className="block text-gray-700">Pricing</Link>
-          <Link href="/about" className="block text-gray-700">About</Link>
-          <Link href="/resources" className="block text-gray-700">Resources</Link>
-          <Link href="/careers" className="block text-gray-700">Careers</Link>
-          <div className="space-y-2 pt-2">
-            <a href="/login?logout=true" onClick={handleLoginClick} className="block text-gray-700 cursor-pointer">
+        <div
+          className="absolute left-0 top-16 w-full space-y-1 px-4 py-4 md:hidden"
+          style={{
+            backgroundColor: 'var(--card-bg)',
+            borderBottom: '1px solid var(--card-border)',
+            boxShadow: 'var(--shadow-lg)',
+          }}
+        >
+          {[
+            {
+              label: "Products", children: [
+                { label: "HRMS", href: "/products/hrms" },
+                { label: "Payroll", href: "/products/payroll" },
+                { label: "Analytics", href: "/products/analytics" },
+              ]
+            },
+            {
+              label: "Customers", children: [
+                { label: "Startups", href: "/customers/startups" },
+                { label: "SMEs", href: "/customers/smes" },
+                { label: "Enterprises", href: "/customers/enterprises" },
+              ]
+            },
+          ].map((group) => (
+            <details key={group.label} className="rounded-xl overflow-hidden">
+              <summary
+                className="cursor-pointer px-4 py-3 text-sm font-medium rounded-xl"
+                style={{ color: 'var(--text-color)', backgroundColor: 'var(--bg-subtle)' }}
+              >
+                {group.label}
+              </summary>
+              <div className="ml-4 mt-1 space-y-1">
+                {group.children.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="block px-4 py-2 text-sm rounded-lg"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </details>
+          ))}
+          {[
+            { label: "Pricing", href: "/pricing" },
+            { label: "About", href: "/about" },
+            { label: "Resources", href: "/resources" },
+            { label: "Careers", href: "/careers" },
+          ].map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="block px-4 py-3 text-sm font-medium rounded-xl"
+              style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-subtle)' }}
+            >
+              {link.label}
+            </Link>
+          ))}
+          <div className="space-y-2 pt-2 border-t" style={{ borderColor: 'var(--card-border)' }}>
+            <a
+              href="/login?logout=true"
+              onClick={handleLoginClick}
+              className="block px-4 py-3 text-sm font-medium rounded-xl cursor-pointer"
+              style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg-subtle)' }}
+            >
               Login
             </a>
             <a
               href="https://www.PRIMA.com/signup"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full rounded-full bg-blue-600 py-2 text-white inline-block text-center"
+              className="btn-PRIMAry-gradient block text-center text-sm"
+              style={{ borderRadius: '12px', padding: '12px', textDecoration: 'none' }}
             >
               Get free trial
             </a>
