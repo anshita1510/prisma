@@ -5,16 +5,19 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from 'react';
 import { authService } from '../../services/auth.services';
 import { useAuth } from '../../hooks/useAuth';
+import { useTheme } from '@/lib/theme/ThemeContext';
 import {
   Menu, X, LayoutDashboard, UserPlus, LogOut,
-  BarChart3, CheckSquare, ChevronLeft, ChevronRight,
+  BarChart3, ChevronLeft, ChevronRight,
+  Building2, Users, Crown, Sun, Moon,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
   { id: "dashboard", name: "Dashboard", icon: LayoutDashboard, href: "/superAdmin" },
   { id: "analytics", name: "View Analytics", icon: BarChart3, href: "/superAdmin/analytics" },
-  // { id: "tasks", name: "Tasks", icon: CheckSquare, href: "/superAdmin/tasks" },
-  { id: "create-user", name: "Create User", icon: UserPlus, href: "/superAdmin/createUser" },
+  { id: "create-ceo", name: "Create CEO", icon: Crown, href: "/superAdmin/createCeo" },
+  { id: "manage-companies", name: "Manage Companies", icon: Building2, href: "/superAdmin/manageCompanies" },
+  { id: "manage-users", name: "Manage Users", icon: Users, href: "/superAdmin/manageUsers" },
 ];
 
 const SB = 'var(--card-bg)';
@@ -27,6 +30,8 @@ export default function AdminSidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const { user, getUserInitials, getRoleDisplay, refreshUser } = useAuth();
+  const { resolvedTheme, toggleTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
   const pathname = usePathname();
 
   useEffect(() => { refreshUser(); }, [refreshUser]);
@@ -62,7 +67,7 @@ export default function AdminSidebar() {
         style={{ width: sidebarW, backgroundColor: SB, borderRight: `1px solid ${BORDER}` }}
       >
         {/* Toggle Button for Desktop - Floating on the right edge */}
-        <button
+        {/* <button
           onClick={() => setCollapsed(c => !c)}
           className="hidden lg:flex absolute -right-3 top-6 items-center justify-center w-6 h-6 rounded-full transition-colors z-[60]"
           style={{ backgroundColor: SB, border: `1px solid ${BORDER}`, color: 'var(--text-muted)', boxShadow: 'var(--shadow-sm)' }}
@@ -70,7 +75,7 @@ export default function AdminSidebar() {
           onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
         >
           {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-        </button>
+        </button> */}
 
         {/* Logo */}
         <div className={`py-5 flex items-center flex-shrink-0 relative ${collapsed ? 'justify-center mx-auto' : 'justify-between px-4'}`}
@@ -94,8 +99,20 @@ export default function AdminSidebar() {
 
         {/* Nav */}
         <nav className="flex-1 px-2 py-5 space-y-1 overflow-y-auto overflow-x-hidden">
+          {/* Section label */}
+          {!collapsed && (
+            <p className="text-[10px] font-bold uppercase tracking-widest px-3 mb-2" style={{ color: 'var(--text-muted)', opacity: 0.6 }}>
+              Navigation
+            </p>
+          )}
           {NAV_ITEMS.map((item) => {
             const isActive = pathname === item.href;
+            const isCeo = item.id === 'create-ceo';
+            const isCompanies = item.id === 'manage-companies';
+            const isUsers = item.id === 'manage-users';
+            const accent = isCeo ? '#f59e0b' : isCompanies ? '#3b82f6' : isUsers ? '#22c55e' : 'var(--primary-color)';
+            const accentBg = isCeo ? 'rgba(245,158,11,0.12)' : isCompanies ? 'rgba(59,130,246,0.12)' : isUsers ? 'rgba(34,197,94,0.12)' : 'var(--primary-subtle)';
+
             return (
               <Link
                 key={item.id}
@@ -104,8 +121,8 @@ export default function AdminSidebar() {
                 title={collapsed ? item.name : undefined}
                 className={`flex items-center rounded-lg transition-all duration-150 group relative ${collapsed ? 'justify-center px-0 py-3' : 'gap-3 px-3 py-2.5'}`}
                 style={{
-                  backgroundColor: isActive ? ACTIVE_BG : 'transparent',
-                  color: isActive ? ACTIVE_COLOR : INACTIVE_COLOR,
+                  backgroundColor: isActive ? (isCeo || isCompanies || isUsers ? accentBg : ACTIVE_BG) : 'transparent',
+                  color: isActive ? accent : INACTIVE_COLOR,
                 }}
                 onMouseEnter={e => {
                   if (!isActive) {
@@ -121,15 +138,76 @@ export default function AdminSidebar() {
                 }}
               >
                 {isActive && (
-                  <div className="absolute left-0 top-1.5 bottom-1.5 w-[3px] bg-[#7c3aed] rounded-r-full" />
+                  <div className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full"
+                    style={{ backgroundColor: accent }} />
                 )}
                 <item.icon size={18} strokeWidth={isActive ? 2.5 : 2} className="flex-shrink-0" />
                 {!collapsed && (
                   <span className="text-sm font-medium whitespace-nowrap">{item.name}</span>
                 )}
+
+                {/* Special badges for new items */}
+                {!collapsed && !isActive && isCeo && (
+                  <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
+                    style={{ backgroundColor: 'rgba(245,158,11,0.15)', color: '#f59e0b' }}>New</span>
+                )}
               </Link>
             );
           })}
+
+          {/* Divider before theme */}
+          <div style={{ height: '1px', backgroundColor: BORDER, margin: '12px 4px' }} />
+
+          {/* Theme Toggle inline button */}
+          {!collapsed ? (
+            <button
+              onClick={toggleTheme}
+              className="flex items-center gap-3 w-full rounded-lg px-3 py-2.5 transition-all duration-150"
+              style={{ color: INACTIVE_COLOR }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--bg-subtle)';
+                (e.currentTarget as HTMLElement).style.color = 'var(--text-color)';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                (e.currentTarget as HTMLElement).style.color = INACTIVE_COLOR;
+              }}
+            >
+              <div className="w-8 h-4 rounded-full relative flex-shrink-0 transition-colors duration-300"
+                style={{ backgroundColor: isDark ? '#7c3aed' : '#e2e6f0', border: '1px solid var(--card-border)' }}>
+                <div className="w-3 h-3 rounded-full absolute top-0.5 transition-all duration-300 flex items-center justify-center"
+                  style={{
+                    left: isDark ? '16px' : '2px',
+                    backgroundColor: isDark ? '#e8eaf6' : '#ffffff',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+                  }}>
+                </div>
+              </div>
+              <span className="text-sm font-medium whitespace-nowrap">
+                {isDark ? 'Dark Mode' : 'Light Mode'}
+              </span>
+              <div className="ml-auto">
+                {isDark ? <Moon size={14} style={{ color: '#a78bfa' }} /> : <Sun size={14} style={{ color: '#f59e0b' }} />}
+              </div>
+            </button>
+          ) : (
+            <button
+              onClick={toggleTheme}
+              className="flex items-center justify-center w-full py-3 rounded-lg transition-all duration-150"
+              title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              style={{ color: INACTIVE_COLOR }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--bg-subtle)';
+                (e.currentTarget as HTMLElement).style.color = 'var(--text-color)';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                (e.currentTarget as HTMLElement).style.color = INACTIVE_COLOR;
+              }}
+            >
+              {isDark ? <Sun size={18} style={{ color: '#f59e0b' }} /> : <Moon size={18} style={{ color: '#7c3aed' }} />}
+            </button>
+          )}
         </nav>
 
         {/* Divider */}

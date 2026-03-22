@@ -130,31 +130,30 @@ function SocialButton({
 /* ── Toast system ───────────────────────────────────────────── */
 function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id: number) => void }) {
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2" role="status" aria-live="polite">
-      <AnimatePresence>
-        {toasts.map(t => (
-          <motion.div
-            key={t.id}
-            initial={{ opacity: 0, x: 40, scale: 0.9 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: 40, scale: 0.9 }}
-            className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium shadow-lg"
-            style={{
-              backgroundColor: "var(--card-bg)",
-              border: `1px solid ${t.type === "success" ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}`,
-              color: t.type === "success" ? "#22c55e" : "#ef4444",
-              boxShadow: "var(--shadow-lg)",
-            }}
-          >
-            {t.type === "success"
-              ? <CheckCircle className="h-4 w-4 shrink-0" />
-              : <AlertCircle className="h-4 w-4 shrink-0" />}
-            {t.message}
-            <button onClick={() => onDismiss(t.id)} className="ml-2 opacity-60 hover:opacity-100"
-              style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0 }}>✕</button>
-          </motion.div>
-        ))}
-      </AnimatePresence>
+    <div className="fixed top-6 right-13 z-50 flex flex-col gap-2" role="status" aria-live="polite">      <AnimatePresence>
+      {toasts.map(t => (
+        <motion.div
+          key={t.id}
+          initial={{ opacity: 0, x: 40, scale: 0.9 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          exit={{ opacity: 0, x: 40, scale: 0.9 }}
+          className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium shadow-lg"
+          style={{
+            backgroundColor: "var(--card-bg)",
+            border: `1px solid ${t.type === "success" ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}`,
+            color: t.type === "success" ? "#22c55e" : "#ef4444",
+            boxShadow: "var(--shadow-lg)",
+          }}
+        >
+          {t.type === "success"
+            ? <CheckCircle className="h-4 w-4 shrink-0" />
+            : <AlertCircle className="h-4 w-4 shrink-0" />}
+          {t.message}
+          <button onClick={() => onDismiss(t.id)} className="ml-2 opacity-60 hover:opacity-100"
+            style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0 }}>✕</button>
+        </motion.div>
+      ))}
+    </AnimatePresence>
     </div>
   );
 }

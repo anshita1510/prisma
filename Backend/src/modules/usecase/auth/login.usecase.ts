@@ -1,4 +1,3 @@
-
 import { UserRepository } from "../../repository/auth/user.repository";
 import { comparePassword } from "../../../shared/utils/password";
 import { generateAuthToken } from "../../../shared/utils/jwt";
