@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { NotificationService } from './notification.service';
+import nodemailer from 'nodemailer';
 
 const prisma = new PrismaClient();
 
@@ -35,23 +36,32 @@ interface GetEventsFilter {
 
 export class CalendarService {
   private notificationService: NotificationService;
+  private mailer = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT),
+    secure: false,
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+  });
 
   constructor() {
     this.notificationService = new NotificationService();
   }
 
+  private sendEventEmail(to: string, subject: string, html: string) {
+    this.mailer.sendMail({
+      from: `"PRIMA Calendar" <${process.env.SMTP_USER}>`,
+      to, subject, html,
+    }).catch(err => console.error('📧 Calendar email failed:', err.message));
+  }
+
   async createEvent(userId: number, data: CreateEventDTO) {
-    // Get employee from user
     const employee = await prisma.employee.findUnique({
       where: { userId },
-      include: { user: true }
+      include: { user: true, company: true }
     });
 
-    if (!employee) {
-      throw new Error('Employee not found');
-    }
+    if (!employee) throw new Error('Employee not found');
 
-    // Create event
     const event = await prisma.calendarEvent.create({
       data: {
         title: data.title,
@@ -64,39 +74,76 @@ export class CalendarService {
         isRecurring: data.isRecurring || false,
         recurrenceRule: data.recurrenceRule,
         organizerId: employee.id,
-        attendees: data.attendeeIds ? {
-          create: data.attendeeIds.map(attendeeId => ({
-            attendeeId,
-            status: 'pending'
-          }))
+        attendees: data.attendeeIds?.length ? {
+          create: data.attendeeIds.map(attendeeId => ({ attendeeId, status: 'pending' }))
         } : undefined
       },
       include: {
-        organizer: {
-          include: { user: true }
-        },
-        attendees: {
-          include: {
-            attendee: {
-              include: { user: true }
-            }
-          }
-        }
+        organizer: { include: { user: true } },
+        attendees: { include: { attendee: { include: { user: true } } } }
       }
     });
 
-    // Send notifications to attendees
+    // In-app notifications for selected attendees
     if (data.attendeeIds && data.attendeeIds.length > 0) {
       await this.notificationService.createNotification({
         title: 'New Event Invitation',
         message: `You have been invited to "${data.title}"`,
-        type: 'TASK_ASSIGNED', // Using existing type, can add EVENT_INVITATION later
+        type: 'TASK_ASSIGNED',
         referenceId: event.id,
         referenceType: 'calendar_event',
         createdById: employee.id,
         recipientIds: data.attendeeIds
       });
     }
+
+    // Email ALL company members (non-blocking)
+    setTimeout(async () => {
+      try {
+        const companyMembers = await prisma.employee.findMany({
+          where: { companyId: employee.companyId, isActive: true },
+          include: { user: { select: { email: true } } }
+        });
+
+        const eventDate = new Date(data.startDateTime).toLocaleString('en-US', {
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        });
+
+        for (const member of companyMembers) {
+          if (!member.user?.email) continue;
+          this.sendEventEmail(
+            member.user.email,
+            `📅 New Event: ${data.title}`,
+            `
+            <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#f9fafb;border-radius:12px;">
+              <div style="background:linear-gradient(135deg,#2563eb,#7c3aed);padding:24px;border-radius:8px;margin-bottom:24px;">
+                <h1 style="color:#fff;margin:0;font-size:22px;">📅 New Event Created</h1>
+                <p style="color:rgba(255,255,255,0.8);margin:8px 0 0;">${employee.name} created a new event</p>
+              </div>
+              <div style="background:#fff;padding:20px;border-radius:8px;border:1px solid #e5e7eb;">
+                <h2 style="color:#111827;margin:0 0 12px;">${data.title}</h2>
+                ${data.description ? `<p style="color:#6b7280;margin:0 0 16px;">${data.description}</p>` : ''}
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  <div style="display:flex;align-items:center;gap:8px;color:#374151;">
+                    <span>📆</span><span>${eventDate}</span>
+                  </div>
+                  ${data.location ? `<div style="display:flex;align-items:center;gap:8px;color:#374151;"><span>📍</span><span>${data.location}</span></div>` : ''}
+                  <div style="display:flex;align-items:center;gap:8px;color:#374151;">
+                    <span>🏷️</span><span>${data.eventType}</span>
+                  </div>
+                </div>
+              </div>
+              <p style="color:#9ca3af;font-size:12px;text-align:center;margin-top:16px;">PRIMA — Company Calendar Notification</p>
+            </div>
+            `
+          );
+        }
+        console.log(`📧 Event emails sent to ${companyMembers.length} company members`);
+      } catch (err: any) {
+        console.error('📧 Failed to send event emails:', err.message);
+      }
+    }, 0);
 
     return event;
   }
@@ -106,40 +153,26 @@ export class CalendarService {
       where: { userId }
     });
 
-    if (!employee) {
-      throw new Error('Employee not found');
-    }
+    // Return empty array instead of throwing if no employee record yet
+    if (!employee) return [];
 
     const where: any = {
       OR: [
         { organizerId: employee.id },
-        {
-          attendees: {
-            some: {
-              attendeeId: employee.id
-            }
-          }
-        }
+        { attendees: { some: { attendeeId: employee.id } } },
+        // Also show company-wide events
+        { organizer: { companyId: employee.companyId } }
       ]
     };
 
-    // Add date filters
+    // Only apply date filter if both dates provided
     if (filters.startDate && filters.endDate) {
       where.AND = [
-        {
-          startDateTime: {
-            gte: new Date(filters.startDate)
-          }
-        },
-        {
-          endDateTime: {
-            lte: new Date(filters.endDate)
-          }
-        }
+        { startDateTime: { gte: new Date(filters.startDate) } },
+        { endDateTime: { lte: new Date(filters.endDate) } }
       ];
     }
 
-    // Add event type filter
     if (filters.eventType) {
       where.eventType = filters.eventType;
     }

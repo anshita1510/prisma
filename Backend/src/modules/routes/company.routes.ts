@@ -156,4 +156,9 @@ router.get('/', authenticateToken, authorize(Role.SUPER_ADMIN), (req, res) => co
  */
 router.get('/current', authenticateToken, (req, res) => companyController.getCurrentUserCompany(req, res));
 
+
+router.get('/:id', authenticateToken, authorize(Role.SUPER_ADMIN), (req, res) => companyController.getCompanyById(req, res));
+
+router.delete('/:id', authenticateToken, authorize(Role.SUPER_ADMIN), (req, res) => companyController.deleteCompany(req, res));
+
 export default router;

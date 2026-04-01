@@ -178,14 +178,14 @@ export default function CreateUserForm({
   const isCompanyFieldDisabled = currentUserRole !== 'SUPER_ADMIN';
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-8">
+    <div className="p-2" style={{ color: 'var(--text-color)' }}>
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
           <User className="w-5 h-5 text-blue-600" />
         </div>
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Create New User</h2>
-          <p className="text-sm text-gray-600">
+          <h2 className="text-xl font-semibold" style={{ color: 'var(--text-color)' }}>Create New User</h2>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
             {currentUserRole === 'SUPER_ADMIN'
               ? 'Add a new user to any company in the system.'
               : `Add a new user to ${currentUserCompany?.name || 'your company'}.`
@@ -197,7 +197,7 @@ export default function CreateUserForm({
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Email Address */}
         <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+          <label className="flex items-center gap-2 text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>
             <Mail className="w-4 h-4" />
             Email Address *
           </label>
@@ -206,8 +206,9 @@ export default function CreateUserForm({
             name="email"
             value={formData.email}
             onChange={handleInputChange}
-            placeholder="john.doe@company.com"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            placeholder="name@company.com"
+            className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            style={{ backgroundColor: 'var(--input-bg, var(--card-bg))', borderColor: 'var(--card-border)', color: 'var(--text-color)' }}
             required
           />
         </div>
@@ -215,7 +216,7 @@ export default function CreateUserForm({
         {/* Name Fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <label className="flex items-center gap-2 text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>
               <User className="w-4 h-4" />
               First Name *
             </label>
@@ -224,13 +225,14 @@ export default function CreateUserForm({
               name="firstName"
               value={formData.firstName}
               onChange={handleInputChange}
-              placeholder="John"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              placeholder="First name"
+              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              style={{ backgroundColor: 'var(--input-bg, var(--card-bg))', borderColor: 'var(--card-border)', color: 'var(--text-color)' }}
               required
             />
           </div>
           <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <label className="flex items-center gap-2 text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>
               <User className="w-4 h-4" />
               Last Name *
             </label>
@@ -239,8 +241,9 @@ export default function CreateUserForm({
               name="lastName"
               value={formData.lastName}
               onChange={handleInputChange}
-              placeholder="Doe"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              placeholder="Last name"
+              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              style={{ backgroundColor: 'var(--input-bg, var(--card-bg))', borderColor: 'var(--card-border)', color: 'var(--text-color)' }}
               required
             />
           </div>
@@ -248,7 +251,7 @@ export default function CreateUserForm({
 
         {/* Phone Number */}
         <div>
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+          <label className="flex items-center gap-2 text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>
             <Phone className="w-4 h-4" />
             Phone Number *
           </label>
@@ -257,8 +260,9 @@ export default function CreateUserForm({
             name="phone"
             value={formData.phone}
             onChange={handleInputChange}
-            placeholder="+91 9592003120"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            placeholder="+1 555 000 0000"
+            className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            style={{ backgroundColor: 'var(--input-bg, var(--card-bg))', borderColor: 'var(--card-border)', color: 'var(--text-color)' }}
             required
           />
         </div>
@@ -266,7 +270,7 @@ export default function CreateUserForm({
         {/* Company Selection - Only for SuperAdmin */}
         {currentUserRole === 'SUPER_ADMIN' && (
           <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <label className="flex items-center gap-2 text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>
               <Building className="w-4 h-4" />
               Company *
               <button
@@ -283,21 +287,23 @@ export default function CreateUserForm({
               <button
                 type="button"
                 onClick={() => setShowCompanyDropdown(!showCompanyDropdown)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-left flex items-center justify-between"
+                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-left flex items-center justify-between"
+                style={{ backgroundColor: 'var(--input-bg, var(--card-bg))', borderColor: 'var(--card-border)', color: 'var(--text-color)' }}
                 disabled={loadingCompanies}
               >
-                <span className={formData.companyName ? 'text-gray-900' : 'text-gray-500'}>
+                <span style={{ color: formData.companyName ? 'var(--text-color)' : 'var(--text-muted)' }}>
                   {loadingCompanies ? 'Loading companies...' : (formData.companyName || 'Select a company')}
                 </span>
-                <ChevronDown className="w-4 h-4 text-gray-400" />
+                <ChevronDown className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
               </button>
 
               {showCompanyDropdown && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                <div className="absolute z-10 w-full mt-1 border rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                  style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
                   {loadingCompanies ? (
-                    <div className="px-4 py-3 text-gray-500">Loading companies...</div>
+                    <div className="px-4 py-3" style={{ color: 'var(--text-muted)' }}>Loading companies...</div>
                   ) : companies.length === 0 ? (
-                    <div className="px-4 py-3 text-gray-500">
+                    <div className="px-4 py-3" style={{ color: 'var(--text-muted)' }}>
                       No companies found. Create a company first in the "Manage Companies" tab.
                     </div>
                   ) : (
@@ -306,10 +312,10 @@ export default function CreateUserForm({
                         key={company.id}
                         type="button"
                         onClick={() => handleCompanySelect(company)}
-                        className="w-full px-4 py-3 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none"
+                        className="w-full px-4 py-3 text-left hover:bg-black/5 focus:bg-black/5 focus:outline-none"
                       >
-                        <div className="font-medium text-gray-900">{company.name}</div>
-                        <div className="text-sm text-gray-500">
+                        <div className="font-medium" style={{ color: 'var(--text-color)' }}>{company.name}</div>
+                        <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
                           {company.code} • {company.userCount || 0} users
                         </div>
                       </button>
@@ -329,15 +335,15 @@ export default function CreateUserForm({
         {/* Company Info Display - For Admin/Manager */}
         {currentUserRole !== 'SUPER_ADMIN' && currentUserCompany && (
           <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <label className="flex items-center gap-2 text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>
               <Building className="w-4 h-4" />
               Company
             </label>
-            <div className="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-600">
-              <div className="font-medium">{currentUserCompany.name}</div>
-              <div className="text-sm text-gray-500">{currentUserCompany.code}</div>
+            <div className="w-full px-4 py-3 border rounded-lg" style={{ backgroundColor: 'var(--bg-color)', borderColor: 'var(--card-border)', color: 'var(--text-muted)' }}>
+              <div className="font-medium" style={{ color: 'var(--text-color)' }}>{currentUserCompany.name}</div>
+              <div className="text-sm">{currentUserCompany.code}</div>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
               Users will be added to your company automatically
             </p>
           </div>
@@ -346,7 +352,7 @@ export default function CreateUserForm({
         {/* Designation and Role */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <label className="flex items-center gap-2 text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>
               <Briefcase className="w-4 h-4" />
               Designation *
             </label>
@@ -354,7 +360,8 @@ export default function CreateUserForm({
               name="designation"
               value={formData.designation}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              style={{ backgroundColor: 'var(--input-bg, var(--card-bg))', borderColor: 'var(--card-border)', color: 'var(--text-color)' }}
               required
             >
               <option value="">Select designation</option>
@@ -375,7 +382,7 @@ export default function CreateUserForm({
             </select>
           </div>
           <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+            <label className="flex items-center gap-2 text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>
               <UserCheck className="w-4 h-4" />
               Role *
             </label>
@@ -383,10 +390,12 @@ export default function CreateUserForm({
               name="role"
               value={formData.role}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              style={{ backgroundColor: 'var(--input-bg, var(--card-bg))', borderColor: 'var(--card-border)', color: 'var(--text-color)' }}
               required
             >
               <option value="EMPLOYEE">EMPLOYEE</option>
+              <option value="HR">HR</option>
               <option value="MANAGER">MANAGER</option>
               {(currentUserRole === 'SUPER_ADMIN' || currentUserRole === 'ADMIN') && (
                 <option value="ADMIN">ADMIN</option>
@@ -420,7 +429,8 @@ export default function CreateUserForm({
           <button
             type="button"
             onClick={resetForm}
-            className="flex items-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+            className="flex items-center gap-2 px-6 py-3 border rounded-lg hover:opacity-80 transition-colors font-medium"
+            style={{ borderColor: 'var(--card-border)', color: 'var(--text-muted)' }}
           >
             <RotateCcw className="w-4 h-4" />
             Reset Form
@@ -428,10 +438,9 @@ export default function CreateUserForm({
         </div>
       </form>
 
-      {/* What happens next section */}
-      <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <h3 className="font-medium text-blue-900 mb-2">What happens next?</h3>
-        <ul className="text-sm text-blue-800 space-y-1">
+      <div className="mt-8 p-4 rounded-lg border" style={{ backgroundColor: 'var(--accent-subtle)', borderColor: 'var(--accent-color)', opacity: 0.9 }}>
+        <h3 className="font-medium mb-2" style={{ color: 'var(--accent-color)' }}>What happens next?</h3>
+        <ul className="text-sm space-y-1" style={{ color: 'var(--text-muted)' }}>
           <li>• The user will receive an invitation email with setup instructions</li>
           <li>• They can set their password and complete their profile</li>
           <li>• The user will be assigned to the {currentUserRole === 'SUPER_ADMIN' ? 'selected' : 'your'} company and role</li>

@@ -2,38 +2,34 @@
 
 import { Info, ChevronDown, User, Users } from 'lucide-react';
 import { AttendanceStats as AttendanceStatsType } from '../types/attendanceTypes';
-import { cn } from '@/lib/utils';
 
 interface StatRowProps {
   icon: React.ReactNode;
   label: string;
   avgHours: string;
   onTimePercent: number;
-  variant?: 'PRIMAry' | 'secondary';
+  accent: string;
+  accentBg: string;
 }
 
-const StatRow = ({ icon, label, avgHours, onTimePercent, variant = 'PRIMAry' }: StatRowProps) => (
-  <div className={cn(
-    "flex items-center justify-between py-3 px-4 rounded-lg",
-    variant === 'PRIMAry' ? "bg-yellow-50" : "bg-blue-50"
-  )}>
+const StatRow = ({ icon, label, avgHours, onTimePercent, accent, accentBg }: StatRowProps) => (
+  <div className="flex items-center justify-between py-3 px-4 rounded-xl"
+    style={{ backgroundColor: accentBg }}>
     <div className="flex items-center gap-3">
-      <div className={cn(
-        "w-8 h-8 rounded-full flex items-center justify-center",
-        variant === 'PRIMAry' ? "bg-yellow-400 text-white" : "bg-blue-500 text-white"
-      )}>
+      <div className="w-8 h-8 rounded-full flex items-center justify-center text-white"
+        style={{ backgroundColor: accent }}>
         {icon}
       </div>
-      <span className="font-medium text-gray-900">{label}</span>
+      <span className="font-medium text-sm" style={{ color: 'var(--text-color)' }}>{label}</span>
     </div>
     <div className="flex items-center gap-8 text-sm">
       <div className="text-right">
-        <div className="text-xs text-gray-500 uppercase tracking-wide">Avg Hrs / Day</div>
-        <div className="font-semibold text-gray-900">{avgHours}</div>
+        <div className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Avg Hrs / Day</div>
+        <div className="font-semibold" style={{ color: 'var(--text-color)' }}>{avgHours}</div>
       </div>
       <div className="text-right">
-        <div className="text-xs text-gray-500 uppercase tracking-wide">On Time Arrival</div>
-        <div className="font-semibold text-gray-900">{onTimePercent}%</div>
+        <div className="text-xs uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>On Time Arrival</div>
+        <div className="font-semibold" style={{ color: 'var(--text-color)' }}>{onTimePercent}%</div>
       </div>
     </div>
   </div>
@@ -46,31 +42,35 @@ interface AttendanceStatsProps {
 
 export const AttendanceStats = ({ myStats, teamStats }: AttendanceStatsProps) => {
   return (
-    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+    <div className="rounded-xl p-6"
+      style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--card-border)', boxShadow: 'var(--shadow-sm)' }}>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">Attendance Stats</h2>
-        <Info className="w-4 h-4 text-gray-400 cursor-help" />
+        <h2 className="text-base font-semibold" style={{ color: 'var(--text-color)' }}>Attendance Stats</h2>
+        <Info className="w-4 h-4 cursor-help" style={{ color: 'var(--text-muted)' }} />
       </div>
-      
-      <button className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-4 transition-colors">
+
+      <button className="flex items-center gap-2 text-sm mb-4 transition-colors"
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
         <span>Last Week</span>
         <ChevronDown className="w-4 h-4" />
       </button>
-      
+
       <div className="space-y-3">
         <StatRow
           icon={<User className="w-4 h-4" />}
           label="Me"
           avgHours={myStats.avgHoursPerDay}
           onTimePercent={myStats.onTimeArrivalPercent}
-          variant="PRIMAry"
+          accent="#f59e0b"
+          accentBg="rgba(245,158,11,0.1)"
         />
         <StatRow
           icon={<Users className="w-4 h-4" />}
           label="My Team"
           avgHours={teamStats.avgHoursPerDay}
           onTimePercent={teamStats.onTimeArrivalPercent}
-          variant="secondary"
+          accent="#3b82f6"
+          accentBg="rgba(59,130,246,0.1)"
         />
       </div>
     </div>

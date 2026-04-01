@@ -1,229 +1,182 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useState, useEffect } from 'react';
 import { authService } from '../../services/authService';
+import { useAuth } from '../../hooks/useAuth';
 import {
-  Menu,
-  X,
-  LayoutDashboard,
-  CalendarOff,
-  UserCheck,
-  Briefcase,
-  UserPlus,
-  ChevronRight,
-  LogOut,
-  Target,
-  Users,
-  CheckSquare,
-  FolderOpen,
-  Calendar,
-  ArrowLeft
+  Menu, X, LayoutDashboard, CalendarOff, UserCheck,
+  FolderOpen, UserPlus, CheckSquare, Calendar, Users, LogOut,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, href: '/admin' }, 
-  { id: 'attendance', name: 'Attendance', icon: UserCheck, href: '/admin/attendance' },       
-  { id: 'leave', name: 'Leave Management', icon: CalendarOff, href: '/admin/leave' },       
+  { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard, href: '/admin' },
+  { id: 'attendance', name: 'Attendance', icon: UserCheck, href: '/admin/attendance' },
+  { id: 'leave', name: 'Leave Management', icon: CalendarOff, href: '/admin/leave' },
   { id: 'projects', name: 'Projects', icon: FolderOpen, href: '/admin/projects' },
-  { id: 'tasks', name: 'Tasks', icon: CheckSquare, href: '/admin/tasks' },            
+  { id: 'tasks', name: 'Tasks', icon: CheckSquare, href: '/admin/tasks' },
   { id: 'create-user', name: 'Create User', icon: UserPlus, href: '/admin/createUser' },
-  // Enhanced TMS Items
-  { id: 'enhanced-calendar', name: 'Enhanced Calendar', icon: Calendar, href: '/enhanced-tms/calendar' },
-  { id: 'enhanced-team', name: 'Enhanced Team', icon: Users, href: '/enhanced-tms/team' },
+  { id: 'enh-cal', name: 'Calendar', icon: Calendar, href: '/enhanced-tms/calendar' },
+  { id: 'enh-team', name: 'Team', icon: Users, href: '/enhanced-tms/team' },
 ];
 
+const SB = 'var(--card-bg)';
+const BORDER = 'var(--card-border)';
+const ACTIVE_BG = 'var(--primary-subtle)';
+const INACTIVE_CLR = 'var(--text-muted)';
+
 export default function Sidebar() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [mounted, setMounted] = useState(false);
-  const router = useRouter();
+  const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
 
-  useEffect(() => {
-    setMounted(true);
-    const currentUser = authService.getStoredUser();
-    setUser(currentUser);
-  }, []);
-
-  const toggleSidebar = () => setIsOpen(!isOpen);
-
-  const handleLogout = () => {
-    authService.logout();
-    // No need to manually redirect - authService.logout() handles it
-  };
-
-  const getUserInitials = () => {
-    if (!user?.name) return 'A';
-    return user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
-  };
-
-  const getRoleDisplay = () => {
-    return user?.role || 'ADMIN';
-  };
-
-  const goBack = () => {
-    router.back();
-  };
-
-  const sidebarWidth = isHovered ? 'w-64' : 'w-16';
-
-  // Don't render until mounted to avoid hydration mismatch
-  if (!mounted) {
-    return (
-      <aside className="sidebar-fixed z-50 w-16 bg-gradient-to-b from-blue-600 to-purple-700 text-white">
-        <div className="flex flex-col h-screen border-r border-blue-800/30 shadow-2xl">
-          <div className="p-4 flex items-center justify-center border-b border-blue-600/50">
-            <div className="w-8 h-8 bg-white text-blue-700 rounded-xl flex items-center justify-center shadow-lg font-bold">
-              <Target size={20} />
-            </div>
-          </div>
-          <div className="flex-1 px-2 py-8">
-            <div className="animate-pulse space-y-2">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="h-12 bg-blue-600/50 rounded-xl"></div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </aside>
-    );
+  // Use useAuth if available, fallback to authService
+  let user: any = null;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const auth = useAuth();
+    user = auth.user;
+  } catch {
+    // useAuth not available in this context
   }
+
+  const [storedUser, setStoredUser] = useState<any>(null);
+  useEffect(() => {
+    if (!user) setStoredUser(authService.getStoredUser());
+  }, [user]);
+
+  const displayUser = user || storedUser;
+
+  const getInitials = () => {
+    if (!displayUser?.name && !displayUser?.firstName) return 'A';
+    const name = displayUser.name || `${displayUser.firstName} ${displayUser.lastName || ''}`;
+    return name.split(' ').filter(Boolean).map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const sidebarW = '230px';
 
   return (
     <>
-      {/* MOBILE TOP BAR - Fixed for mobile screens */}
-      <div className="lg:hidden flex items-center justify-between bg-gradient-to-r from-blue-600 to-purple-600 p-4 text-white fixed top-0 left-0 right-0 z-40 shadow-md">
+      {/* Mobile top bar */}
+      <div className="lg:hidden flex items-center justify-between px-4 py-3 fixed top-0 left-0 right-0 z-40"
+        style={{ backgroundColor: SB, borderBottom: `1px solid ${BORDER}` }}>
         <div className="flex items-center gap-2">
-          <button onClick={goBack} className="p-2 hover:bg-blue-600/80 rounded-md transition-colors mr-2">
-            <ArrowLeft size={20} />
-          </button>
-          <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center font-bold text-white">T</div>
-          <span className="font-semibold text-lg tracking-tight">PRIMA</span>
+          <div className="w-8 h-8 flex items-center justify-center relative">
+            <Image src="/prima-logo.svg" alt="PRIMA" width={32} height={32} className="object-contain" />
+          </div>
+          <span className="font-bold text-[var(--text-color)] text-sm tracking-widest">PRIMA</span>
         </div>
-        <button onClick={toggleSidebar} className="p-2 hover:bg-blue-600/80 rounded-md transition-colors">
-          <Menu size={24} />
+        <button onClick={() => setMobileOpen(true)}
+          className="p-1" style={{ background: 'none', border: 'none', cursor: 'pointer', color: INACTIVE_CLR }}>
+          <Menu size={22} />
         </button>
       </div>
 
-      {/* MOBILE OVERLAY */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm transition-opacity"
-          onClick={() => setIsOpen(false)}
-        />
+      {/* Overlay */}
+      {mobileOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setMobileOpen(false)} />
       )}
 
-      {/* SIDEBAR ASIDE */}
-      <aside 
-        className={`
-          fixed top-0 left-0 h-full z-50 ${sidebarWidth} bg-gradient-to-b from-blue-600 to-purple-700 text-white transform transition-all duration-300 ease-in-out
-          lg:translate-x-0
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-        `}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+      {/* Sidebar */}
+      <aside
+        className={`flex-shrink-0 flex flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:h-screen transition-all duration-300
+          ${mobileOpen ? 'fixed inset-y-0 left-0 z-50 h-screen w-[230px]' : 'hidden lg:flex'}`}
+        style={{ width: sidebarW, backgroundColor: SB, borderRight: `1px solid ${BORDER}` }}
       >
-        <div className="flex flex-col h-screen border-r border-blue-800/30 shadow-2xl lg:shadow-none">
-
-          {/* LOGO SECTION */}
-          <div className={`p-4 flex items-center ${isHovered ? 'justify-between' : 'justify-center'} border-b border-blue-600/50 transition-all duration-300`}>
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-white text-blue-700 rounded-xl flex items-center justify-center shadow-lg font-bold">
-                <Target size={20} />
-              </div>
-              {isHovered && (
-                <span className="font-bold text-lg tracking-tight uppercase animate-fade-in">PRIMA</span>
-              )}
+        {/* Logo */}
+        <div className="py-5 flex items-center justify-between px-4 flex-shrink-0"
+          style={{ borderBottom: `1px solid ${BORDER}`, height: '73px' }}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 flex-shrink-0 flex items-center justify-center">
+              <Image src="/prima-logo.svg" alt="PRIMA" width={36} height={36} className="object-contain" />
             </div>
-            {isHovered && (
-              <button onClick={() => setIsOpen(false)} className="lg:hidden p-1.5 hover:bg-blue-600 rounded-full">
-                <X size={16} />
-              </button>
-            )}
+            <span className="font-bold text-[var(--text-color)] text-base tracking-widest">PRIMA</span>
           </div>
+          <button onClick={() => setMobileOpen(false)}
+            className="lg:hidden" style={{ background: 'none', border: 'none', cursor: 'pointer', color: INACTIVE_CLR }}>
+            <X size={18} />
+          </button>
+        </div>
 
-          {/* NAV LINKS */}
-          <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto custom-scrollbar">
-            {NAV_ITEMS.map((item) => {
-              const isActive = pathname === item.href;
+        {/* Nav */}
+        <nav className="flex-1 px-2 py-5 space-y-1 overflow-y-auto overflow-x-hidden">
+          <p className="text-[10px] font-bold uppercase tracking-widest px-3 mb-2"
+            style={{ color: INACTIVE_CLR, opacity: 0.6 }}>Navigation</p>
 
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  onClick={() => {
-                    setIsOpen(false);
-                  }}
-                  className={`w-full group flex items-center ${isHovered ? 'justify-start px-3' : 'justify-center px-2'} py-3 rounded-xl transition-all duration-300 
-          ${isActive ? 'bg-white text-blue-800 shadow-lg' : 'hover:bg-blue-600/80 text-white'}
-        `}
-                  title={!isHovered ? item.name : undefined}
-                >
-                  <item.icon
-                    size={20}
-                    className={`${isActive ? 'text-blue-700' : 'text-blue-300'} transition-colors duration-200`}
-                  />
-                  
-                  {isHovered && (
-                    <>
-                      <span className="ml-3 font-semibold text-sm tracking-wide animate-fade-in">
-                        {item.name}
-                      </span>
-                      <ChevronRight
-                        size={14}
-                        className={`ml-auto transition-all duration-200 ${isActive ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2'}`}
-                      />
-                    </>
-                  )}
-                </Link>
-              );
-            })}
-          </nav>
+          {NAV_ITEMS.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link key={item.id} href={item.href}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 relative"
+                style={{
+                  backgroundColor: isActive ? ACTIVE_BG : 'transparent',
+                  color: isActive ? 'var(--primary-color)' : INACTIVE_CLR,
+                }}
+                onMouseEnter={e => {
+                  if (!isActive) {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--bg-subtle)';
+                    (e.currentTarget as HTMLElement).style.color = 'var(--text-color)';
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!isActive) {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                    (e.currentTarget as HTMLElement).style.color = INACTIVE_CLR;
+                  }
+                }}
+              >
+                {isActive && (
+                  <div className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full"
+                    style={{ backgroundColor: 'var(--primary-color)' }} />
+                )}
+                <item.icon size={18} strokeWidth={isActive ? 2.5 : 2} className="flex-shrink-0" />
+                <span className="text-sm font-medium whitespace-nowrap">{item.name}</span>
+              </Link>
+            );
+          })}
 
-          {/* USER & LOGOUT SECTION */}
-          <div className={`p-2 border-t border-blue-600/50 space-y-2 bg-blue-800/20 mt-auto transition-all duration-300`}>
-            <div className={`flex items-center gap-3 p-2 rounded-xl bg-blue-800/40 ${isHovered ? '' : 'justify-center'}`}>
-              <div className="w-8 h-8 rounded-full bg-blue-400 border-2 border-blue-500/50 flex items-center justify-center text-blue-900 font-bold text-xs uppercase">
-                {getUserInitials()}
-              </div>
-              {isHovered && (
-                <div className="flex-1 min-w-0 animate-fade-in">
-                  <p className="text-xs font-bold truncate">{user?.name || "Loading..."}</p>
-                  <p className="text-[8px] text-blue-300 font-bold uppercase tracking-widest">{getRoleDisplay()}</p>
-                </div>
-              )}
+          {/* Divider */}
+          <div style={{ height: '1px', backgroundColor: BORDER, margin: '12px 4px' }} />
+        </nav>
+
+        {/* Divider */}
+        <div style={{ height: '1px', backgroundColor: BORDER, margin: '0 12px' }} />
+
+        {/* User + Logout */}
+        <div className="p-3 flex-shrink-0">
+          <div className="flex items-center gap-3 p-2.5 rounded-xl mb-2"
+            style={{ backgroundColor: 'var(--bg-subtle)', border: `1px solid ${BORDER}` }}>
+            <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-white"
+              style={{ background: 'linear-gradient(135deg,#2563eb,#7c3aed)' }}>
+              {getInitials()}
             </div>
-
-            <button
-              onClick={handleLogout}
-              className={`w-full flex items-center gap-3 px-3 py-2 text-red-100 hover:bg-red-500/20 hover:text-white rounded-xl transition-all duration-200 font-semibold text-sm ${isHovered ? 'justify-start' : 'justify-center'}`}
-              title={!isHovered ? 'Logout' : undefined}
-            >
-              <LogOut size={16} />
-              {isHovered && <span className="animate-fade-in">Logout</span>}
-            </button>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-[var(--text-color)] truncate">
+                {displayUser?.name || displayUser?.firstName || 'Admin'}
+              </p>
+              <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
+                style={{ backgroundColor: 'var(--primary-subtle)', color: 'var(--primary-color)' }}>
+                {displayUser?.role || 'ADMIN'}
+              </span>
+            </div>
           </div>
+          <button onClick={() => authService.logout()}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: INACTIVE_CLR }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
+            onMouseLeave={e => (e.currentTarget.style.color = INACTIVE_CLR)}
+          >
+            <LogOut size={16} className="flex-shrink-0" />
+            <span>Logout</span>
+          </button>
         </div>
       </aside>
 
-      {/* Global CSS for hidden scrollbar and animations */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
-        
-        .animate-fade-in {
-          animation: fadeIn 0.3s ease-in-out;
-        }
-        
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateX(-10px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-      `}} />
+      {/* Spacer for desktop layout */}
+      <div className="hidden lg:block flex-shrink-0" style={{ width: sidebarW }} />
     </>
   );
 }

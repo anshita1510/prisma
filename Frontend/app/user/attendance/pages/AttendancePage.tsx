@@ -6,6 +6,9 @@ import { TimingsCard } from '../component/Timingscard';
 import { ActionsCard } from '../component/ActionsCard';
 import { LogsTabs } from '../component/Logstab';
 import { AttendanceLog } from '../component/AttendanceLog';
+import { AttendanceCalendar } from '../component/AttendanceCalendar';
+import { AttendanceRequests } from '../component/AttendanceRequests';
+import { SessionLogsCard } from '../component/SessionLogsCard';
 import { useAttendance } from '../hooks/useAttendance';
 import { useToast } from '../../../hooks/useToast';
 import { ToastContainer } from '../../../../components/ui/toast';
@@ -13,6 +16,7 @@ import { ToastContainer } from '../../../../components/ui/toast';
 export const AttendancePage = () => {
   const {
     records,
+    requests,
     myStats,
     teamStats,
     viewMode,
@@ -26,6 +30,7 @@ export const AttendancePage = () => {
     currentDate,
     loading,
     error,
+    todayAttendance
   } = useAttendance();
 
   const { toasts, removeToast } = useToast();
@@ -53,10 +58,10 @@ export const AttendancePage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center justify-center py-16">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading attendance data...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 mx-auto mb-4" style={{ borderColor: 'var(--primary-color)' }} />
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading attendance data...</p>
         </div>
       </div>
     );
@@ -64,18 +69,15 @@ export const AttendancePage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center justify-center py-16">
         <div className="text-center">
-          <div className="text-red-500 mb-4">
-            <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          </div>
-          <p className="text-gray-600 mb-4">Error loading attendance data: {error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-          >
+          <svg className="w-10 h-10 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#f87171' }}>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+          <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>Error loading attendance data: {error}</p>
+          <button onClick={() => window.location.reload()}
+            className="px-4 py-2 rounded-xl text-sm font-semibold text-white"
+            style={{ background: 'linear-gradient(135deg,#7c3aed,#a855f7)', border: 'none', cursor: 'pointer' }}>
             Retry
           </button>
         </div>
@@ -84,25 +86,25 @@ export const AttendancePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="p-6 max-w-[1400px] mx-auto">
-        {/* Top section - 3 columns */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <AttendanceStats myStats={myStats} teamStats={teamStats} />
-          <TimingsCard currentTime={currentTime} currentDate={currentDate} />
+    <div style={{ backgroundColor: 'var(--bg-color)' }}>
+      <main className="p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 items-start">
+          <div className="flex flex-col gap-6 lg:col-span-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <AttendanceStats myStats={myStats} teamStats={teamStats} />
+              <TimingsCard currentTime={currentTime} currentDate={currentDate} />
+            </div>
+            {todayAttendance?.timeSlots && todayAttendance.timeSlots.length > 0 && (
+              <SessionLogsCard timeSlots={todayAttendance.timeSlots} />
+            )}
+          </div>
           <ActionsCard currentTime={currentTime} currentDate={currentDate} />
         </div>
 
-        {/* Logs section */}
-        <div className="bg-white rounded-lg shadow-sm">
-          <LogsTabs
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            timeFormat={timeFormat}
-            onTimeFormatChange={setTimeFormat}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-          />
+        <div className="rounded-xl overflow-hidden"
+          style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--card-border)', boxShadow: 'var(--shadow-sm)' }}>
+          <LogsTabs activeTab={activeTab} onTabChange={setActiveTab} timeFormat={timeFormat}
+            onTimeFormatChange={setTimeFormat} viewMode={viewMode} onViewModeChange={setViewMode} />
 
           {activeTab === 'log' && (
             <AttendanceLog
@@ -112,30 +114,25 @@ export const AttendancePage = () => {
                 date: record.date instanceof Date ? record.date.toISOString().split('T')[0] : record.date,
                 timeSlots: record.timeSlots.map(slot => ({
                   ...slot,
-                  checkIn: slot.checkIn ?? slot.startTime ?? null, // map your TimeSlot field → checkIn
-                  checkOut: slot.checkOut ?? slot.endTime ?? null, // map your TimeSlot field → checkOut
+                  checkIn: slot.checkIn ?? (slot as any).startTime ?? null,
+                  checkOut: slot.checkOut ?? (slot as any).endTime ?? null,
                 })),
                 isManuallyEdited: false,
-              }))} selectedMonth={''} onMonthChange={function (month: string): void {
-                throw new Error('Function not implemented.');
-              }} />
+              }))}
+              selectedMonth={selectedMonth}
+              onMonthChange={setSelectedMonth}
+            />
           )}
 
           {activeTab === 'calendar' && (
-            <div className="p-8 text-center text-gray-500">
-              Calendar view coming soon
-            </div>
+            <AttendanceCalendar records={records} />
           )}
 
           {activeTab === 'requests' && (
-            <div className="p-8 text-center text-gray-500">
-              Attendance requests coming soon
-            </div>
+            <AttendanceRequests requests={requests} />
           )}
         </div>
       </main>
-
-      {/* Toast notifications */}
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   );

@@ -29,38 +29,30 @@ export default function PageHeader({ title, subtitle, showBackButton = true, chi
   };
 
   return (
-    <div className="bg-white border-b border-gray-200 px-6 py-4">
+    <div className="px-6 py-4" style={{ backgroundColor: 'var(--card-bg)', borderBottom: '1px solid var(--card-border)' }}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           {showBackButton && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleBack}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-            >
+            <Button variant="ghost" size="sm" onClick={handleBack}
+              className="flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
               <ArrowLeft className="w-4 h-4" />
               Back
             </Button>
           )}
-          <div className="border-l border-gray-300 pl-4">
+          <div className="pl-4" style={{ borderLeft: '1px solid var(--card-border)' }}>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-blue-600 uppercase tracking-wide">
+              <span className="text-sm font-bold uppercase tracking-wide" style={{ color: 'var(--primary-color)' }}>
                 {getModuleName()}
               </span>
-              <span className="text-gray-400">•</span>
-              <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
+              <span style={{ color: 'var(--text-muted)' }}>·</span>
+              <h1 className="text-xl font-semibold" style={{ color: 'var(--text-color)' }}>{title}</h1>
             </div>
             {subtitle && (
-              <p className="text-sm text-gray-600 mt-1">{subtitle}</p>
+              <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>{subtitle}</p>
             )}
           </div>
         </div>
-        {children && (
-          <div className="flex items-center gap-2">
-            {children}
-          </div>
-        )}
+        {children && <div className="flex items-center gap-2">{children}</div>}
       </div>
     </div>
   );

@@ -32,12 +32,12 @@ api.interceptors.response.use(
     if (error.response) {
       // Server responded with error status
       const status = error.response.status;
-      
+
       if (status === 401) {
         console.log('🚨 401 Error detected');
         console.log('🚨 URL:', error.config?.url);
         console.log('🚨 Current path:', typeof window !== 'undefined' ? window.location.pathname : 'unknown');
-        
+
         // Only clear token if we're not already on login page
         // This prevents clearing token during page initialization
         if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
@@ -62,7 +62,7 @@ api.interceptors.response.use(
       // Error in request setup
       console.error('Request setup error:', error.message);
     }
-    
+
     return Promise.reject(error);
   }
 );

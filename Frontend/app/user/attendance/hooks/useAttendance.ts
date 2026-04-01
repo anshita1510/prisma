@@ -3,12 +3,12 @@
 import { useState, useMemo, useEffect } from 'react';
 import { authService } from '../../../services/auth.services';
 import api from '../../../../lib/axios';
-import { 
-  AttendanceRecord, 
-  AttendanceStats, 
+import {
+  AttendanceRecord,
+  AttendanceStats,
   AttendanceRequest,
   ViewMode,
-  TimeFormat 
+  TimeFormat
 } from '../types/attendanceTypes';
 // API service for attendance
 const attendanceAPI = {
@@ -90,13 +90,13 @@ const attendanceAPI = {
 const generateMockAttendance = (): AttendanceRecord[] => {
   const records: AttendanceRecord[] = [];
   const today = new Date();
-  
+
   for (let i = 0; i < 30; i++) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
-    
+
     const dayOfWeek = date.getDay();
-    
+
     // Weekends
     if (dayOfWeek === 0 || dayOfWeek === 6) {
       records.push({
@@ -110,7 +110,7 @@ const generateMockAttendance = (): AttendanceRecord[] => {
       });
       continue;
     }
-    
+
     // Holiday on 1st and random holidays
     if (date.getDate() === 1 || (Math.random() > 0.95)) {
       records.push({
@@ -125,7 +125,7 @@ const generateMockAttendance = (): AttendanceRecord[] => {
       });
       continue;
     }
-    
+
     // Random absence (5% chance)
     if (Math.random() > 0.95) {
       records.push({
@@ -139,26 +139,26 @@ const generateMockAttendance = (): AttendanceRecord[] => {
       });
       continue;
     }
-    
+
     // Present days with varied timing
     const isLate = Math.random() > 0.8; // 20% chance of being late
     const isEarlyLeave = Math.random() > 0.9; // 10% chance of early leave
-    
+
     // Varied work hours (7.5 to 9.5 hours)
     const baseMinutes = 450; // 7.5 hours
     const extraMinutes = Math.floor(Math.random() * 120); // 0-2 extra hours
     const effectiveMinutes = baseMinutes + extraMinutes;
-    
+
     // Break time (30-60 minutes)
     const breakMinutes = 30 + Math.floor(Math.random() * 30);
     const grossMinutes = effectiveMinutes + breakMinutes;
-    
+
     // Arrival time
     const baseArrivalHour = 9;
     const baseArrivalMinute = 30;
     let arrivalHour = baseArrivalHour;
     let arrivalMinute = baseArrivalMinute;
-    
+
     if (isLate) {
       arrivalMinute += Math.floor(Math.random() * 30) + 5; // 5-35 minutes late
       if (arrivalMinute >= 60) {
@@ -175,16 +175,16 @@ const generateMockAttendance = (): AttendanceRecord[] => {
         }
       }
     }
-    
+
     // Departure time
     const departureHour = arrivalHour + Math.floor(grossMinutes / 60);
     const departureMinute = (arrivalMinute + (grossMinutes % 60)) % 60;
-    
+
     const arrivalTime = `${arrivalHour.toString().padStart(2, '0')}:${arrivalMinute.toString().padStart(2, '0')}:${Math.floor(Math.random() * 60).toString().padStart(2, '0')}`;
-    const departureTime = isEarlyLeave 
+    const departureTime = isEarlyLeave
       ? `${(departureHour - 1).toString().padStart(2, '0')}:${departureMinute.toString().padStart(2, '0')}:00`
       : `${departureHour.toString().padStart(2, '0')}:${departureMinute.toString().padStart(2, '0')}:00`;
-    
+
     records.push({
       id: `att-${i}`,
       date,
@@ -201,7 +201,7 @@ const generateMockAttendance = (): AttendanceRecord[] => {
       departureTime,
     });
   }
-  
+
   return records;
 };
 
@@ -229,11 +229,12 @@ export const useAttendance = () => {
   const [timeFormat, setTimeFormat] = useState<TimeFormat>('24h');
   const [selectedMonth, setSelectedMonth] = useState<string>('30 DAYS');
   const [activeTab, setActiveTab] = useState<'log' | 'calendar' | 'requests'>('log');
-  
+
   // State for real data
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [myStats, setMyStats] = useState<AttendanceStats | null>(null);
   const [teamStats, setTeamStats] = useState<AttendanceStats | null>(null);
+  const [todayAttendance, setTodayAttendance] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -246,216 +247,223 @@ export const useAttendance = () => {
   }, []);
 
   // Load attendance data
-  useEffect(() => {
-    const loadAttendanceData = async () => {
-      if (!currentUser?.id) return;
+  const refreshData = async () => {
+    if (!currentUser?.id) return;
 
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Try to load real data from API
       try {
-        setLoading(true);
-        setError(null);
+        const [statsResponse, logsResponse, teamStatsResponse, todayResponse] = await Promise.all([
+          attendanceAPI.getMyStats('week'),
+          attendanceAPI.getMyLogs(30),
+          attendanceAPI.getMyTeamStats('week'),
+          attendanceAPI.getMyTodayAttendance()
+        ]);
 
-        // Try to load real data from API
-        try {
-          const [statsResponse, logsResponse, teamStatsResponse] = await Promise.all([
-            attendanceAPI.getMyStats('week'),
-            attendanceAPI.getMyLogs(30),
-            attendanceAPI.getMyTeamStats('week')
-          ]);
+        if (todayResponse?.success && todayResponse?.data) {
+          setTodayAttendance(todayResponse.data);
+        } else {
+          setTodayAttendance(null);
+        }
 
-          if (statsResponse.success && logsResponse.success && teamStatsResponse.success) {
-            // Convert backend data to frontend format
-            const convertedLogs = logsResponse.data.map((log: any) => {
-              // Calculate effective hours and gross hours from API data
-              const workHours = log.workHours || 0;
-              const effectiveHours = workHours; // Effective hours = work hours
-              const grossHours = log.checkIn && log.checkOut 
-                ? (new Date(log.checkOut).getTime() - new Date(log.checkIn).getTime()) / (1000 * 60 * 60)
-                : workHours;
-              
-              // Format hours to "Xh Ym" format
-              const formatHours = (hours: number) => {
-                const h = Math.floor(hours);
-                const m = Math.round((hours - h) * 60);
-                return `${h}h ${m}m`;
-              };
+        if (statsResponse.success && logsResponse.success && teamStatsResponse.success) {
+          // Convert backend data to frontend format
+          const convertedLogs = logsResponse.data.map((log: any) => {
+            // Calculate effective hours and gross hours from API data
+            const workHours = log.workHours || 0;
+            const effectiveHours = workHours; // Effective hours = work hours
+            const grossHours = log.checkIn && log.checkOut
+              ? (new Date(log.checkOut).getTime() - new Date(log.checkIn).getTime()) / (1000 * 60 * 60)
+              : workHours;
 
-              // Convert timeSlots from API format to frontend format
-              const timeSlots = (log.timeSlots || []).map((slot: any) => {
-                const checkInTime = new Date(slot.checkIn);
-                const checkOutTime = new Date(slot.checkOut);
-                return {
-                  start: checkInTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-                  end: checkOutTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-                  type: 'work' as const
-                };
-              });
+            // Format hours to "Xh Ym" format
+            const formatHours = (hours: number) => {
+              const h = Math.floor(hours);
+              const m = Math.round((hours - h) * 60);
+              return `${h}h ${m}m`;
+            };
 
+            // Convert timeSlots from API format to frontend format
+            const timeSlots = (log.timeSlots || []).map((slot: any) => {
+              const checkInTime = new Date(slot.checkIn);
+              const checkOutTime = new Date(slot.checkOut);
               return {
-                id: `att-${log.id}`,
-                date: new Date(log.date),
-                status: log.status.toLowerCase(),
-                timeSlots: timeSlots,
-                effectiveHours: formatHours(effectiveHours),
-                grossHours: formatHours(grossHours),
-                arrivalStatus: log.checkIn ? 'on-time' : 'no-entry',
-                arrivalTime: log.checkIn ? new Date(log.checkIn).toLocaleTimeString() : undefined,
-                departureTime: log.checkOut ? new Date(log.checkOut).toLocaleTimeString() : undefined,
+                start: checkInTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+                end: checkOutTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+                type: 'work' as const
               };
             });
 
-            setRecords(convertedLogs);
-
-            // Safely convert stats with fallbacks
-            const convertedMyStats: AttendanceStats = {
-              avgHoursPerDay: statsResponse.data?.avgHoursPerDay 
-                ? `${Math.floor(statsResponse.data.avgHoursPerDay)}h ${Math.round((statsResponse.data.avgHoursPerDay % 1) * 60)}m`
-                : '8h 0m',
-              onTimeArrivalPercent: statsResponse.data?.onTimePercentage || 0,
-              totalWorkingDays: statsResponse.data?.totalDays || 0,
-              presentDays: statsResponse.data?.presentDays || 0,
-              absentDays: statsResponse.data?.absentDays || 0,
-              lateDays: Math.max(0, (statsResponse.data?.totalDays || 0) - (statsResponse.data?.presentDays || 0) - (statsResponse.data?.absentDays || 0)),
+            return {
+              id: `att-${log.id}`,
+              date: new Date(log.date),
+              status: log.status.toLowerCase(),
+              timeSlots: timeSlots,
+              effectiveHours: formatHours(effectiveHours),
+              grossHours: formatHours(grossHours),
+              arrivalStatus: log.checkIn ? 'on-time' : 'no-entry',
+              arrivalTime: log.checkIn ? new Date(log.checkIn).toLocaleTimeString() : undefined,
+              departureTime: log.checkOut ? new Date(log.checkOut).toLocaleTimeString() : undefined,
             };
+          });
 
-            const convertedTeamStats: AttendanceStats = {
-              avgHoursPerDay: teamStatsResponse.data?.avgHoursPerDay 
-                ? `${Math.floor(teamStatsResponse.data.avgHoursPerDay)}h ${Math.round((teamStatsResponse.data.avgHoursPerDay % 1) * 60)}m`
-                : '7h 30m',
-              onTimeArrivalPercent: teamStatsResponse.data?.onTimePercentage || 0,
-              totalWorkingDays: teamStatsResponse.data?.totalDays || 22,
-              presentDays: teamStatsResponse.data?.presentDays || 18,
-              absentDays: teamStatsResponse.data?.absentDays || 2,
-              lateDays: teamStatsResponse.data?.lateDays || 2,
-            };
+          setRecords(convertedLogs);
 
-            setMyStats(convertedMyStats);
-            setTeamStats(convertedTeamStats);
-            return;
-          }
-        } catch (apiError) {
-          console.log('API not available, using mock data:', apiError);
+          // Safely convert stats with fallbacks
+          const convertedMyStats: AttendanceStats = {
+            avgHoursPerDay: statsResponse.data?.avgHoursPerDay
+              ? `${Math.floor(statsResponse.data.avgHoursPerDay)}h ${Math.round((statsResponse.data.avgHoursPerDay % 1) * 60)}m`
+              : '8h 0m',
+            onTimeArrivalPercent: statsResponse.data?.onTimePercentage || 0,
+            totalWorkingDays: statsResponse.data?.totalDays || 0,
+            presentDays: statsResponse.data?.presentDays || 0,
+            absentDays: statsResponse.data?.absentDays || 0,
+            lateDays: Math.max(0, (statsResponse.data?.totalDays || 0) - (statsResponse.data?.presentDays || 0) - (statsResponse.data?.absentDays || 0)),
+          };
+
+          const convertedTeamStats: AttendanceStats = {
+            avgHoursPerDay: teamStatsResponse.data?.avgHoursPerDay
+              ? `${Math.floor(teamStatsResponse.data.avgHoursPerDay)}h ${Math.round((teamStatsResponse.data.avgHoursPerDay % 1) * 60)}m`
+              : '7h 30m',
+            onTimeArrivalPercent: teamStatsResponse.data?.onTimePercentage || 0,
+            totalWorkingDays: teamStatsResponse.data?.totalDays || 22,
+            presentDays: teamStatsResponse.data?.presentDays || 18,
+            absentDays: teamStatsResponse.data?.absentDays || 2,
+            lateDays: teamStatsResponse.data?.lateDays || 2,
+          };
+
+          setMyStats(convertedMyStats);
+          setTeamStats(convertedTeamStats);
+          return;
         }
-
-        // Fallback to mock data with dynamic stats calculation
-        const mockRecords = generateMockAttendance();
-        setRecords(mockRecords);
-
-        // Calculate dynamic stats from mock records
-        const calculateStatsFromRecords = (records: AttendanceRecord[]) => {
-          const workingDays = records.filter(r => 
-            r.status !== 'weekly-off' && r.status !== 'holiday'
-          );
-          
-          const presentDays = records.filter(r => r.status === 'present');
-          const lateDays = records.filter(r => r.arrivalStatus === 'late');
-          const absentDays = records.filter(r => r.status === 'absent');
-          
-          // Calculate average hours from present days
-          let totalMinutes = 0;
-          presentDays.forEach(day => {
-            const hoursMatch = day.effectiveHours.match(/(\d+)h (\d+)m/);
-            if (hoursMatch) {
-              totalMinutes += parseInt(hoursMatch[1]) * 60 + parseInt(hoursMatch[2]);
-            }
-          });
-          
-          const avgMinutesPerDay = presentDays.length > 0 ? totalMinutes / presentDays.length : 0;
-          const avgHours = Math.floor(avgMinutesPerDay / 60);
-          const avgMinutes = Math.round(avgMinutesPerDay % 60);
-          
-          const onTimePercentage = presentDays.length > 0 
-            ? Math.round(((presentDays.length - lateDays.length) / presentDays.length) * 100)
-            : 0;
-
-          return {
-            avgHoursPerDay: `${avgHours}h ${avgMinutes}m`,
-            onTimeArrivalPercent: onTimePercentage,
-            totalWorkingDays: workingDays.length,
-            presentDays: presentDays.length,
-            absentDays: absentDays.length,
-            lateDays: lateDays.length,
-          };
-        };
-
-        const dynamicMyStats = calculateStatsFromRecords(mockRecords);
-        
-        // Create slightly different team stats
-        const dynamicTeamStats: AttendanceStats = {
-          avgHoursPerDay: '7h 45m',
-          onTimeArrivalPercent: Math.max(0, dynamicMyStats.onTimeArrivalPercent - 15),
-          totalWorkingDays: dynamicMyStats.totalWorkingDays,
-          presentDays: Math.max(0, dynamicMyStats.presentDays - 2),
-          absentDays: dynamicMyStats.absentDays + 1,
-          lateDays: dynamicMyStats.lateDays + 2,
-        };
-
-        setMyStats(dynamicMyStats);
-        setTeamStats(dynamicTeamStats);
-
-      } catch (err: any) {
-        console.error('Error loading attendance data:', err);
-        setError(err.message || 'Failed to load attendance data');
-        
-        // Fallback to mock data with dynamic calculation
-        const mockRecords = generateMockAttendance();
-        setRecords(mockRecords);
-        
-        // Calculate stats from mock records
-        const calculateStatsFromRecords = (records: AttendanceRecord[]) => {
-          const workingDays = records.filter(r => 
-            r.status !== 'weekly-off' && r.status !== 'holiday'
-          );
-          
-          const presentDays = records.filter(r => r.status === 'present');
-          const lateDays = records.filter(r => r.arrivalStatus === 'late');
-          const absentDays = records.filter(r => r.status === 'absent');
-          
-          // Calculate average hours from present days
-          let totalMinutes = 0;
-          presentDays.forEach(day => {
-            const hoursMatch = day.effectiveHours.match(/(\d+)h (\d+)m/);
-            if (hoursMatch) {
-              totalMinutes += parseInt(hoursMatch[1]) * 60 + parseInt(hoursMatch[2]);
-            }
-          });
-          
-          const avgMinutesPerDay = presentDays.length > 0 ? totalMinutes / presentDays.length : 0;
-          const avgHours = Math.floor(avgMinutesPerDay / 60);
-          const avgMinutes = Math.round(avgMinutesPerDay % 60);
-          
-          const onTimePercentage = presentDays.length > 0 
-            ? Math.round(((presentDays.length - lateDays.length) / presentDays.length) * 100)
-            : 0;
-
-          return {
-            avgHoursPerDay: `${avgHours}h ${avgMinutes}m`,
-            onTimeArrivalPercent: onTimePercentage,
-            totalWorkingDays: workingDays.length,
-            presentDays: presentDays.length,
-            absentDays: absentDays.length,
-            lateDays: lateDays.length,
-          };
-        };
-
-        const dynamicMyStats = calculateStatsFromRecords(mockRecords);
-        
-        const dynamicTeamStats: AttendanceStats = {
-          avgHoursPerDay: '7h 45m',
-          onTimeArrivalPercent: Math.max(0, dynamicMyStats.onTimeArrivalPercent - 15),
-          totalWorkingDays: dynamicMyStats.totalWorkingDays,
-          presentDays: Math.max(0, dynamicMyStats.presentDays - 2),
-          absentDays: dynamicMyStats.absentDays + 1,
-          lateDays: dynamicMyStats.lateDays + 2,
-        };
-
-        setMyStats(dynamicMyStats);
-        setTeamStats(dynamicTeamStats);
-      } finally {
-        setLoading(false);
+      } catch (apiError) {
+        console.log('API not available, using mock data:', apiError);
       }
-    };
 
-    loadAttendanceData();
+      // Fallback to mock data with dynamic stats calculation
+      const mockRecords = generateMockAttendance();
+      setRecords(mockRecords);
+
+      // Calculate dynamic stats from mock records
+      const calculateStatsFromRecords = (records: AttendanceRecord[]) => {
+        const workingDays = records.filter(r =>
+          r.status !== 'weekly-off' && r.status !== 'holiday'
+        );
+
+        const presentDays = records.filter(r => r.status === 'present');
+        const lateDays = records.filter(r => r.arrivalStatus === 'late');
+        const absentDays = records.filter(r => r.status === 'absent');
+
+        // Calculate average hours from present days
+        let totalMinutes = 0;
+        presentDays.forEach(day => {
+          const hoursMatch = day.effectiveHours.match(/(\d+)h (\d+)m/);
+          if (hoursMatch) {
+            totalMinutes += parseInt(hoursMatch[1]) * 60 + parseInt(hoursMatch[2]);
+          }
+        });
+
+        const avgMinutesPerDay = presentDays.length > 0 ? totalMinutes / presentDays.length : 0;
+        const avgHours = Math.floor(avgMinutesPerDay / 60);
+        const avgMinutes = Math.round(avgMinutesPerDay % 60);
+
+        const onTimePercentage = presentDays.length > 0
+          ? Math.round(((presentDays.length - lateDays.length) / presentDays.length) * 100)
+          : 0;
+
+        return {
+          avgHoursPerDay: `${avgHours}h ${avgMinutes}m`,
+          onTimeArrivalPercent: onTimePercentage,
+          totalWorkingDays: workingDays.length,
+          presentDays: presentDays.length,
+          absentDays: absentDays.length,
+          lateDays: lateDays.length,
+        };
+      };
+
+      const dynamicMyStats = calculateStatsFromRecords(mockRecords);
+
+      // Create slightly different team stats
+      const dynamicTeamStats: AttendanceStats = {
+        avgHoursPerDay: '7h 45m',
+        onTimeArrivalPercent: Math.max(0, dynamicMyStats.onTimeArrivalPercent - 15),
+        totalWorkingDays: dynamicMyStats.totalWorkingDays,
+        presentDays: Math.max(0, dynamicMyStats.presentDays - 2),
+        absentDays: dynamicMyStats.absentDays + 1,
+        lateDays: dynamicMyStats.lateDays + 2,
+      };
+
+      setMyStats(dynamicMyStats);
+      setTeamStats(dynamicTeamStats);
+
+    } catch (err: any) {
+      console.error('Error loading attendance data:', err);
+      setError(err.message || 'Failed to load attendance data');
+
+      // Fallback to mock data with dynamic calculation
+      const mockRecords = generateMockAttendance();
+      setRecords(mockRecords);
+
+      // Calculate stats from mock records
+      const calculateStatsFromRecords = (records: AttendanceRecord[]) => {
+        const workingDays = records.filter(r =>
+          r.status !== 'weekly-off' && r.status !== 'holiday'
+        );
+
+        const presentDays = records.filter(r => r.status === 'present');
+        const lateDays = records.filter(r => r.arrivalStatus === 'late');
+        const absentDays = records.filter(r => r.status === 'absent');
+
+        // Calculate average hours from present days
+        let totalMinutes = 0;
+        presentDays.forEach(day => {
+          const hoursMatch = day.effectiveHours.match(/(\d+)h (\d+)m/);
+          if (hoursMatch) {
+            totalMinutes += parseInt(hoursMatch[1]) * 60 + parseInt(hoursMatch[2]);
+          }
+        });
+
+        const avgMinutesPerDay = presentDays.length > 0 ? totalMinutes / presentDays.length : 0;
+        const avgHours = Math.floor(avgMinutesPerDay / 60);
+        const avgMinutes = Math.round(avgMinutesPerDay % 60);
+
+        const onTimePercentage = presentDays.length > 0
+          ? Math.round(((presentDays.length - lateDays.length) / presentDays.length) * 100)
+          : 0;
+
+        return {
+          avgHoursPerDay: `${avgHours}h ${avgMinutes}m`,
+          onTimeArrivalPercent: onTimePercentage,
+          totalWorkingDays: workingDays.length,
+          presentDays: presentDays.length,
+          absentDays: absentDays.length,
+          lateDays: lateDays.length,
+        };
+      };
+
+      const dynamicMyStats = calculateStatsFromRecords(mockRecords);
+
+      const dynamicTeamStats: AttendanceStats = {
+        avgHoursPerDay: '7h 45m',
+        onTimeArrivalPercent: Math.max(0, dynamicMyStats.onTimeArrivalPercent - 15),
+        totalWorkingDays: dynamicMyStats.totalWorkingDays,
+        presentDays: Math.max(0, dynamicMyStats.presentDays - 2),
+        absentDays: dynamicMyStats.absentDays + 1,
+        lateDays: dynamicMyStats.lateDays + 2,
+      };
+
+      setMyStats(dynamicMyStats);
+      setTeamStats(dynamicTeamStats);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshData();
   }, [currentUser]);
 
   // Check in function
@@ -499,26 +507,26 @@ export const useAttendance = () => {
   };
 
   const requests = mockRequests;
-  
+
   const currentTime = useMemo(() => {
     const now = new Date();
-    return now.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit', 
+    return now.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
       second: '2-digit',
-      hour12: timeFormat === '12h' 
+      hour12: timeFormat === '12h'
     });
   }, [timeFormat]);
-  
+
   const currentDate = useMemo(() => {
-    return new Date().toLocaleDateString('en-US', { 
-      weekday: 'short', 
-      day: '2-digit', 
-      month: 'short', 
-      year: 'numeric' 
+    return new Date().toLocaleDateString('en-US', {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
     });
   }, []);
-  
+
   return {
     records,
     requests,
@@ -553,5 +561,8 @@ export const useAttendance = () => {
     checkIn,
     checkOut,
     currentUser,
+    refreshData,
+    todayAttendance,
+    setTodayAttendance,
   };
 };

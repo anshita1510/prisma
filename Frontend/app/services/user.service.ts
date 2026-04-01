@@ -63,13 +63,119 @@ export interface GetCurrentCompanyResponse {
 
 export interface CreateCompanyData {
   name: string;
+  industry?: string;
   description?: string;
+  technology?: string;
+  plan?: string;
 }
 
 export interface CreateCompanyResponse {
   success: boolean;
   company: Company;
   message: string;
+}
+
+
+export interface Ceo {
+  id: number;
+  ceoId: string;
+  firstName: string;
+  lastName: string;
+  name: string;
+  email: string;
+  phone: string;
+  status: string;
+  isActive: boolean;
+  isVerified: boolean;
+  companyId?: number;
+  companyName?: string;
+  companyCode?: string;
+  createdAt: string;
+}
+
+export interface CreateCeoData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  companyId: number;
+  password: string;
+}
+
+export interface CreateCeoResponse {
+  success: boolean;
+  message: string;
+  ceo: {
+    id: number;
+    ceoId: string;
+    email: string;
+    name: string;
+    company: string;
+    companyCode: string;
+  };
+}
+
+export interface GetCeosResponse {
+  success: boolean;
+  ceos: Ceo[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface CompanyFull extends Company {
+  industry?: string;
+  plan?: string;
+  isActive?: boolean;
+  createdAt?: string;
+}
+
+
+export interface Ceo {
+  id: number;
+  ceoId: string;
+  firstName: string;
+  lastName: string;
+  name: string;
+  email: string;
+  phone: string;
+  status: string;
+  isActive: boolean;
+  isVerified: boolean;
+  companyId?: number;
+  companyName?: string;
+  companyCode?: string;
+  createdAt: string;
+}
+
+export interface CreateCeoData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  companyId: number;
+  password: string;
+}
+
+export interface CreateCeoResponse {
+  success: boolean;
+  message: string;
+  ceo: { id: number; ceoId: string; email: string; name: string; company: string; companyCode: string };
+}
+
+export interface GetCeosResponse {
+  success: boolean;
+  ceos: Ceo[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface CompanyFull extends Company {
+  industry?: string;
+  plan?: string;
+  isActive?: boolean;
+  createdAt?: string;
 }
 
 class UserService {
@@ -80,10 +186,10 @@ class UserService {
     try {
       console.log('🔍 Frontend: Sending user data:', JSON.stringify(userData, null, 2));
       console.log('🔍 Frontend: Current token:', localStorage.getItem('token') ? 'Present' : 'Missing');
-      
+
       // Use a longer timeout specifically for user creation
       const response = await api.post('/api/users/register', userData, {
-        timeout: 45000 // 45 seconds for user creation
+        timeout: 45000 // 15 seconds
       });
       console.log('✅ Frontend: User creation successful:', response.data);
       return response.data;
@@ -93,9 +199,10 @@ class UserService {
       console.error("❌ Error status:", error.response?.status);
       console.error("❌ Error headers:", error.response?.headers);
       console.error("❌ Request config:", error.config);
-      
-      // Provide more specific error message
-      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to create user';
+
+      const errorMessage = error.code === 'ECONNABORTED'
+        ? 'Request timed out. Please check the server is running and try again.'
+        : error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to create user';
       throw new Error(errorMessage);
     }
   }
@@ -142,7 +249,7 @@ class UserService {
     try {
       console.log("🔍 Frontend: Attempting to delete user", userId);
       console.log("🔍 Frontend: API URL", `/api/users/${userId}`);
-      
+
       const response = await api.delete(`/api/users/${userId}`);
 
       console.log("🔍 Frontend: Delete response data", response.data);
@@ -185,7 +292,7 @@ class UserService {
       .toUpperCase()
       .replace(/[^A-Z0-9]/g, '')
       .substring(0, 4);
-    
+
     const randomSuffix = Math.random().toString(36).substring(2, 5).toUpperCase();
     return `${cleanName}${randomSuffix}`;
   }
@@ -249,6 +356,33 @@ class UserService {
     // Allow letters, numbers, hyphens, and underscores
     const regex = /^[A-Za-z0-9_-]+$/;
     return regex.test(employeeId) && employeeId.length >= 3 && employeeId.length <= 20;
+  }
+
+  async createCeo(data: CreateCeoData): Promise<CreateCeoResponse> {
+    const response = await api.post('/api/ceos', data);
+    return response.data;
+  }
+
+  async getCeos(page = 1, limit = 20, search?: string): Promise<GetCeosResponse> {
+    const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+    if (search) params.append('search', search);
+    const response = await api.get(`/api/ceos?${params}`);
+    return response.data;
+  }
+
+  async deleteCeo(id: number): Promise<{ success: boolean; message: string }> {
+    const response = await api.delete(`/api/ceos/${id}`);
+    return response.data;
+  }
+
+  async getCompanyById(id: number): Promise<{ success: boolean; company: CompanyFull }> {
+    const response = await api.get(`/api/companies/${id}`);
+    return response.data;
+  }
+
+  async deleteCompany(id: number): Promise<{ success: boolean; message: string }> {
+    const response = await api.delete(`/api/companies/${id}`);
+    return response.data;
   }
 }
 

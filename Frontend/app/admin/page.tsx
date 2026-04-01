@@ -1,508 +1,338 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
+import { useState, useEffect } from 'react';
 import Sidebar from './_components/Sidebar_A';
 import PageHeader from './_components/PageHeader';
-import { 
-  BarChart3, 
-  CheckSquare, 
-  Clock, 
-  Users, 
-  TrendingUp, 
-  AlertCircle,
-  Calendar,
-  FolderOpen,
-  Target,
-  Activity,
-  UserPlus,
-  PieChart as PieChartIcon
+import { useAuth } from '../hooks/useAuth';
+import api from '../../lib/axios';
+import {
+  CheckSquare, Clock, Users, TrendingUp, AlertCircle,
+  Calendar, FolderOpen, Target, Activity, UserPlus,
 } from 'lucide-react';
-import { authService } from '@/app/services/authService';
-import { 
-  LineChart, 
-  Line, 
-  BarChart, 
-  Bar, 
-  PieChart, 
-  Pie, 
-  Cell, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer,
-  Area,
-  AreaChart,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar
+import {
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend,
+  ResponsiveContainer, Area, AreaChart,
+  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
 } from 'recharts';
 
-interface DashboardStats {
-  totalEmployees: number;
-  activeProjects: number;
-  totalTasks: number;
-  completedTasks: number;
-  overdueTasks: number;
-  pendingLeaves: number;
-}
+const cardStyle = {
+  backgroundColor: 'var(--card-bg)',
+  border: '1px solid var(--card-border)',
+  borderRadius: '16px',
+  boxShadow: 'var(--shadow-sm)',
+  transition: 'all 0.2s ease'
+} as const;
 
-interface RecentActivity {
-  id: string;
-  type: 'user_created' | 'task_completed' | 'leave_approved' | 'project_created';
-  title: string;
-  description: string;
-  timestamp: string;
-  user: string;
-}
+const tooltipStyle = {
+  backgroundColor: 'var(--card-bg)',
+  border: '1px solid var(--card-border)',
+  borderRadius: '8px',
+  color: 'var(--text-color)',
+  fontSize: 12,
+};
+
+const STAT_CARDS = (stats: any, completionRate: number) => [
+  { label: 'Total Employees', value: stats.totalEmployees || 0, sub: 'Active team members', icon: Users, accent: '#3b82f6' },
+  { label: 'Total Tasks', value: stats.totalTasks || 0, sub: `${stats.completedTasks || 0} completed`, icon: CheckSquare, accent: '#22c55e' },
+  { label: 'Completion Rate', value: `${completionRate.toFixed(1)}%`, sub: 'Task completion', icon: TrendingUp, accent: '#a78bfa', progress: completionRate },
+  { label: 'Pending Leaves', value: stats.pendingLeaves || 0, sub: 'Require approval', icon: AlertCircle, accent: '#ef4444' },
+];
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState<DashboardStats>({
-    totalEmployees: 24,
-    activeProjects: 8,
-    totalTasks: 156,
-    completedTasks: 89,
-    overdueTasks: 7,
-    pendingLeaves: 5
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<any>({
+    totalEmployees: 0, activeProjects: 0,
+    totalTasks: 0, completedTasks: 0,
+    overdueTasks: 0, pendingLeaves: 0,
+    attendanceTrendData: [],
+    departmentPerformanceData: [],
+    projectProgressData: [],
+    employeeProductivityData: [],
+    leaveStatisticsData: [],
+    recentActivity: []
   });
-  
-  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([
-    {
-      id: '1',
-      type: 'user_created',
-      title: 'New User Created',
-      description: 'John Smith was added as a Software Engineer',
-      timestamp: '2 hours ago',
-      user: 'Admin'
-    },
-    {
-      id: '2',
-      type: 'leave_approved',
-      title: 'Leave Approved',
-      description: 'Sarah Johnson\'s sick leave request was approved',
-      timestamp: '4 hours ago',
-      user: 'Admin'
-    },
-    {
-      id: '3',
-      type: 'project_created',
-      title: 'New Project',
-      description: 'E-commerce Platform project was created',
-      timestamp: '6 hours ago',
-      user: 'Admin'
+
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      fetchDashboardData();
+    } else if (!user && !loading) {
+      setLoading(false);
     }
-  ]);
-  
-  const [loading, setLoading] = useState(false);
+  }, [user]);
 
-  // Chart data
-  const attendanceTrendData = [
-    { month: 'Jan', present: 92, late: 5, absent: 3 },
-    { month: 'Feb', present: 88, late: 7, absent: 5 },
-    { month: 'Mar', present: 95, late: 3, absent: 2 },
-    { month: 'Apr', present: 90, late: 6, absent: 4 },
-    { month: 'May', present: 93, late: 4, absent: 3 },
-    { month: 'Jun', present: 96, late: 2, absent: 2 }
-  ];
-
-  const departmentPerformanceData = [
-    { department: 'Development', productivity: 85, quality: 90, efficiency: 88 },
-    { department: 'Design', productivity: 92, quality: 95, efficiency: 90 },
-    { department: 'QA', productivity: 78, quality: 85, efficiency: 80 },
-    { department: 'Marketing', productivity: 88, quality: 87, efficiency: 85 }
-  ];
-
-  const taskStatusData = [
-    { name: 'Completed', value: stats.completedTasks, color: '#10b981' },
-    { name: 'In Progress', value: 45, color: '#3b82f6' },
-    { name: 'Pending', value: 15, color: '#f59e0b' },
-    { name: 'Overdue', value: stats.overdueTasks, color: '#ef4444' }
-  ];
-
-  const projectProgressData = [
-    { project: 'E-commerce', progress: 75, tasks: 45, completed: 34 },
-    { project: 'Mobile App', progress: 60, tasks: 30, completed: 18 },
-    { project: 'Dashboard', progress: 90, tasks: 25, completed: 23 },
-    { project: 'API Gateway', progress: 45, tasks: 40, completed: 18 }
-  ];
-
-  const employeeProductivityData = [
-    { week: 'Week 1', avgHours: 42, avgTasks: 8 },
-    { week: 'Week 2', avgHours: 45, avgTasks: 10 },
-    { week: 'Week 3', avgHours: 43, avgTasks: 9 },
-    { week: 'Week 4', avgHours: 46, avgTasks: 11 }
-  ];
-
-  const leaveStatisticsData = [
-    { type: 'Sick Leave', count: 12, color: '#ef4444' },
-    { type: 'Casual Leave', count: 18, color: '#3b82f6' },
-    { type: 'Vacation', count: 25, color: '#10b981' },
-    { type: 'Other', count: 5, color: '#f59e0b' }
-  ];
-
-  const getActivityIcon = (type: RecentActivity['type']) => {
-    switch (type) {
-      case 'user_created':
-        return <UserPlus className="w-4 h-4 text-blue-500" />;
-      case 'task_completed':
-        return <CheckSquare className="w-4 h-4 text-green-500" />;
-      case 'leave_approved':
-        return <Calendar className="w-4 h-4 text-orange-500" />;
-      case 'project_created':
-        return <FolderOpen className="w-4 h-4 text-purple-500" />;
-      default:
-        return <Activity className="w-4 h-4 text-gray-500" />;
+  const fetchDashboardData = async () => {
+    try {
+      const res = await api.get('/api/dashboard/admin-stats');
+      if (res.data.success) {
+        setStats(res.data.stats);
+      }
+    } catch (error) {
+      console.error('Error fetching admin dashboard data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const completionRate = stats.totalTasks > 0 ? (stats.completedTasks / stats.totalTasks) * 100 : 0;
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Sidebar />
-        <div className="lg:ml-16 min-h-screen pt-16 lg:pt-0">
-          <PageHeader title="Dashboard" subtitle="Admin dashboard overview" showBackButton={false} />
-          <div className="p-4 sm:p-6 max-w-7xl mx-auto">
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const taskStatusData = [
+    { name: 'Completed', value: stats.completedTasks || 0, color: '#22c55e' },
+    { name: 'In Progress', value: Math.max(0, (stats.totalTasks || 0) - (stats.completedTasks || 0) - (stats.overdueTasks || 0)), color: '#3b82f6' },
+    { name: 'Pending', value: 15, color: '#f59e0b' },
+    { name: 'Overdue', value: stats.overdueTasks || 0, color: '#ef4444' },
+  ].filter(d => d.value > 0);
+
+  const quickActions = [
+    { label: 'Create New User', icon: UserPlus, href: '/admin/createUser', color: '#3b82f6' },
+    { label: 'Manage Projects', icon: FolderOpen, href: '/admin/projects', color: '#a78bfa' },
+    { label: 'View Attendance', icon: Clock, href: '/admin/attendance', color: '#22c55e' },
+    { label: 'Manage Leaves', icon: Calendar, href: '/admin/leave-management', color: '#f59e0b' },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="flex min-h-screen" style={{ backgroundColor: 'var(--bg-color)' }}>
       <Sidebar />
-      <div className="lg:ml-16 min-h-screen pt-16 lg:pt-0">
+      <main className="flex-1 min-w-0 pt-[57px] lg:pt-0">
         <PageHeader title="Dashboard" subtitle="Admin dashboard overview" showBackButton={false} />
-        <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 max-w-7xl mx-auto">
-          
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Employees</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">{stats.totalEmployees}</div>
-                <p className="text-xs text-muted-foreground">
-                  Active team members
-                </p>
-              </CardContent>
-            </Card>
 
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
-                <CheckSquare className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">{stats.totalTasks}</div>
-                <p className="text-xs text-muted-foreground">
-                  {stats.completedTasks} completed
-                </p>
-              </CardContent>
-            </Card>
+        <div className="p-5 md:p-6 space-y-6">
 
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-purple-600">{completionRate.toFixed(1)}%</div>
-                <Progress value={completionRate} className="mt-2" />
-              </CardContent>
-            </Card>
+          {/* Stat Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            {STAT_CARDS(stats, completionRate).map(({ label, value, sub, icon: Icon, accent, progress }) => (
+              <div key={label} className="relative p-5 rounded-2xl transition-all duration-300 hover:-translate-y-1 cursor-default group overflow-hidden"
+                style={{ ...cardStyle, borderBottom: `3px solid ${accent}` }}
+                onMouseEnter={e => (e.currentTarget.style.boxShadow = 'var(--shadow-md)')}
+                onMouseLeave={e => (e.currentTarget.style.boxShadow = 'var(--shadow-sm)')}
+              >
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none"
+                  style={{ background: `linear-gradient(145deg, transparent 40%, ${accent} 100%)` }} />
 
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pending Leaves</CardTitle>
-                <AlertCircle className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">{stats.pendingLeaves}</div>
-                <p className="text-xs text-muted-foreground">
-                  Require approval
-                </p>
-              </CardContent>
-            </Card>
+                <div className="relative z-10">
+                  <div className="flex items-start justify-between mb-3">
+                    <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{label}</span>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: `${accent}18` }}>
+                      <Icon size={15} style={{ color: accent }} />
+                    </div>
+                  </div>
+                  <p className="text-2xl font-bold tracking-tight text-[var(--text-color)] mb-1">{loading ? '...' : value}</p>
+                  {progress !== undefined ? (
+                    <div className="mt-2">
+                      <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--card-border)' }}>
+                        <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: accent }} />
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{sub}</p>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* Charts Row 1 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Attendance Trend */}
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Attendance Trends
-                </CardTitle>
-                <CardDescription>
-                  Monthly attendance statistics
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={attendanceTrendData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Area type="monotone" dataKey="present" stackId="1" stroke="#10b981" fill="#10b981" />
-                    <Area type="monotone" dataKey="late" stackId="1" stroke="#f59e0b" fill="#f59e0b" />
-                    <Area type="monotone" dataKey="absent" stackId="1" stroke="#ef4444" fill="#ef4444" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="p-5 rounded-2xl" style={cardStyle}
+              onMouseEnter={e => (e.currentTarget.style.boxShadow = 'var(--shadow-md)')}
+              onMouseLeave={e => (e.currentTarget.style.boxShadow = 'var(--shadow-sm)')}>
+              <p className="text-[var(--text-color)] font-medium mb-0.5">Attendance Trends</p>
+              <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>Monthly attendance statistics</p>
+              <ResponsiveContainer width="100%" height={260}>
+                <AreaChart data={stats.attendanceTrendData || []}>
+                  <defs>
+                    <linearGradient id="presentFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#22c55e" stopOpacity={0.5} />
+                      <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" />
+                  <XAxis dataKey="month" stroke="var(--text-muted)" fontSize={11} tick={{ fill: 'var(--text-muted)' }} />
+                  <YAxis stroke="var(--text-muted)" fontSize={11} tick={{ fill: 'var(--text-muted)' }} />
+                  <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: '#22c55e', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                  <Legend wrapperStyle={{ color: 'var(--text-muted)', fontSize: 11 }} />
+                  <Area type="monotone" dataKey="present" stackId="1" stroke="#22c55e" strokeWidth={3} fill="url(#presentFill)" dot={{ fill: '#22c55e', r: 4, strokeWidth: 0 }} />
+                  <Area type="monotone" dataKey="late" stackId="1" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.7} />
+                  <Area type="monotone" dataKey="absent" stackId="1" stroke="#ef4444" fill="#ef4444" fillOpacity={0.7} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
 
-            {/* Task Status Distribution */}
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <PieChartIcon className="h-5 w-5" />
-                  Task Status Distribution
-                </CardTitle>
-                <CardDescription>
-                  Current task breakdown
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
+            <div className="p-5 rounded-2xl" style={cardStyle}
+              onMouseEnter={e => (e.currentTarget.style.boxShadow = 'var(--shadow-md)')}
+              onMouseLeave={e => (e.currentTarget.style.boxShadow = 'var(--shadow-sm)')}>
+              <p className="text-[var(--text-color)] font-medium mb-0.5">Task Status Distribution</p>
+              <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>Current task breakdown</p>
+              <div className="relative">
+                <ResponsiveContainer width="100%" height={260}>
                   <PieChart>
-                    <Pie
-                      data={taskStatusData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {taskStatusData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
+                    <Pie data={taskStatusData} cx="50%" cy="50%" innerRadius={70} outerRadius={100} dataKey="value" stroke="none" paddingAngle={2}>
+                      {taskStatusData.map((e, i) => <Cell key={i} fill={e.color} />)}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Legend wrapperStyle={{ color: 'var(--text-muted)', fontSize: 11 }} />
                   </PieChart>
                 </ResponsiveContainer>
-              </CardContent>
-            </Card>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mb-4">
+                  <span className="text-2xl font-semibold text-[var(--text-color)]">{loading ? '...' : stats.totalTasks}</span>
+                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Total Tasks</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Charts Row 2 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Department Performance Radar */}
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5" />
-                  Department Performance
-                </CardTitle>
-                <CardDescription>
-                  Performance metrics by department
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <RadarChart data={departmentPerformanceData}>
-                    <PolarGrid />
-                    <PolarAngleAxis dataKey="department" />
-                    <PolarRadiusAxis angle={90} domain={[0, 100]} />
-                    <Radar name="Productivity" dataKey="productivity" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.6} />
-                    <Radar name="Quality" dataKey="quality" stroke="#10b981" fill="#10b981" fillOpacity={0.6} />
-                    <Radar name="Efficiency" dataKey="efficiency" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
-                    <Legend />
-                    <Tooltip />
-                  </RadarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="p-5 rounded-2xl" style={cardStyle}
+              onMouseEnter={e => (e.currentTarget.style.boxShadow = 'var(--shadow-md)')}
+              onMouseLeave={e => (e.currentTarget.style.boxShadow = 'var(--shadow-sm)')}>
+              <p className="text-[var(--text-color)] font-medium mb-0.5">Department Performance</p>
+              <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>Performance metrics by department</p>
+              <ResponsiveContainer width="100%" height={260}>
+                <RadarChart data={stats.departmentPerformanceData || []}>
+                  <PolarGrid stroke="var(--card-border)" />
+                  <PolarAngleAxis dataKey="department" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} />
+                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fill: 'var(--text-muted)', fontSize: 10 }} />
+                  <Radar name="Productivity" dataKey="productivity" stroke="#a78bfa" fill="#a78bfa" fillOpacity={0.5} strokeWidth={2} />
+                  <Radar name="Quality" dataKey="quality" stroke="#22c55e" fill="#22c55e" fillOpacity={0.5} strokeWidth={2} />
+                  <Radar name="Efficiency" dataKey="efficiency" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.5} strokeWidth={2} />
+                  <Legend wrapperStyle={{ color: 'var(--text-muted)', fontSize: 11 }} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
 
-            {/* Project Progress */}
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FolderOpen className="h-5 w-5" />
-                  Project Progress
-                </CardTitle>
-                <CardDescription>
-                  Active projects completion status
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={projectProgressData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" domain={[0, 100]} />
-                    <YAxis dataKey="project" type="category" />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="progress" fill="#3b82f6" radius={[0, 8, 8, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+            <div className="p-5 rounded-2xl" style={cardStyle}
+              onMouseEnter={e => (e.currentTarget.style.boxShadow = 'var(--shadow-md)')}
+              onMouseLeave={e => (e.currentTarget.style.boxShadow = 'var(--shadow-sm)')}>
+              <p className="text-[var(--text-color)] font-medium mb-0.5">Project Progress</p>
+              <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>Active projects completion status</p>
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={stats.projectProgressData || []} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" horizontal={false} />
+                  <XAxis type="number" domain={[0, 100]} tick={{ fill: 'var(--text-muted)', fontSize: 11 }} />
+                  <YAxis dataKey="project" type="category" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} width={80} />
+                  <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'var(--bg-subtle)' }} />
+                  <Bar dataKey="progress" fill="#3b82f6" radius={[0, 8, 8, 0]} barSize={20} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
 
           {/* Charts Row 3 */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Employee Productivity */}
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Employee Productivity
-                </CardTitle>
-                <CardDescription>
-                  Average hours and tasks per week
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={employeeProductivityData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="week" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="avgHours" stroke="#8b5cf6" strokeWidth={2} />
-                    <Line type="monotone" dataKey="avgTasks" stroke="#10b981" strokeWidth={2} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="p-5 rounded-2xl" style={cardStyle}
+              onMouseEnter={e => (e.currentTarget.style.boxShadow = 'var(--shadow-md)')}
+              onMouseLeave={e => (e.currentTarget.style.boxShadow = 'var(--shadow-sm)')}>
+              <p className="text-[var(--text-color)] font-medium mb-0.5">Employee Productivity</p>
+              <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>Average hours and tasks per week</p>
+              <ResponsiveContainer width="100%" height={260}>
+                <LineChart data={stats.employeeProductivityData || []}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--card-border)" />
+                  <XAxis dataKey="week" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} />
+                  <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 11 }} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Legend wrapperStyle={{ color: 'var(--text-muted)', fontSize: 11 }} />
+                  <Line type="monotone" dataKey="avgHours" stroke="#a78bfa" strokeWidth={3} dot={{ fill: '#a78bfa', r: 4, strokeWidth: 0 }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="avgTasks" stroke="#22c55e" strokeWidth={3} dot={{ fill: '#22c55e', r: 4, strokeWidth: 0 }} activeDot={{ r: 6 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
 
-            {/* Leave Statistics */}
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Leave Statistics
-                </CardTitle>
-                <CardDescription>
-                  Leave types distribution
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={leaveStatisticsData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={(entry: any) => `${entry.type}: ${entry.count}`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="count"
-                    >
-                      {leaveStatisticsData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+            <div className="p-5 rounded-2xl" style={cardStyle}
+              onMouseEnter={e => (e.currentTarget.style.boxShadow = 'var(--shadow-md)')}
+              onMouseLeave={e => (e.currentTarget.style.boxShadow = 'var(--shadow-sm)')}>
+              <p className="text-[var(--text-color)] font-medium mb-0.5">Leave Statistics</p>
+              <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>Leave types distribution</p>
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie data={stats.leaveStatisticsData || []} cx="50%" cy="50%" innerRadius={55} outerRadius={80} dataKey="count" stroke="none" paddingAngle={2}>
+                    {(stats.leaveStatisticsData || []).map((e: any, i: number) => <Cell key={i} fill={e.color} />)}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="grid grid-cols-2 gap-2 mt-3">
+                {(stats.leaveStatisticsData || []).map((d: any) => (
+                  <div key={d.type} className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                    style={{ backgroundColor: 'var(--bg-color)' }}>
+                    <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: d.color }} />
+                    <span className="text-xs text-[var(--text-color)] flex-1 truncate">{d.type}</span>
+                    <span className="text-xs font-semibold" style={{ color: d.color }}>{d.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Bottom Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Quick Actions */}
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5" />
-                  Quick Actions
-                </CardTitle>
-                <CardDescription>
-                  Common administrative tasks
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button className="w-full justify-start" variant="outline" asChild>
-                  <a href="/admin/createUser">
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Create New User
+            <div className="p-5 rounded-2xl" style={cardStyle}
+              onMouseEnter={e => (e.currentTarget.style.boxShadow = 'var(--shadow-md)')}
+              onMouseLeave={e => (e.currentTarget.style.boxShadow = 'var(--shadow-sm)')}>
+              <div className="flex items-center gap-2 mb-1">
+                <Target size={16} style={{ color: 'var(--primary-color)' }} />
+                <p className="font-semibold text-sm" style={{ color: 'var(--text-color)' }}>Quick Actions</p>
+              </div>
+              <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>Common administrative tasks</p>
+              <div className="space-y-2">
+                {quickActions.map(({ label, icon: Icon, href, color }) => (
+                  <a key={label} href={href}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all"
+                    style={{ backgroundColor: 'var(--bg-subtle)', color: 'var(--text-color)', textDecoration: 'none' }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = `${color}18`)}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--bg-subtle)')}>
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: `${color}20` }}>
+                      <Icon size={14} style={{ color }} />
+                    </div>
+                    <span className="text-sm font-medium">{label}</span>
                   </a>
-                </Button>
-                <Button className="w-full justify-start" variant="outline" asChild>
-                  <a href="/admin/project">
-                    <FolderOpen className="mr-2 h-4 w-4" />
-                    Manage Projects
-                  </a>
-                </Button>
-                <Button className="w-full justify-start" variant="outline" asChild>
-                  <a href="/admin/attendance">
-                    <Clock className="mr-2 h-4 w-4" />
-                    View Attendance
-                  </a>
-                </Button>
-                <Button className="w-full justify-start" variant="outline" asChild>
-                  <a href="/admin/leave-management">
-                    <Calendar className="mr-2 h-4 w-4" />
-                    Manage Leaves
-                  </a>
-                </Button>
-              </CardContent>
-            </Card>
+                ))}
+              </div>
+            </div>
 
             {/* Recent Activity */}
-            <Card className="lg:col-span-2 hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Recent Activity
-                </CardTitle>
-                <CardDescription>
-                  Latest administrative actions and updates
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {recentActivity.map((activity) => (
-                    <div 
-                      key={activity.id} 
-                      className="flex items-start space-x-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="mt-1">
-                        {getActivityIcon(activity.type)}
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium">{activity.title}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {activity.description}
-                        </p>
-                        <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                          <span>{activity.user}</span>
-                          <span>•</span>
-                          <span>{activity.timestamp}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+            <div className="lg:col-span-2 p-5 rounded-2xl" style={cardStyle}
+              onMouseEnter={e => (e.currentTarget.style.boxShadow = 'var(--shadow-md)')}
+              onMouseLeave={e => (e.currentTarget.style.boxShadow = 'var(--shadow-sm)')}>
+              <div className="flex items-center justify-between mb-0.5">
+                <div className="flex items-center gap-2">
+                  <Activity size={16} style={{ color: 'var(--primary-color)' }} />
+                  <p className="font-semibold text-sm" style={{ color: 'var(--text-color)' }}>Recent Activity</p>
                 </div>
-              </CardContent>
-            </Card>
+                <span className="text-xs px-2 py-0.5 rounded-full"
+                  style={{ backgroundColor: 'rgba(124,58,237,0.15)', color: '#a78bfa' }}>Live</span>
+              </div>
+              <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>Latest administrative actions</p>
+              <div className="space-y-3">
+                {(stats.recentActivity || []).map((a: any) => (
+                  <div key={a.id} className="flex items-start gap-3 p-3 rounded-xl"
+                    style={{ backgroundColor: 'var(--bg-subtle)' }}>
+                    <div className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center mt-0.5"
+                      style={{ backgroundColor: `${a.color}18` }}>
+                      <Activity size={13} style={{ color: a.color }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[var(--text-color)] leading-tight">{a.title}</p>
+                      <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>{a.description}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{a.timestamp}</p>
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{a.user}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
+
         </div>
-      </div>
+      </main>
     </div>
   );
 }

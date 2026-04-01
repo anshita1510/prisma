@@ -137,20 +137,15 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
     }
 
     // In authenticateToken middleware, replace the prisma.user.findUnique call with:
-    const user = await Promise.race([
-      prisma.user.findUnique({
-        where: { id: decoded.id },
-        include: {
-          employee: {
-            select: { id: true, name: true, designation: true, companyId: true, departmentId: true, isActive: true }
-          },
-          company: { select: { id: true, name: true } }
-        }
-      }),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('DB_TIMEOUT: prisma.user.findUnique took >5s')), 5000)
-      )
-    ]) as any;
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      include: {
+        employee: {
+          select: { id: true, name: true, designation: true, companyId: true, departmentId: true, isActive: true }
+        },
+        company: { select: { id: true, name: true } }
+      }
+    });
 
     if (!user) {
       return res.status(401).json({

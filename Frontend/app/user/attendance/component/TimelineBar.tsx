@@ -1,5 +1,3 @@
-import { cn } from '@/lib/utils';
-
 interface BackendTimeSlot {
   checkIn: string;
   checkOut?: string;
@@ -10,83 +8,53 @@ interface TimelineBarProps {
   className?: string;
 }
 
-// Convert time string to percentage of day (9AM - 7PM = 10 hours)
-const timeToPercent = (timeString: string): number => {
-  const date = new Date(timeString);
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  const totalMinutes = hours * 60 + minutes;
-  
-  const startOfDay = 9 * 60 + 30; // 9:30 AM
-  const endOfDay = 18 * 60 + 30; // 6:30 PM
-  const dayDuration = endOfDay - startOfDay;
-  
-  return Math.max(0, Math.min(100, ((totalMinutes - startOfDay) / dayDuration) * 100));
+const timeToPercent = (t: string): number => {
+  const d = new Date(t);
+  const total = d.getHours() * 60 + d.getMinutes();
+  const start = 9 * 60 + 30;
+  const end = 18 * 60 + 30;
+  return Math.max(0, Math.min(100, ((total - start) / (end - start)) * 100));
 };
 
-const formatTime = (timeString: string): string => {
-  return new Date(timeString).toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  });
-};
+const formatTime = (t: string) =>
+  new Date(t).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
 
 export const TimelineBar = ({ slots, className }: TimelineBarProps) => {
-  if (!slots || slots.length === 0) {
+  if (!slots?.length) {
     return (
-      <div className={cn("h-3 bg-gray-200 rounded-full relative", className)}>
-        <div className="text-xs text-gray-500 text-center mt-1">No entries</div>
+      <div className={`h-3 rounded-full ${className || ''}`} style={{ backgroundColor: 'var(--bg-subtle)' }}>
+        <div className="text-xs text-center mt-1" style={{ color: 'var(--text-muted)' }}>No entries</div>
       </div>
     );
   }
-  
+
   return (
     <div className="space-y-2">
-      {/* Timeline bar */}
-      <div className={cn("relative h-3 bg-gray-200 rounded-full overflow-hidden", className)}>
-        {/* Hour markers (9:30 AM to 6:30 PM) */}
+      <div className={`relative h-3 rounded-full overflow-hidden ${className || ''}`}
+        style={{ backgroundColor: 'var(--bg-subtle)' }}>
         {Array.from({ length: 10 }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute top-0 w-px h-full bg-gray-300 opacity-50"
-            style={{ left: `${(i / 9) * 100}%` }}
-          />
+          <div key={i} className="absolute top-0 w-px h-full opacity-30"
+            style={{ left: `${(i / 9) * 100}%`, backgroundColor: 'var(--card-border)' }} />
         ))}
-        
-        {/* Time slots */}
-        {slots.map((slot, index) => {
-          const startPercent = timeToPercent(slot.checkIn);
-          const endPercent = slot.checkOut ? timeToPercent(slot.checkOut) : 100;
-          const width = Math.max(2, endPercent - startPercent); // Minimum 2% width for visibility
-          
+        {slots.map((slot, i) => {
+          const start = timeToPercent(slot.checkIn);
+          const end = slot.checkOut ? timeToPercent(slot.checkOut) : 100;
+          const width = Math.max(2, end - start);
           return (
-            <div
-              key={index}
-              className={cn(
-                "absolute top-0 h-full transition-all duration-300",
-                slot.checkOut 
-                  ? "bg-teal-400 hover:bg-teal-500" 
-                  : "bg-green-400 animate-pulse hover:bg-green-500"
-              )}
+            <div key={i}
+              className={`absolute top-0 h-full transition-all duration-300 ${!slot.checkOut ? 'animate-pulse' : ''}`}
               style={{
-                left: `${startPercent}%`,
-                width: `${width}%`,
+                left: `${start}%`, width: `${width}%`,
+                backgroundColor: slot.checkOut ? '#14b8a6' : '#22c55e',
               }}
-              title={`Session ${index + 1}: ${formatTime(slot.checkIn)} - ${
-                slot.checkOut ? formatTime(slot.checkOut) : 'Active'
-              }`}
+              title={`Session ${i + 1}: ${formatTime(slot.checkIn)} - ${slot.checkOut ? formatTime(slot.checkOut) : 'Active'}`}
             />
           );
         })}
       </div>
-      
-      {/* Time labels */}
-      <div className="flex justify-between text-xs text-gray-500">
+      <div className="flex justify-between text-xs" style={{ color: 'var(--text-muted)' }}>
         <span>9:30</span>
-        <span className="text-center">
-          {slots.length} session{slots.length !== 1 ? 's' : ''}
-        </span>
+        <span>{slots.length} session{slots.length !== 1 ? 's' : ''}</span>
         <span>18:30</span>
       </div>
     </div>

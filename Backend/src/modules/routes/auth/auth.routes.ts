@@ -5,12 +5,37 @@ import { inviteAuthMiddleware } from "../../../middlewares/inviteAuth.middleware
 import { authenticate } from "../../../middlewares/auth.middleware";
 import { requireRole, requireAnyRole } from "../../../middlewares/role.middleware";
 import { Role } from "@prisma/client";
-import {forgotPassword} from "../../controller/password/forget.password.controller"
+import { forgotPassword } from "../../controller/password/forget.password.controller"
 import { verifyOtp } from "../../controller/password/verify.password";
 import { resetPassword } from "../../controller/password/reset.password.controller";
 
 const router = Router();
 const controller = new UserController();
+
+/**
+ * @swagger
+ * /api/users/verify:
+ *   post:
+ *     summary: Verify email using token
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *             properties:
+ *               token:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Account verified successfully
+ *       400:
+ *         description: Invalid or expired token
+ */
+router.post('/verify', controller.verifyEmail);
 
 /* ---------------- AUTH ---------------- */
 
@@ -220,6 +245,14 @@ router.get(
  */
 router.post(
     "/register",
+    authenticate,
+    requireAnyRole(Role.ADMIN, Role.SUPER_ADMIN),
+    controller.inviteEmployee
+);
+
+// Alias for /register — same handler, simpler endpoint name
+router.post(
+    "/create-user",
     authenticate,
     requireAnyRole(Role.ADMIN, Role.SUPER_ADMIN),
     controller.inviteEmployee

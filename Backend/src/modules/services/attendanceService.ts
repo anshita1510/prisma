@@ -77,25 +77,25 @@ class AttendanceService {
     });
 
     const checkInTime = new Date();
-    
+
     // Check if currently checked in (has check-in but no check-out)
     if (existingAttendance) {
       // Parse existing time slots
       const timeSlots = (existingAttendance.timeSlots as any) || [];
-      
+
       // Check if there's an open slot (checked in but not checked out)
       const hasOpenSlot = timeSlots.some((slot: any) => slot.checkIn && !slot.checkOut);
-      
+
       if (hasOpenSlot) {
         throw new Error('Already checked in. Please check out first.');
       }
-      
+
       // Add new check-in slot
       timeSlots.push({
         checkIn: checkInTime.toISOString(),
         checkOut: null
       });
-      
+
       // Determine status based on first check-in of the day
       const firstCheckIn = timeSlots[0]?.checkIn ? new Date(timeSlots[0].checkIn) : checkInTime;
       const status = this.determineAttendanceStatus(firstCheckIn, 'checkin');
@@ -184,20 +184,20 @@ class AttendanceService {
     }
 
     const checkOutTime = new Date();
-    
+
     // Parse existing time slots
     const timeSlots = (attendance.timeSlots as any) || [];
-    
+
     // Find the last open slot (checked in but not checked out)
     const openSlotIndex = timeSlots.findIndex((slot: any) => slot.checkIn && !slot.checkOut);
-    
+
     if (openSlotIndex === -1) {
       throw new Error('No active check-in found. Please check in first.');
     }
-    
+
     // Update the open slot with check-out time
     timeSlots[openSlotIndex].checkOut = checkOutTime.toISOString();
-    
+
     // Calculate total work hours from all completed slots
     let totalWorkMinutes = 0;
     timeSlots.forEach((slot: any) => {
@@ -209,10 +209,10 @@ class AttendanceService {
         totalWorkMinutes += diffMinutes;
       }
     });
-    
+
     const totalWorkHours = totalWorkMinutes / 60;
     const overtime = this.calculateOvertime(totalWorkHours);
-    
+
     // Determine final status based on first check-in and last check-out
     const firstCheckIn = new Date(timeSlots[0].checkIn);
     const lastCheckOut = checkOutTime;
@@ -244,12 +244,12 @@ class AttendanceService {
       ipAddress: req.ip,
       userAgent: req.get('User-Agent'),
       oldValues: { checkOut: null },
-      newValues: { 
-        checkOut: checkOutTime, 
-        workHours: totalWorkHours, 
-        overtime, 
+      newValues: {
+        checkOut: checkOutTime,
+        workHours: totalWorkHours,
+        overtime,
         status: finalStatus,
-        timeSlots 
+        timeSlots
       },
       reason: 'Employee check-out'
     });
@@ -259,7 +259,7 @@ class AttendanceService {
 
   async getPersonalAttendanceHistory(employeeId: number, startDate?: Date, endDate?: Date) {
     const whereClause: any = { employeeId };
-    
+
     if (startDate || endDate) {
       whereClause.date = {};
       if (startDate) whereClause.date.gte = startDate;
@@ -382,8 +382,8 @@ class AttendanceService {
         editReason: data.reason,
         editedBy: data.correctedBy,
         editedAt: new Date(),
-        workHours: data.checkIn && data.checkOut ? 
-          this.calculateWorkHours(data.checkIn, data.checkOut) : 
+        workHours: data.checkIn && data.checkOut ?
+          this.calculateWorkHours(data.checkIn, data.checkOut) :
           attendance.workHours
       }
     });
@@ -409,7 +409,7 @@ class AttendanceService {
 
   async getPendingRegularizationRequests(approverId?: number) {
     const whereClause: any = { status: RequestStatus.PENDING };
-    
+
     // If approverId is provided, filter by department or reporting structure
     if (approverId) {
       // Add logic to filter based on approval hierarchy
@@ -633,11 +633,11 @@ class AttendanceService {
 
       acc[empId].totalDays++;
       acc[empId].attendances.push(attendance);
-      
+
       if (attendance.status === AttendanceStatus.PRESENT) acc[empId].presentDays++;
       if (attendance.status === AttendanceStatus.ABSENT) acc[empId].absentDays++;
       if (attendance.status === AttendanceStatus.LATE) acc[empId].lateDays++;
-      
+
       acc[empId].totalWorkHours += attendance.workHours || 0;
       acc[empId].totalOvertime += attendance.overtime || 0;
 
@@ -653,11 +653,11 @@ class AttendanceService {
   // Audit Methods
   async getAuditTrail(attendanceId?: number, employeeId?: number, startDate?: Date, endDate?: Date) {
     const whereClause: any = {};
-    
+
     if (attendanceId) {
       whereClause.attendanceId = attendanceId;
     }
-    
+
     if (employeeId) {
       whereClause.attendance = {
         employeeId
@@ -700,7 +700,7 @@ class AttendanceService {
   private determineAttendanceStatus(checkInTime: Date, type: 'checkin' | 'checkout'): AttendanceStatus {
     const hour = checkInTime.getHours();
     const minute = checkInTime.getMinutes();
-    
+
     if (type === 'checkin') {
       // Late if after 9:30 AM
       if (hour > 9 || (hour === 9 && minute > 30)) {
@@ -708,7 +708,7 @@ class AttendanceService {
       }
       return AttendanceStatus.PRESENT;
     }
-    
+
     return AttendanceStatus.PRESENT;
   }
 
@@ -717,13 +717,13 @@ class AttendanceService {
     const checkInMinute = checkIn.getMinutes();
     const checkOutHour = checkOut.getHours();
     const checkOutMinute = checkOut.getMinutes();
-    
+
     // Check if late (after 9:30 AM)
     const isLate = checkInHour > 9 || (checkInHour === 9 && checkInMinute > 30);
-    
+
     // Check if early departure (before 6:30 PM)
     const isEarlyDeparture = checkOutHour < 18 || (checkOutHour === 18 && checkOutMinute < 30);
-    
+
     if (isLate && isEarlyDeparture) {
       return AttendanceStatus.PARTIAL;
     } else if (isLate) {
@@ -738,7 +738,7 @@ class AttendanceService {
   private calculateWorkHours(checkIn: Date, checkOut: Date): number {
     const diffMs = checkOut.getTime() - checkIn.getTime();
     const diffHours = diffMs / (1000 * 60 * 60);
-    
+
     // Round to 2 decimal places
     return Math.round(diffHours * 100) / 100;
   }
@@ -747,7 +747,7 @@ class AttendanceService {
     // Standard work hours: 9:30 AM to 6:30 PM = 9 hours
     const standardHours = 9;
     const overtime = workHours > standardHours ? workHours - standardHours : 0;
-    
+
     // Round to 2 decimal places
     return Math.round(overtime * 100) / 100;
   }
@@ -756,7 +756,7 @@ class AttendanceService {
   async performAutoCheckout() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     // Find all employees who are checked in but not checked out
     const pendingAttendances = await prisma.attendance.findMany({
       where: {
@@ -772,13 +772,13 @@ class AttendanceService {
     console.log(`🕕 Auto-checkout process: Found ${pendingAttendances.length} employees to check out`);
 
     const results = [];
-    
+
     for (const attendance of pendingAttendances) {
       try {
         // Set checkout time to exactly 6:30 PM
         const checkOutTime = new Date();
         checkOutTime.setHours(18, 30, 0, 0);
-        
+
         const workHours = this.calculateWorkHours(attendance.checkIn!, checkOutTime);
         const overtime = this.calculateOvertime(workHours);
         const finalStatus = this.determineFinalAttendanceStatus(attendance.checkIn!, checkOutTime);
@@ -806,12 +806,12 @@ class AttendanceService {
           ipAddress: 'system',
           userAgent: 'auto-checkout-system',
           oldValues: { checkOut: null },
-          newValues: { 
-            checkOut: checkOutTime, 
-            workHours, 
-            overtime, 
+          newValues: {
+            checkOut: checkOutTime,
+            workHours,
+            overtime,
             status: finalStatus,
-            autoCheckout: true 
+            autoCheckout: true
           },
           reason: 'Automatic checkout at 6:30 PM'
         });
@@ -826,7 +826,7 @@ class AttendanceService {
         });
 
         console.log(`✅ Auto-checkout: ${attendance.employee.name} - ${workHours}h (${overtime}h OT)`);
-        
+
       } catch (error: any) {
         console.error(`❌ Auto-checkout failed for employee ${attendance.employee.name}:`, error.message);
         results.push({

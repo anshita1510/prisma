@@ -1,29 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, Clock, MapPin, Users, Bell, X } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-
-interface AddEventModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: (event: any) => void;
-  selectedDate?: string;
-  editEvent?: CalendarEvent | null;
-}
-
-interface Attendee {
-  id: number;
-  name: string;
-  email: string;
-  role?: string;
-}
+import api from '@/lib/axios';
 
 interface CalendarEvent {
   id: string;
@@ -34,9 +13,59 @@ interface CalendarEvent {
   type: 'MEETING' | 'DEADLINE' | 'MILESTONE' | 'REMINDER' | 'FESTIVAL' | 'HOLIDAY';
   attendees?: string[];
   location?: string;
-  createdBy?: string;
-  notifyAttendees?: boolean;
 }
+
+interface Attendee {
+  id: number;
+  name: string;
+  email: string;
+  role?: string;
+}
+
+interface AddEventModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: (event: any) => void;
+  selectedDate?: string;
+  editEvent?: CalendarEvent | null;
+}
+
+const EVENT_TYPES = [
+  { value: 'MEETING', label: 'Meeting', icon: '👥' },
+  { value: 'DEADLINE', label: 'Deadline', icon: '⏰' },
+  { value: 'MILESTONE', label: 'Milestone', icon: '🏁' },
+  { value: 'REMINDER', label: 'Reminder', icon: '🔔' },
+  { value: 'FESTIVAL', label: 'Festival', icon: '🎉' },
+  { value: 'HOLIDAY', label: 'Holiday', icon: '🏖️' },
+];
+
+const inputStyle = {
+  backgroundColor: 'var(--input-bg)',
+  border: '1px solid var(--card-border)',
+  color: 'var(--text-color)',
+  borderRadius: '10px',
+  padding: '9px 12px',
+  fontSize: '14px',
+  width: '100%',
+  outline: 'none',
+} as const;
+
+const sectionStyle = {
+  backgroundColor: 'var(--bg-subtle)',
+  border: '1px solid var(--card-border)',
+  borderRadius: '12px',
+  padding: '16px',
+} as const;
+
+const labelStyle = {
+  display: 'block',
+  fontSize: '12px',
+  fontWeight: 600,
+  marginBottom: '6px',
+  color: 'var(--text-muted)',
+  textTransform: 'uppercase' as const,
+  letterSpacing: '0.04em',
+};
 
 export function AddEventModal({ isOpen, onClose, onSuccess, selectedDate, editEvent }: AddEventModalProps) {
   const [formData, setFormData] = useState({
@@ -44,11 +73,9 @@ export function AddEventModal({ isOpen, onClose, onSuccess, selectedDate, editEv
     description: '',
     date: selectedDate || '',
     time: '',
-    type: 'MEETING' as 'MEETING' | 'DEADLINE' | 'MILESTONE' | 'REMINDER',
+    type: 'MEETING' as CalendarEvent['type'],
     location: '',
-    notifyAttendees: true,
   });
-  
   const [selectedAttendees, setSelectedAttendees] = useState<number[]>([]);
   const [availableUsers, setAvailableUsers] = useState<Attendee[]>([]);
   const [loading, setLoading] = useState(false);
@@ -56,420 +83,277 @@ export function AddEventModal({ isOpen, onClose, onSuccess, selectedDate, editEv
   const isEditMode = !!editEvent;
 
   useEffect(() => {
-    if (isOpen) {
-      loadCompanyMembers();
-      if (editEvent) {
-        // Populate form with edit data
-        setFormData({
-          title: editEvent.title,
-          description: editEvent.description,
-          date: editEvent.date,
-          time: editEvent.time === 'All Day' ? '' : editEvent.time,
-          type: editEvent.type as any,
-          location: editEvent.location || '',
-          notifyAttendees: true,
-        });
-        // TODO: Map attendee names to IDs when we have the data
-      } else if (selectedDate) {
-        setFormData(prev => ({ ...prev, date: selectedDate }));
-      }
+    if (!isOpen) return;
+    loadCompanyMembers();
+    if (editEvent) {
+      setFormData({
+        title: editEvent.title,
+        description: editEvent.description,
+        date: editEvent.date,
+        time: editEvent.time === 'All Day' ? '' : editEvent.time,
+        type: editEvent.type,
+        location: editEvent.location || '',
+      });
+    } else if (selectedDate) {
+      setFormData(prev => ({ ...prev, date: selectedDate }));
     }
   }, [isOpen, selectedDate, editEvent]);
 
   const loadCompanyMembers = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const userStr = localStorage.getItem('user');
-      const currentUser = userStr ? JSON.parse(userStr) : null;
-      
-      if (!token || !currentUser?.companyId) {
-        console.warn('No token or company ID found');
-        return;
-      }
-
-      // Fetch company members from API
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/employees/company/${currentUser.companyId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Filter out SUPER_ADMIN users
-        const members = (data.data || data)
-          .filter((emp: any) => emp.user?.role !== 'SUPER_ADMIN')
-          .map((emp: any) => ({
-            id: emp.id,
-            name: emp.name || emp.user?.name || 'Unknown',
-            email: emp.email || emp.user?.email || '',
-            role: emp.user?.role || emp.designation || ''
-          }));
-        
-        setAvailableUsers(members);
-        console.log('✅ Loaded company members:', members.length);
-      } else {
-        // Fallback to mock data if API fails
-        console.warn('API failed, using mock data');
-        useMockData();
-      }
-    } catch (error) {
-      console.error('Error loading company members:', error);
-      // Use mock data as fallback
-      useMockData();
+      const res = await api.get('/api/employees');
+      const list = res.data?.data || res.data || [];
+      setAvailableUsers(
+        list
+          .filter((e: any) => e.user?.role !== 'SUPER_ADMIN')
+          .map((e: any) => ({
+            id: e.id,
+            name: e.name || 'Unknown',
+            email: e.user?.email || '',
+            role: e.user?.role || e.designation || '',
+          }))
+      );
+    } catch {
+      setAvailableUsers([]);
     }
-  };
-
-  const useMockData = () => {
-    const mockUsers: Attendee[] = [
-      { id: 1, name: 'John Doe', email: 'john@company.com', role: 'ADMIN' },
-      { id: 2, name: 'Jane Smith', email: 'jane@company.com', role: 'MANAGER' },
-      { id: 3, name: 'Mike Johnson', email: 'mike@company.com', role: 'USER' },
-      { id: 4, name: 'Sarah Wilson', email: 'sarah@company.com', role: 'MANAGER' },
-      { id: 5, name: 'Alex Brown', email: 'alex@company.com', role: 'USER' },
-    ];
-    setAvailableUsers(mockUsers);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.title.trim()) {
-      setError('Event title is required');
-      return;
-    }
-    
-    if (!formData.date) {
-      setError('Event date is required');
-      return;
-    }
-
+    if (!formData.title.trim()) return setError('Event title is required');
+    if (!formData.date) return setError('Event date is required');
     setLoading(true);
     setError('');
-
     try {
-      const userStr = localStorage.getItem('user');
-      const user = userStr ? JSON.parse(userStr) : null;
-
-      const eventData = {
-        id: editEvent?.id || `custom-${Date.now()}`,
+      const startDateTime = formData.time ? `${formData.date}T${formData.time}:00` : `${formData.date}T00:00:00`;
+      const endDateTime = formData.time ? `${formData.date}T${formData.time}:00` : `${formData.date}T23:59:59`;
+      const payload = {
         title: formData.title,
         description: formData.description,
+        startDateTime,
+        endDateTime,
+        isAllDay: !formData.time,
+        eventType: formData.type,
+        location: formData.location,
+        attendeeIds: selectedAttendees,
+      };
+      const res = isEditMode && editEvent?.id
+        ? await api.put(`/api/calendar/events/${editEvent.id}`, payload)
+        : await api.post('/api/calendar/events', payload);
+      const saved = res.data.data;
+      onSuccess({
+        id: String(saved.id),
+        title: saved.title,
+        description: saved.description || '',
         date: formData.date,
         time: formData.time || 'All Day',
         type: formData.type,
         location: formData.location,
-        attendees: selectedAttendees.map(id => 
-          availableUsers.find(u => u.id === id)?.name || ''
-        ).filter(Boolean),
-        createdBy: user?.name || 'Current User',
-        notifyAttendees: formData.notifyAttendees,
-      };
-
-      // TODO: Replace with actual API call
-      // if (isEditMode) {
-      //   await calendarService.updateEvent(eventData.id, eventData);
-      // } else {
-      //   await calendarService.createEvent(eventData);
-      // }
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      console.log(isEditMode ? '✅ Event updated:' : '✅ Event created:', eventData);
-      
-      // Show notification if enabled
-      if (formData.notifyAttendees && selectedAttendees.length > 0) {
-        console.log('📧 Notifications sent to:', selectedAttendees.length, 'attendees');
-      }
-      
-      onSuccess(eventData);
+        attendees: selectedAttendees
+          .map(id => availableUsers.find(u => u.id === id)?.name || '')
+          .filter(Boolean),
+      });
       resetForm();
       onClose();
-    } catch (error) {
-      console.error('❌ Error creating event:', error);
-      setError(error instanceof Error ? error.message : 'Failed to create event');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Failed to save event');
     } finally {
       setLoading(false);
     }
   };
 
   const resetForm = () => {
-    setFormData({
-      title: '',
-      description: '',
-      date: '',
-      time: '',
-      type: 'MEETING',
-      location: '',
-      notifyAttendees: true,
-    });
+    setFormData({ title: '', description: '', date: '', time: '', type: 'MEETING', location: '' });
     setSelectedAttendees([]);
     setError('');
   };
 
-  const handleClose = () => {
-    resetForm();
-    onClose();
-  };
+  const handleClose = () => { resetForm(); onClose(); };
+  const toggle = (id: number) =>
+    setSelectedAttendees(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
-  const toggleAttendee = (userId: number) => {
-    setSelectedAttendees(prev => 
-      prev.includes(userId) 
-        ? prev.filter(id => id !== userId)
-        : [...prev, userId]
-    );
-  };
-
-  const getEventTypeColor = (type: string) => {
-    const colors: Record<string, string> = {
-      'MEETING': 'bg-blue-100 text-blue-800',
-      'DEADLINE': 'bg-red-100 text-red-800',
-      'MILESTONE': 'bg-green-100 text-green-800',
-      'REMINDER': 'bg-yellow-100 text-yellow-800',
-    };
-    return colors[type] || 'bg-gray-100 text-gray-800';
-  };
+  if (!isOpen) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 -mx-6 -mt-6 px-6 py-4 rounded-t-lg">
-          <DialogTitle className="text-white text-xl flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            {isEditMode ? 'Edit Event' : 'Add New Event'}
-          </DialogTitle>
-        </DialogHeader>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}>
+      <div className="w-full max-w-lg max-h-[90vh] flex flex-col rounded-2xl overflow-hidden"
+        style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--card-border)', boxShadow: 'var(--shadow-lg)' }}>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start gap-3">
-            <span className="text-red-500 mt-0.5">⚠️</span>
-            <span>{error}</span>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 flex-shrink-0"
+          style={{ background: 'var(--gradient-PRIMAry)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+          <div className="flex items-center gap-3">
+            <Calendar className="w-5 h-5 text-white" />
+            <h2 className="text-base font-bold text-white">
+              {isEditMode ? 'Edit Event' : 'Add New Event'}
+            </h2>
           </div>
-        )}
+          <button onClick={handleClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg"
+            style={{ background: 'rgba(255,255,255,0.15)', border: 'none', cursor: 'pointer', color: 'white' }}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6 px-2">
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+
+          {error && (
+            <div className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm"
+              style={{ backgroundColor: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171' }}>
+              <span>⚠️</span><span>{error}</span>
+            </div>
+          )}
+
           {/* Event Type */}
-          <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
-            <Label htmlFor="type" className="font-medium mb-2 block">Event Type *</Label>
-            <Select
-              value={formData.type}
-              onValueChange={(value: any) => setFormData({ ...formData, type: value })}
-            >
-              <SelectTrigger id="type">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="MEETING">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4" />
-                    <span>Meeting</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="DEADLINE">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    <span>Deadline</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="MILESTONE">
-                  <div className="flex items-center gap-2">
-                    <Badge className="w-4 h-4" />
-                    <span>Milestone</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="REMINDER">
-                  <div className="flex items-center gap-2">
-                    <Bell className="w-4 h-4" />
-                    <span>Reminder</span>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
+          <div style={sectionStyle}>
+            <label style={labelStyle}>Event Type *</label>
+            <div className="grid grid-cols-3 gap-2">
+              {EVENT_TYPES.map(et => (
+                <button key={et.value} type="button"
+                  onClick={() => setFormData(f => ({ ...f, type: et.value as CalendarEvent['type'] }))}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all"
+                  style={{
+                    backgroundColor: formData.type === et.value ? 'var(--PRIMAry-subtle)' : 'var(--input-bg)',
+                    border: `1px solid ${formData.type === et.value ? 'var(--PRIMAry-color)' : 'var(--card-border)'}`,
+                    color: formData.type === et.value ? 'var(--PRIMAry-color)' : 'var(--text-muted)',
+                    cursor: 'pointer',
+                  }}>
+                  <span>{et.icon}</span><span>{et.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Event Details */}
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="title" className="font-medium">Event Title *</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="e.g., Team Standup Meeting"
-                disabled={loading}
-                className="mt-1"
-              />
-            </div>
+          {/* Title */}
+          <div>
+            <label style={labelStyle}>Event Title *</label>
+            <input value={formData.title}
+              onChange={e => setFormData(f => ({ ...f, title: e.target.value }))}
+              placeholder="e.g., Q2 Planning Meeting"
+              disabled={loading}
+              style={inputStyle} />
+          </div>
 
-            <div>
-              <Label htmlFor="description" className="font-medium">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Add event details, agenda, or notes..."
-                rows={3}
-                disabled={loading}
-                className="mt-1"
-              />
-            </div>
+          {/* Description */}
+          <div>
+            <label style={labelStyle}>Description</label>
+            <textarea value={formData.description}
+              onChange={e => setFormData(f => ({ ...f, description: e.target.value }))}
+              placeholder="Add agenda, notes, or context..."
+              rows={3} disabled={loading}
+              style={{ ...inputStyle, resize: 'none' }} />
           </div>
 
           {/* Date & Time */}
-          <div className="bg-green-50 rounded-lg p-4 border border-green-100">
-            <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-green-600" />
-              Date & Time
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
+          <div style={sectionStyle}>
+            <label style={labelStyle}>
+              <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 inline" /> Date & Time</span>
+            </label>
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="date" className="font-medium">Date *</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  disabled={loading}
-                  className="mt-1"
-                />
+                <label style={{ ...labelStyle, marginBottom: 4 }}>Date *</label>
+                <input type="date" value={formData.date}
+                  onChange={e => setFormData(f => ({ ...f, date: e.target.value }))}
+                  disabled={loading} style={inputStyle} />
               </div>
               <div>
-                <Label htmlFor="time" className="font-medium">Time</Label>
-                <Input
-                  id="time"
-                  type="time"
-                  value={formData.time}
-                  onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                  disabled={loading}
-                  className="mt-1"
-                />
+                <label style={{ ...labelStyle, marginBottom: 4 }}>Time</label>
+                <input type="time" value={formData.time}
+                  onChange={e => setFormData(f => ({ ...f, time: e.target.value }))}
+                  disabled={loading} style={inputStyle} />
               </div>
             </div>
           </div>
 
           {/* Location */}
           <div>
-            <Label htmlFor="location" className="font-medium flex items-center gap-2">
-              <MapPin className="w-4 h-4" />
-              Location
-            </Label>
-            <Input
-              id="location"
-              value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              placeholder="e.g., Conference Room A or Virtual Meeting"
-              disabled={loading}
-              className="mt-1"
-            />
+            <label style={labelStyle}>
+              <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 inline" /> Location</span>
+            </label>
+            <input value={formData.location}
+              onChange={e => setFormData(f => ({ ...f, location: e.target.value }))}
+              placeholder="e.g., Conference Room A or Zoom"
+              disabled={loading} style={inputStyle} />
           </div>
 
           {/* Attendees */}
-          <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-100">
-            <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <Users className="w-4 h-4 text-indigo-600" />
-              Attendees
-            </h3>
-            
-            <div className="space-y-2 max-h-40 overflow-y-auto">
-              {availableUsers.map((user) => (
-                <label
-                  key={user.id}
-                  className="flex items-center gap-3 p-2 hover:bg-indigo-100 rounded cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedAttendees.includes(user.id)}
-                    onChange={() => toggleAttendee(user.id)}
-                    className="w-4 h-4 text-indigo-600"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                      {user.role && (
-                        <Badge className="text-xs bg-gray-200 text-gray-700">
-                          {user.role}
-                        </Badge>
-                      )}
+          <div style={sectionStyle}>
+            <label style={labelStyle}>
+              <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 inline" /> Attendees</span>
+            </label>
+            {availableUsers.length === 0 ? (
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No company members found</p>
+            ) : (
+              <div className="space-y-1 max-h-36 overflow-y-auto">
+                {availableUsers.map(user => (
+                  <label key={user.id}
+                    className="flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer transition-colors"
+                    style={{ backgroundColor: selectedAttendees.includes(user.id) ? 'var(--PRIMAry-subtle)' : 'transparent' }}
+                    onMouseEnter={e => { if (!selectedAttendees.includes(user.id)) (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--bg-color)'; }}
+                    onMouseLeave={e => { if (!selectedAttendees.includes(user.id)) (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}>
+                    <input type="checkbox" checked={selectedAttendees.includes(user.id)}
+                      onChange={() => toggle(user.id)}
+                      style={{ accentColor: 'var(--PRIMAry-color)', width: 16, height: 16 }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate" style={{ color: 'var(--text-color)' }}>
+                        {user.name}
+                        {user.role && <span className="ml-2 text-xs" style={{ color: 'var(--text-muted)' }}>({user.role})</span>}
+                      </p>
+                      <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{user.email}</p>
                     </div>
-                    <p className="text-xs text-gray-500">{user.email}</p>
-                  </div>
-                </label>
-              ))}
-            </div>
+                  </label>
+                ))}
+              </div>
+            )}
 
             {selectedAttendees.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-indigo-200">
-                <p className="text-sm text-gray-600 mb-2">
-                  Selected: {selectedAttendees.length} attendee(s)
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {selectedAttendees.map(id => {
-                    const user = availableUsers.find(u => u.id === id);
-                    return user ? (
-                      <Badge key={id} className="bg-indigo-200 text-indigo-800 flex items-center gap-1">
-                        {user.name}
-                        <X 
-                          className="w-3 h-3 cursor-pointer hover:text-indigo-900" 
-                          onClick={() => toggleAttendee(id)}
-                        />
-                      </Badge>
-                    ) : null;
-                  })}
-                </div>
+              <div className="mt-3 pt-3 flex flex-wrap gap-2" style={{ borderTop: '1px solid var(--card-border)' }}>
+                {selectedAttendees.map(id => {
+                  const u = availableUsers.find(x => x.id === id);
+                  return u ? (
+                    <span key={id}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
+                      style={{ backgroundColor: 'var(--PRIMAry-subtle)', color: 'var(--PRIMAry-color)', border: '1px solid var(--PRIMAry-color)' }}>
+                      {u.name}
+                      <X className="w-3 h-3 cursor-pointer ml-0.5" onClick={() => toggle(id)} />
+                    </span>
+                  ) : null;
+                })}
               </div>
             )}
           </div>
 
-          {/* Notifications */}
-          <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-100">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.notifyAttendees}
-                onChange={(e) => setFormData({ ...formData, notifyAttendees: e.target.checked })}
-                className="w-4 h-4 text-yellow-600"
-              />
-              <div className="flex items-center gap-2">
-                <Bell className="w-4 h-4 text-yellow-600" />
-                <span className="font-medium text-gray-900">
-                  Send notifications to all attendees
-                </span>
-              </div>
-            </label>
-            <p className="text-xs text-gray-600 mt-2 ml-7">
-              Attendees will receive an email notification about this event
-            </p>
-          </div>
+          {/* Email notice */}
+          {selectedAttendees.length > 0 && (
+            <div className="flex items-start gap-3 px-4 py-3 rounded-xl"
+              style={{ backgroundColor: 'var(--accent-subtle)', border: '1px solid var(--accent-color)', opacity: 0.9 }}>
+              <Bell className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: 'var(--accent-color)' }} />
+              <p className="text-sm" style={{ color: 'var(--text-color)' }}>
+                Selected attendees will receive an email notification.
+              </p>
+            </div>
+          )}
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-3 pt-4 border-t">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={handleClose}
-              disabled={loading}
-              className="px-6"
-            >
-              Cancel
-            </Button>
-            <Button 
-              type="submit"
-              disabled={loading}
-              className="px-6 bg-blue-600 hover:bg-blue-700"
-            >
-              {loading ? (
-                <span className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  {isEditMode ? 'Updating...' : 'Creating...'}
-                </span>
-              ) : (
-                isEditMode ? 'Update Event' : 'Create Event'
-              )}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-5 py-4 flex-shrink-0"
+          style={{ borderTop: '1px solid var(--card-border)', backgroundColor: 'var(--bg-subtle)' }}>
+          <button type="button" onClick={handleClose} disabled={loading}
+            className="px-5 py-2.5 rounded-xl text-sm font-medium transition-colors"
+            style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--card-border)', color: 'var(--text-muted)', cursor: 'pointer' }}>
+            Cancel
+          </button>
+          <button onClick={handleSubmit} disabled={loading}
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
+            style={{ background: 'var(--gradient-PRIMAry)', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', boxShadow: '0 4px 14px rgba(109,40,217,0.3)' }}>
+            {loading
+              ? <><span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />{isEditMode ? 'Updating...' : 'Creating...'}</>
+              : isEditMode ? 'Update Event' : 'Create Event'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

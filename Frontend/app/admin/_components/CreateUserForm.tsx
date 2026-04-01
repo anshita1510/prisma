@@ -459,7 +459,7 @@ export default function CreateUserForm() {
               <Input
                 id="phone"
                 type="tel"
-                placeholder="+91 9592003120"
+                placeholder="+1 555 000 0000"
                 value={formData.phone}
                 onChange={(e) => handleInputChange('phone', e.target.value)}
                 className={errors.phone ? 'border-red-500 focus:border-red-500' : ''}

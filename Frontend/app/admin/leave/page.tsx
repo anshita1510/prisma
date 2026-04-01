@@ -2,20 +2,20 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { RefreshCw } from 'lucide-react';
 
 export default function AdminLeavePage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to the new leave management page
     router.replace('/admin/leave-management');
   }, [router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: 'var(--bg-color)' }}>
       <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Redirecting to Leave Management...</p>
+        <RefreshCw className="h-10 w-10 animate-spin mx-auto" style={{ color: 'var(--primary-color)' }} />
+        <p className="mt-4 text-sm" style={{ color: 'var(--text-muted)' }}>Redirecting to Leave Management...</p>
       </div>
     </div>
   );

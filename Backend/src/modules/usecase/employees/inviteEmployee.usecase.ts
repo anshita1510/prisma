@@ -39,8 +39,12 @@ export class InviteEmployeeUsecase {
       throw new Error("Cannot invite Super Admin");
     }
 
+    const t0 = Date.now();
+    console.log(`⏱ [0ms] inviteEmployee started for ${data.email}`);
+
     /* 👤 Check existing user */
     const existingUser = await this.userRepo.findByEmail(data.email);
+    console.log(`⏱ [${Date.now() - t0}ms] findByEmail done`);
     if (existingUser) {
       throw new Error("User with this email already exists");
     }
@@ -50,6 +54,7 @@ export class InviteEmployeeUsecase {
       const existingEmployee = await prisma.employee.findUnique({
         where: { employeeCode: data.employeeCode }
       });
+      console.log(`⏱ [${Date.now() - t0}ms] employeeCode check done`);
       if (existingEmployee) {
         throw new Error("Employee code already exists");
       }
@@ -60,10 +65,15 @@ export class InviteEmployeeUsecase {
     const inviteExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     const tempPassword = crypto.randomBytes(6).toString("hex");
-    const hashedTempPassword = await bcrypt.hash(tempPassword, 10);
-
     const rawOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    const hashedOtp = await bcrypt.hash(rawOtp, 10);
+
+    console.log(`⏱ [${Date.now() - t0}ms] starting bcrypt (parallel)`);
+    const [hashedTempPassword, hashedOtp] = await Promise.all([
+      bcrypt.hash(tempPassword, 8),
+      bcrypt.hash(rawOtp, 8),
+    ]);
+    console.log(`⏱ [${Date.now() - t0}ms] bcrypt done`);
+
     const otpExpiry = new Date(Date.now() + 30 * 60 * 1000);
 
     console.log('🔐 GENERATED CREDENTIALS FOR:', data.email);
@@ -73,63 +83,38 @@ export class InviteEmployeeUsecase {
 
     /* 🏢 Handle Company Creation/Assignment Based on Role */
     let companyId: number | null = null;
-    
+
     if (inviterRole === Role.SUPER_ADMIN) {
-      // SUPER_ADMIN: Can dynamically select company via dropdown
       if (data.companyName) {
-        // Create or find company by name
         const companyCode = typeof data.companyId === 'string' ? data.companyId :
           data.companyName.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 10);
-
+        console.log(`⏱ [${Date.now() - t0}ms] upserting company...`);
         const company = await prisma.company.upsert({
-          where: {
-            code: companyCode
-          },
+          where: { code: companyCode },
           update: {},
-          create: {
-            name: data.companyName,
-            code: companyCode,
-            isActive: true
-          }
+          create: { name: data.companyName, code: companyCode, isActive: true }
         });
         companyId = company.id;
+        console.log(`⏱ [${Date.now() - t0}ms] company upsert done, id=${companyId}`);
       } else if (data.companyId && typeof data.companyId === 'number') {
-        // Use existing company ID
         companyId = data.companyId;
       }
     } else if (inviterRole === Role.ADMIN || inviterRole === Role.MANAGER) {
-      // ADMIN/MANAGER: Use their own company's orgId - they can only create users for their company
-      if (!inviterUserId) {
-        throw new Error("Inviter user ID is required for ADMIN/MANAGER roles");
-      }
-      
+      if (!inviterUserId) throw new Error("Inviter user ID is required for ADMIN/MANAGER roles");
+      console.log(`⏱ [${Date.now() - t0}ms] fetching inviter user...`);
       const inviterUser = await prisma.user.findUnique({
         where: { id: inviterUserId },
-        include: {
-          company: true,
-          employee: {
-            include: {
-              company: true
-            }
-          }
-        }
+        select: { email: true, companyId: true, employee: { select: { companyId: true } } }
       });
-
-      if (!inviterUser) {
-        throw new Error("Inviter user not found");
-      }
-
-      // Get company ID from user's company or employee's company
+      console.log(`⏱ [${Date.now() - t0}ms] inviter user fetched`);
+      if (!inviterUser) throw new Error("Inviter user not found");
       companyId = inviterUser.companyId || inviterUser.employee?.companyId || null;
-      
-      if (!companyId) {
-        throw new Error("Admin/Manager must be associated with a company to invite employees");
-      }
-
-      console.log(`🏢 Admin/Manager ${inviterUser.email} inviting user to company ID: ${companyId}`);
+      if (!companyId) throw new Error("Admin/Manager must be associated with a company to invite employees");
+      console.log(`⏱ [${Date.now() - t0}ms] companyId resolved: ${companyId}`);
     }
 
-    /* 🧑 CREATE USER (FULLY FILLED ✅) */
+    console.log(`⏱ [${Date.now() - t0}ms] creating user in DB...`);
+    /* 🧑 CREATE USER */
     const user = await this.userRepo.create({
       email: data.email,
       firstName: data.firstName,
@@ -147,25 +132,21 @@ export class InviteEmployeeUsecase {
       companyId: companyId,
     });
 
-    /* 🔐 Password setup record */
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        tempPassword: hashedTempPassword,  // already set in create, but safe
-        otp: hashedOtp,
-        otpExpiry: otpExpiry,
-      },
-    });
+    console.log(`⏱ [${Date.now() - t0}ms] user created, id=${user.id}`);
 
-    /* 🏢 CREATE EMPLOYEE RECORD */
-    await this.createEmployeeRecord(user.id, { ...data, companyId });
+    /* 🏢 CREATE EMPLOYEE RECORD (non-blocking) */
+    setTimeout(() => {
+      this.createEmployeeRecord(user.id, { ...data, companyId }).catch((e: any) =>
+        console.error('❌ createEmployeeRecord failed:', e.message)
+      );
+    }, 0);
 
-    /* 📧 Send invite email (non-blocking) */
-    // Send email asynchronously without waiting for it to complete
-    this.sendEmailUseCase.execute({
-      to: data.email,
-      subject: "Welcome to PRIMA - Your Account is Ready!",
-      html: `
+    /* 📧 Send invite email (non-blocking, fully deferred) */
+    setTimeout(() => {
+      this.sendEmailUseCase.execute({
+        to: data.email,
+        subject: "Welcome to PRIMA - Your Account is Ready!",
+        html: `
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -268,12 +249,13 @@ export class InviteEmployeeUsecase {
         </body>
         </html>
       `,
-    }).catch((emailError: any) => {
-      console.error('❌ Failed to send invitation email:', emailError.message);
-      // Email failure doesn't affect user creation success
-    });
+      }).catch((emailError: any) => {
+        console.error('❌ Failed to send invitation email:', emailError.message);
+        // Email failure doesn't affect user creation success
+      });
+    }, 0); // defer fully off the current call stack
 
-    console.log('✅ User created successfully, email being sent in background');
+    console.log(`⏱ [${Date.now() - t0}ms] ✅ execute() complete — sending response`);
 
     return {
       message: "User created successfully! Invitation email is being sent in the background.",

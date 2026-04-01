@@ -121,14 +121,14 @@ export class UserController {
         companyId
       });
 
-      if (!email || !firstName || !lastName || !phone || !designation || !role) {
+      if (!email || !firstName || !lastName || !phone || !designation) {
         console.log('❌ Missing required fields:', {
           email: !!email,
           firstName: !!firstName,
           lastName: !!lastName,
           phone: !!phone,
           designation: !!designation,
-          role: !!role
+          // role: !!role
         });
         return res.status(400).json({ error: "All fields are required" });
       }
@@ -141,19 +141,27 @@ export class UserController {
 
       console.log('✅ All validations passed, calling usecase...');
 
-      await inviteEmployeeUsecase.execute(user.role, {
-        email,
-        firstName,
-        lastName,
-        phone,
-        designation,
-        role: role as Role,
-        employeeCode,
-        companyName,
-        companyId,
-      }, user.id); // Pass the inviter's user ID
+      const t0 = Date.now();
+      const usecaseTimeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Request timed out. Please try again.')), 12000)
+      );
 
-      console.log('✅ Usecase executed successfully');
+      await Promise.race([
+        inviteEmployeeUsecase.execute(user.role, {
+          email,
+          firstName,
+          lastName,
+          phone,
+          designation,
+          role: role as Role,
+          employeeCode,
+          companyName,
+          companyId,
+        }, user.id),
+        usecaseTimeout
+      ]);
+
+      console.log(`✅ Usecase done in ${Date.now() - t0}ms`);
       console.log('Auth is here: ', req.body.authorization);
       console.log("REQ.USER 👉", user);
 
@@ -709,7 +717,7 @@ export class UserController {
         const superAdminCount = await prisma.user.count({
           where: { role: Role.SUPER_ADMIN }
         });
-        
+
         if (superAdminCount <= 1) {
           return res.status(400).json({
             success: false,
@@ -1324,6 +1332,45 @@ export class UserController {
       return res.json(postmanCollection);
     } catch (error: any) {
       return res.status(500).json({ error: error.message });
+    }
+  }
+
+  /* ================= VERIFY EMAIL TOKEN ================= */
+  async verifyEmail(req: Request, res: Response) {
+    try {
+      const { token } = req.body;
+      if (!token) {
+        return res.status(400).json({ error: 'Token is required' });
+      }
+
+      // Check if user with token exists
+      const user = await prisma.user.findUnique({
+        where: { verificationToken: token }
+      });
+
+      if (!user) {
+        return res.status(400).json({ error: 'Invalid or expired verification token' });
+      }
+
+      // Verify the user
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          isVerified: true,
+          isActive: true,
+          status: 'ACTIVE',
+          verificationToken: null,
+          updatedAt: new Date()
+        }
+      });
+
+      return res.json({
+        success: true,
+        message: 'Account verified successfully. You can now log in.'
+      });
+    } catch (error: any) {
+      console.error('Email verification error:', error);
+      return res.status(500).json({ error: 'Failed to verify email' });
     }
   }
 }

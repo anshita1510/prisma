@@ -18,6 +18,7 @@ import newProjectRoutes from './modules/routes/project/project.routes';
 import employeeRoutes from './modules/routes/employee.routes';
 import calendarRoutes from './modules/routes/calendar.routes';
 import companyRoutes from './modules/routes/company.routes';
+import ceoRoutes from './modules/routes/ceo.routes';
 import dashboardRoutes from './modules/routes/dashboard.routes';
 import analyticsRoutes from './modules/routes/analytics.routes';
 import { errorHandler } from './middlewares/validation.middleware';
@@ -28,6 +29,21 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5004;
+
+// ✅ Request Logger with timing
+app.use((req, res, next) => {
+  const start = Date.now();
+  console.log(`➡️  ${req.method} ${req.url}`);
+  res.on('finish', () => {
+    console.log(`✅ ${req.method} ${req.url} → ${res.statusCode} [${Date.now() - start}ms]`);
+  });
+  res.on('close', () => {
+    if (!res.writableEnded) {
+      console.log(`⚠️  ${req.method} ${req.url} → CONNECTION CLOSED before response [${Date.now() - start}ms]`);
+    }
+  });
+  next();
+});
 
 // Security middleware
 app.use(helmet({
@@ -129,6 +145,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/companies', companyRoutes);
+app.use('/api/ceos', ceoRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/analytics', analyticsRoutes);
 

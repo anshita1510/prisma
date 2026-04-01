@@ -10,6 +10,7 @@ import { AddTeamMemberModal } from '@/components/team/AddTeamMemberModal';
 import { AddManagerTeamMemberModal } from '@/components/team/AddManagerTeamMemberModal';
 import { employeeService } from '@/app/services/employeeService';
 import { teamService } from '@/app/services/teamService';
+import api from '@/lib/axios';
 import {
   Users,
   Plus,
@@ -60,7 +61,7 @@ export default function TeamPage() {
     } else {
       loadTeamMembers();
     }
-    
+
     // Load projects for filtering
     loadProjects();
   }, []);
@@ -69,54 +70,39 @@ export default function TeamPage() {
     setLoading(true);
     setDebugInfo('Loading team members...');
     try {
-      console.log('🔍 Fetching team members...');
-      
-      // Get user from localStorage to get company ID
       const userStr = localStorage.getItem('user');
       const user = userStr ? JSON.parse(userStr) : null;
       const companyId = user?.companyId;
 
-      if (!companyId) {
-        console.warn('⚠️ Company ID not found in user data');
-        setDebugInfo('Company ID not found. Please log in again.');
-        setTeamMembers([]);
-        setLoading(false);
-        return;
-      }
+      // Use companyId filter if available, otherwise let backend scope by auth user
+      const url = companyId
+        ? `/api/employees?companyId=${companyId}`
+        : '/api/employees';
 
-      const result = await employeeService.getCompanyEmployees(companyId);
-      console.log('📊 Employees result:', result);
+      const response = await api.get(url);
+      const data = response.data?.data || response.data || [];
+      const list = Array.isArray(data) ? data : [];
 
-      if (result.success && result.data && Array.isArray(result.data)) {
-        console.log('✅ Found employees:', result.data.length);
-        
-        // Transform employees to team members
-        const members: TeamMember[] = result.data.map((emp: any) => ({
-          id: emp.id || emp.employeeId,
-          name: emp.name,
-          email: emp.email || emp.user?.email || '',
-          role: emp.role || emp.user?.role || 'EMPLOYEE',
-          designation: emp.designation || 'Employee',
-          avatar: employeeService.generateAvatarInitials(emp.name),
-          status: emp.status || 'ACTIVE',
-          activeTasks: emp.activeTasks || 0,
-          completedTasks: emp.completedTasks || 0,
-          location: emp.location || 'Not specified',
-          phone: emp.phone || emp.user?.phone || 'N/A',
-          isActive: emp.isActive !== false,
-        }));
+      const members: TeamMember[] = list.map((emp: any) => ({
+        id: emp.id || emp.employeeId,
+        name: emp.name || 'Unknown',
+        email: emp.email || emp.user?.email || '',
+        role: emp.role || emp.user?.role || 'EMPLOYEE',
+        designation: emp.designation || 'Employee',
+        avatar: employeeService.generateAvatarInitials(emp.name || 'U'),
+        status: emp.status || 'ACTIVE',
+        activeTasks: emp.activeTasks || 0,
+        completedTasks: emp.completedTasks || 0,
+        location: emp.location || 'Not specified',
+        phone: emp.phone || emp.user?.phone || 'N/A',
+        isActive: emp.isActive !== false,
+      }));
 
-        setTeamMembers(members);
-        setDebugInfo(`✅ Loaded ${members.length} team members`);
-        console.log('✅ Team members loaded:', members.length);
-      } else {
-        console.warn('⚠️ No employees found or API error');
-        setDebugInfo('No team members found. Create one to get started.');
-        setTeamMembers([]);
-      }
-    } catch (error) {
+      setTeamMembers(members);
+      setDebugInfo(members.length > 0 ? `✅ Loaded ${members.length} team members` : 'No team members found.');
+    } catch (error: any) {
       console.error('❌ Error loading team members:', error);
-      setDebugInfo(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setDebugInfo(`Error: ${error?.response?.data?.message || error?.message || 'Failed to load team members'}`);
       setTeamMembers([]);
     } finally {
       setLoading(false);
@@ -128,13 +114,13 @@ export default function TeamPage() {
     setDebugInfo('Loading your team members...');
     try {
       console.log('🔍 Fetching manager team members...');
-      
+
       const result = await teamService.getManagerTeamMembers();
       console.log('📊 Team members result:', result);
 
       if (result.success && result.data && Array.isArray(result.data)) {
         console.log('✅ Found team members:', result.data.length);
-        
+
         // Transform employees to team members
         const members: TeamMember[] = result.data.map((emp: any) => ({
           id: emp.id || emp.employeeId,
@@ -172,7 +158,7 @@ export default function TeamPage() {
     try {
       const userStr = localStorage.getItem('user');
       const user = userStr ? JSON.parse(userStr) : null;
-      
+
       if (!user?.companyId) return;
 
       const { dynamicProjectService } = await import('@/app/services/dynamicProjectService');
@@ -230,7 +216,7 @@ export default function TeamPage() {
     const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       member.designation.toLowerCase().includes(searchTerm.toLowerCase()) ||
       member.email.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     // Project filter
     if (selectedProject !== 'all') {
       const project = projects.find(p => p.id === parseInt(selectedProject));
@@ -240,7 +226,7 @@ export default function TeamPage() {
       }
       return false;
     }
-    
+
     return matchesSearch;
   });
 
@@ -249,37 +235,31 @@ export default function TeamPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen">
+      <div className="flex min-h-screen" style={{ backgroundColor: 'var(--bg-color)' }}>
         <Sidebar />
-        <main style={{ marginLeft: '64px', width: 'calc(100% - 64px)', minHeight: '100vh' }}>
-          <div className="p-6">
-            <div className="animate-fade-in">
-              <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-PRIMAry"></div>
-              </div>
-            </div>
-          </div>
+        <main className="flex-1 min-w-0 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2" style={{ borderColor: 'var(--primary-color)' }} />
         </main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="flex min-h-screen" style={{ backgroundColor: 'var(--bg-color)' }}>
       <Sidebar />
-      <main style={{ marginLeft: '64px', width: 'calc(100% - 64px)', minHeight: '100vh' }}>
+      <main className="flex-1 min-w-0 pt-[57px] lg:pt-0">
         <div className="p-6">
-          <div className="space-y-6 animate-fade-in">
+          <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="text-2xl font-bold" style={{ color: 'var(--text-color)' }}>
                   {isManager ? 'My Team' : 'Enhanced Team'}
                 </h1>
-                <p className="text-gray-600 mt-1">Manage your team members and their activities</p>
+                <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Manage your team members and their activities</p>
               </div>
               {isManager && (
-                <Button 
+                <Button
                   className="flex items-center gap-2"
                   onClick={() => setIsAddMemberOpen(true)}
                 >
@@ -288,7 +268,7 @@ export default function TeamPage() {
                 </Button>
               )}
               {isAdmin && (
-                <Button 
+                <Button
                   className="flex items-center gap-2"
                   onClick={() => router.push('/admin/manage-users')}
                 >
@@ -300,36 +280,30 @@ export default function TeamPage() {
 
             {/* Debug Info */}
             {debugInfo && (
-              <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg">
-                <p className="text-sm">{debugInfo}</p>
+              <div className="px-4 py-3 rounded-xl text-sm"
+                style={{ backgroundColor: 'var(--primary-subtle)', color: 'var(--primary-color)', border: '1px solid var(--card-border)' }}>
+                {debugInfo}
               </div>
             )}
 
             {/* Search and Filter */}
             <div className="flex items-center gap-4">
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search team members..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+                <input type="text" placeholder="Search team members..." value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm outline-none"
+                  style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--card-border)', color: 'var(--text-color)' }} />
               </div>
-              
+
               {/* Project Filter */}
               {projects.length > 0 && (
-                <select
-                  value={selectedProject}
-                  onChange={(e) => setSelectedProject(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                >
+                <select value={selectedProject} onChange={e => setSelectedProject(e.target.value)}
+                  className="px-4 py-2.5 rounded-xl text-sm outline-none"
+                  style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--card-border)', color: 'var(--text-color)' }}>
                   <option value="all">All Team Members</option>
-                  {projects.map((project) => (
-                    <option key={project.id} value={project.id.toString()}>
-                      Project: {project.name}
-                    </option>
+                  {projects.map(project => (
+                    <option key={project.id} value={project.id.toString()}>Project: {project.name}</option>
                   ))}
                 </select>
               )}
@@ -469,7 +443,7 @@ export default function TeamPage() {
                   {searchTerm ? 'Try adjusting your search terms' : 'Get started by adding your first team member'}
                 </p>
                 {isManager && (
-                  <Button 
+                  <Button
                     className="flex items-center gap-2 mx-auto"
                     onClick={() => setIsAddMemberOpen(true)}
                   >

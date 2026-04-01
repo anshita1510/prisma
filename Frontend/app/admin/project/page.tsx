@@ -8,7 +8,7 @@ export default function AdminProjectPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar />
-      
+
       {/* Main content with proper offset for sidebar - 64px (16 * 4) on desktop */}
       <div className="lg:ml-16 min-h-screen pt-16 lg:pt-0">
         {/* Page Header */}
@@ -25,7 +25,7 @@ export default function AdminProjectPage() {
             <span className="text-sm text-gray-500">Full Access</span>
           </div>
         </div>
-        
+
         {/* Project Management Content */}
         <div className="p-4 sm:p-6 max-w-7xl mx-auto">
           <ProjectManagementDashboard />

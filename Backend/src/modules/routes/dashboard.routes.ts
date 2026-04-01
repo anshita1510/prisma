@@ -55,6 +55,17 @@ router.post('/seed', authenticateToken, authorize(Role.SUPER_ADMIN), dashboardCo
 
 /**
  * @swagger
+ * /api/dashboard/admin-stats:
+ *   get:
+ *     summary: Get dashboard statistics (Admin only)
+ *     tags: [Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get('/admin-stats', authenticateToken, authorize(Role.ADMIN), dashboardController.getAdminDashboardStats);
+
+/**
+ * @swagger
  * /api/dashboard/debug:
  *   get:
  *     summary: Debug database contents (SuperAdmin only)

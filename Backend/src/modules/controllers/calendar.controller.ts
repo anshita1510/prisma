@@ -10,9 +10,9 @@ export class CalendarController {
 
   createEvent = async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).user.userId;
+      const userId = (req as any).user.id;
       const event = await this.calendarService.createEvent(userId, req.body);
-      
+
       res.status(201).json({
         success: true,
         message: 'Event created successfully',
@@ -28,15 +28,15 @@ export class CalendarController {
 
   getEvents = async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).user.userId;
+      const userId = (req as any).user.id;
       const { startDate, endDate, eventType } = req.query;
-      
+
       const events = await this.calendarService.getEvents(userId, {
         startDate: startDate as string,
         endDate: endDate as string,
         eventType: eventType as string
       });
-      
+
       res.status(200).json({
         success: true,
         data: events
@@ -53,7 +53,7 @@ export class CalendarController {
     try {
       const { id } = req.params;
       const event = await this.calendarService.getEventById(parseInt(id));
-      
+
       res.status(200).json({
         success: true,
         data: event
@@ -69,10 +69,10 @@ export class CalendarController {
   updateEvent = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const userId = (req as any).user.userId;
-      
+      const userId = (req as any).user.id;
+
       const event = await this.calendarService.updateEvent(parseInt(id), userId, req.body);
-      
+
       res.status(200).json({
         success: true,
         message: 'Event updated successfully',
@@ -89,10 +89,10 @@ export class CalendarController {
   deleteEvent = async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const userId = (req as any).user.userId;
-      
+      const userId = (req as any).user.id;
+
       await this.calendarService.deleteEvent(parseInt(id), userId);
-      
+
       res.status(200).json({
         success: true,
         message: 'Event deleted successfully'
@@ -109,9 +109,9 @@ export class CalendarController {
     try {
       const { id } = req.params;
       const { attendeeIds } = req.body;
-      
+
       const attendees = await this.calendarService.addAttendees(parseInt(id), attendeeIds);
-      
+
       res.status(200).json({
         success: true,
         message: 'Attendees added successfully',
@@ -129,13 +129,13 @@ export class CalendarController {
     try {
       const { id, attendeeId } = req.params;
       const { status } = req.body;
-      
+
       const attendee = await this.calendarService.updateAttendeeStatus(
         parseInt(id),
         parseInt(attendeeId),
         status
       );
-      
+
       res.status(200).json({
         success: true,
         message: 'Attendee status updated',

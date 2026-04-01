@@ -6,27 +6,22 @@ import { AttendancePage } from '../../user/attendance/pages/AttendancePage';
 
 export default function AdminAttendancePage() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="flex min-h-screen" style={{ backgroundColor: 'var(--bg-color)' }}>
       <Sidebar />
-      
-      {/* Main content with proper offset for sidebar - 64px (16 * 4) on desktop */}
-      <div className="lg:ml-16 min-h-screen pt-16 lg:pt-0">
-        {/* Page Header */}
-        <div className="bg-white px-4 sm:px-6 py-4 sticky top-0 z-10">
-          <h1 className="text-2xl font-bold text-gray-900">My Attendance</h1>
-          <p className="text-gray-600 mt-1">Track your attendance and work hours</p>
-          <div className="mt-2">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-              ADMIN
-            </span>
-          </div>
+      <main className="flex-1 min-w-0 pt-[57px] lg:pt-0">
+        <div className="px-6 py-4 sticky top-0 z-10"
+          style={{ backgroundColor: 'var(--card-bg)', borderBottom: '1px solid var(--card-border)' }}>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--text-color)' }}>My Attendance</h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Track your attendance and work hours</p>
+          <span className="inline-block mt-2 text-xs font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider"
+            style={{ backgroundColor: 'var(--primary-subtle)', color: 'var(--primary-color)' }}>
+            ADMIN
+          </span>
         </div>
-        
-        {/* Attendance Content - Same as Employee */}
-        <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+        <div className="">
           <AttendancePage />
         </div>
-      </div>
+      </main>
     </div>
   );
 }

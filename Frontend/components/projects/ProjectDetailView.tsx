@@ -1,25 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  ArrowLeft,
-  Calendar,
-  Users,
-  User,
-  Building2,
-  Target,
-  Clock,
-  CheckSquare,
-  Activity,
-  AlertCircle,
-  Trash2,
-  Briefcase,
-  Plus
+import {
+  ArrowLeft, Calendar, Users, User, Building2, Target,
+  Clock, CheckSquare, Activity, AlertCircle, Trash2, Briefcase, Plus,
 } from 'lucide-react';
 
 interface ProjectDetailViewProps {
@@ -27,428 +11,313 @@ interface ProjectDetailViewProps {
   tasks: any[];
   onBack: () => void;
   onAddTask: () => void;
-  onDeleteProject: (projectId: number) => void;
-  onDeleteTask: (taskId: number) => void;
-  onUpdateTaskStatus: (taskId: number, status: string) => void;
-  onUpdateProjectStatus?: (projectId: number, status: string) => void;
+  onDeleteProject: (id: number) => void;
+  onDeleteTask: (id: number) => void;
+  onUpdateTaskStatus: (id: number, status: string) => void;
+  onUpdateProjectStatus?: (id: number, status: string) => void;
 }
 
-export function ProjectDetailView({
-  project,
-  tasks,
-  onBack,
-  onAddTask,
-  onDeleteProject,
-  onDeleteTask,
-  onUpdateTaskStatus,
-  onUpdateProjectStatus
-}: ProjectDetailViewProps) {
+const card = {
+  backgroundColor: 'var(--card-bg)',
+  border: '1px solid var(--card-border)',
+  borderRadius: '16px',
+} as const;
+
+const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
+  ACTIVE: { bg: 'rgba(34,197,94,0.12)', color: '#22c55e' },
+  COMPLETED: { bg: 'rgba(59,130,246,0.12)', color: '#60a5fa' },
+  ON_HOLD: { bg: 'rgba(245,158,11,0.12)', color: '#f59e0b' },
+  PLANNING: { bg: 'rgba(167,139,250,0.12)', color: '#a78bfa' },
+  CANCELLED: { bg: 'rgba(239,68,68,0.12)', color: '#f87171' },
+  TODO: { bg: 'rgba(100,116,139,0.12)', color: 'var(--text-muted)' },
+  IN_PROGRESS: { bg: 'rgba(59,130,246,0.12)', color: '#60a5fa' },
+  IN_REVIEW: { bg: 'rgba(245,158,11,0.12)', color: '#f59e0b' },
+};
+
+const PRIORITY_COLORS: Record<string, { bg: string; color: string }> = {
+  LOW: { bg: 'rgba(34,197,94,0.12)', color: '#22c55e' },
+  MEDIUM: { bg: 'rgba(245,158,11,0.12)', color: '#f59e0b' },
+  HIGH: { bg: 'rgba(249,115,22,0.12)', color: '#fb923c' },
+  URGENT: { bg: 'rgba(239,68,68,0.12)', color: '#f87171' },
+};
+
+const TASK_STATUSES = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'CANCELLED'];
+
+const fmtDate = (d: string | Date) => {
+  if (!d) return 'N/A';
+  return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+};
+
+const daysRemaining = (end: string) => {
+  if (!end) return 'N/A';
+  const diff = Math.ceil((new Date(end).getTime() - Date.now()) / 86400000);
+  return diff > 0 ? `${diff} days` : 'Overdue';
+};
+
+function StatusBadge({ status }: { status: string }) {
+  const s = STATUS_COLORS[status] || { bg: 'var(--bg-subtle)', color: 'var(--text-muted)' };
+  return (
+    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full"
+      style={{ backgroundColor: s.bg, color: s.color }}>
+      {status.replace('_', ' ')}
+    </span>
+  );
+}
+
+function MetricCard({ label, value, icon: Icon, accent, progress }: { label: string; value: string | number; icon: any; accent: string; progress?: number }) {
+  return (
+    <div className="p-5 rounded-2xl" style={{ ...card, borderLeft: `3px solid ${accent}` }}>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{label}</p>
+        <Icon className="w-5 h-5 opacity-30" style={{ color: accent }} />
+      </div>
+      <p className="text-2xl font-bold" style={{ color: 'var(--text-color)' }}>{value}</p>
+      {progress !== undefined && (
+        <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--card-border)' }}>
+          <div className="h-full rounded-full" style={{ width: `${progress}%`, backgroundColor: accent }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SectionCard({ title, icon: Icon, accent, children }: { title: string; icon: any; accent: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl overflow-hidden" style={card}>
+      <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: '1px solid var(--card-border)', backgroundColor: 'var(--bg-subtle)' }}>
+        <Icon className="w-4 h-4" style={{ color: accent }} />
+        <span className="text-sm font-semibold" style={{ color: 'var(--text-color)' }}>{title}</span>
+      </div>
+      <div className="p-5">{children}</div>
+    </div>
+  );
+}
+
+export function ProjectDetailView({ project, tasks, onBack, onAddTask, onDeleteProject, onDeleteTask, onUpdateTaskStatus, onUpdateProjectStatus }: ProjectDetailViewProps) {
   const [activeTab, setActiveTab] = useState('TODO');
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      'ACTIVE': 'bg-green-100 text-green-800',
-      'COMPLETED': 'bg-blue-100 text-blue-800',
-      'ON_HOLD': 'bg-yellow-100 text-yellow-800',
-      'PLANNING': 'bg-purple-100 text-purple-800',
-      'CANCELLED': 'bg-red-100 text-red-800',
-      'TODO': 'bg-gray-100 text-gray-800',
-      'IN_PROGRESS': 'bg-blue-100 text-blue-800',
-      'IN_REVIEW': 'bg-orange-100 text-orange-800',
-    };
-    return colors[status] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getPriorityColor = (priority?: string) => {
-    const colors: Record<string, string> = {
-      'LOW': 'bg-green-100 text-green-800',
-      'MEDIUM': 'bg-yellow-100 text-yellow-800',
-      'HIGH': 'bg-orange-100 text-orange-800',
-      'URGENT': 'bg-red-100 text-red-800',
-    };
-    return colors[priority || ''] || 'bg-gray-100 text-gray-800';
-  };
-
-  const getTasksByStatus = (status: string) => {
-    return tasks.filter(task => task.status === status);
-  };
-
-  const formatDate = (date: string | Date) => {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  const calculateDaysRemaining = (endDate: string) => {
-    if (!endDate) return 'N/A';
-    const today = new Date();
-    const end = new Date(endDate);
-    const diff = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    return diff > 0 ? `${diff} days` : 'Overdue';
-  };
+  const getTasksByStatus = (s: string) => tasks.filter(t => t.status === s);
 
   return (
     <div className="space-y-6">
-      {/* Back Button */}
-      <Button 
-        variant="outline" 
-        onClick={onBack}
-        className="flex items-center gap-2 mb-4"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Projects
-      </Button>
+      {/* Back */}
+      <button onClick={onBack}
+        className="flex items-center gap-2 text-sm font-medium transition-colors"
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+        onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-color)')}
+        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
+        <ArrowLeft className="w-4 h-4" /> Back to Projects
+      </button>
 
       {/* Project Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-6 text-white">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-3">
-              <Briefcase className="w-8 h-8" />
-              <div>
-                <h1 className="text-3xl font-bold">{project.name}</h1>
-                <p className="text-blue-100 mt-1">{project.description}</p>
-              </div>
+      <div className="rounded-2xl p-6 text-white"
+        style={{ background: 'linear-gradient(135deg,#1e40af,#4f46e5,#7c3aed)' }}>
+        <div className="flex items-start justify-between">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}>
+              <Briefcase className="w-6 h-6 text-white" />
             </div>
-            <div className="flex items-center gap-3 mt-4">
-              <Badge className="bg-white/20 text-white border-white/30">
-                {project.status?.replace('_', ' ')}
-              </Badge>
-              {project.progressPercentage && (
-                <Badge className="bg-white/20 text-white border-white/30">
-                  {project.progressPercentage}% Complete
-                </Badge>
-              )}
+            <div>
+              <h1 className="text-2xl font-bold text-white">{project.name}</h1>
+              {project.description && <p className="text-white/70 mt-1 text-sm">{project.description}</p>}
+              <div className="flex items-center gap-2 mt-3">
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: '#fff' }}>
+                  {project.status?.replace('_', ' ')}
+                </span>
+                {project.progressPercentage > 0 && (
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: '#fff' }}>
+                    {project.progressPercentage}% Complete
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-          <Button 
-            variant="outline" 
-            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border-white/30"
-            onClick={() => onDeleteProject(project.id)}
-          >
-            <Trash2 className="w-4 h-4" />
-            Delete
-          </Button>
+          <button onClick={() => onDeleteProject(project.id)}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium"
+            style={{ backgroundColor: 'rgba(239,68,68,0.2)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.3)', cursor: 'pointer' }}>
+            <Trash2 className="w-4 h-4" /> Delete
+          </button>
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-l-4 border-l-blue-600">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 font-medium">Progress</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{project.progressPercentage || 0}%</p>
-              </div>
-              <Target className="w-8 h-8 text-blue-600 opacity-20" />
-            </div>
-            <Progress value={project.progressPercentage || 0} className="mt-3 h-2" />
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-green-600">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 font-medium">Total Tasks</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{project._count?.tasks || 0}</p>
-              </div>
-              <CheckSquare className="w-8 h-8 text-green-600 opacity-20" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-purple-600">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 font-medium">Team Members</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{project._count?.members || 0}</p>
-              </div>
-              <Users className="w-8 h-8 text-purple-600 opacity-20" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-orange-600">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 font-medium">Days Remaining</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{calculateDaysRemaining(project.endDate)}</p>
-              </div>
-              <Clock className="w-8 h-8 text-orange-600 opacity-20" />
-            </div>
-          </CardContent>
-        </Card>
+      {/* Metrics */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <MetricCard label="Progress" value={`${project.progressPercentage || 0}%`} icon={Target} accent="#3b82f6" progress={project.progressPercentage || 0} />
+        <MetricCard label="Total Tasks" value={project._count?.tasks || 0} icon={CheckSquare} accent="#22c55e" />
+        <MetricCard label="Team Members" value={project._count?.members || 0} icon={Users} accent="#a78bfa" />
+        <MetricCard label="Days Remaining" value={daysRemaining(project.endDate)} icon={Clock} accent="#f59e0b" />
       </div>
 
-      {/* Project Details Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Project Info */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Project Information */}
-          <Card>
-            <CardHeader className="bg-gray-50 border-b">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-blue-600" />
-                Project Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <p className="text-sm text-gray-600 font-medium mb-1">Department</p>
-                  <p className="text-gray-900 font-semibold">{project.department?.name || 'N/A'}</p>
+      {/* Details Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="lg:col-span-2 space-y-5">
+          <SectionCard title="Project Information" icon={Building2} accent="#3b82f6">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              {[
+                { label: 'Department', value: project.department?.name || 'N/A' },
+                { label: 'Company', value: project.company?.name || 'N/A' },
+                { label: 'Project Code', value: project.code || 'N/A' },
+              ].map(({ label, value }) => (
+                <div key={label}>
+                  <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>{label}</p>
+                  <p className="font-semibold" style={{ color: 'var(--text-color)' }}>{value}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600 font-medium mb-1">Company</p>
-                  <p className="text-gray-900 font-semibold">{project.company?.name || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 font-medium mb-1">Project Code</p>
-                  <Badge variant="outline">{project.code || 'N/A'}</Badge>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 font-medium mb-2">Status</p>
-                  {onUpdateProjectStatus ? (
-                    <select
-                      value={project.status || 'PLANNING'}
-                      onChange={(e) => onUpdateProjectStatus(project.id, e.target.value)}
-                      className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white font-medium"
-                    >
-                      <option value="PLANNING">Planning</option>
-                      <option value="ACTIVE">Active</option>
-                      <option value="ON_HOLD">On Hold</option>
-                      <option value="COMPLETED">Completed</option>
-                      <option value="CANCELLED">Cancelled</option>
-                    </select>
-                  ) : (
-                    <Badge className={getStatusColor(project.status)}>
-                      {project.status?.replace('_', ' ')}
-                    </Badge>
-                  )}
-                </div>
+              ))}
+              <div>
+                <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Status</p>
+                {onUpdateProjectStatus ? (
+                  <select value={project.status || 'PLANNING'} onChange={e => onUpdateProjectStatus(project.id, e.target.value)}
+                    className="px-3 py-1.5 rounded-lg text-sm outline-none"
+                    style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--card-border)', color: 'var(--text-color)' }}>
+                    {['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED'].map(s => (
+                      <option key={s} value={s}>{s.replace('_', ' ')}</option>
+                    ))}
+                  </select>
+                ) : <StatusBadge status={project.status} />}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </SectionCard>
 
-          {/* Timeline Information */}
-          <Card>
-            <CardHeader className="bg-gray-50 border-b">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-green-600" />
-                Timeline
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <p className="text-sm text-gray-600 font-medium mb-2">Start Date</p>
+          <SectionCard title="Timeline" icon={Calendar} accent="#22c55e">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              {[{ label: 'Start Date', value: fmtDate(project.startDate) }, { label: 'End Date', value: fmtDate(project.endDate) }].map(({ label, value }) => (
+                <div key={label}>
+                  <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>{label}</p>
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-gray-400" />
-                    <p className="text-gray-900 font-semibold">{formatDate(project.startDate)}</p>
+                    <Calendar className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
+                    <p className="font-semibold" style={{ color: 'var(--text-color)' }}>{value}</p>
                   </div>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600 font-medium mb-2">End Date</p>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-gray-400" />
-                    <p className="text-gray-900 font-semibold">{formatDate(project.endDate)}</p>
+              ))}
+            </div>
+          </SectionCard>
+
+          <SectionCard title="Project Manager" icon={User} accent="#a78bfa">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: 'rgba(167,139,250,0.15)' }}>
+                <User className="w-5 h-5" style={{ color: '#a78bfa' }} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: 'var(--text-color)' }}>{project.owner?.name || 'N/A'}</p>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{project.owner?.designation || 'Manager'}</p>
+              </div>
+            </div>
+          </SectionCard>
+        </div>
+
+        <SectionCard title={`Team Members (${project._count?.members || 0})`} icon={Users} accent="#6366f1">
+          {project.projectRoles?.length ? (
+            <div className="space-y-2">
+              {project.projectRoles.map((m: any) => (
+                <div key={m.id} className="flex items-center gap-3 p-2.5 rounded-xl transition-colors"
+                  style={{ backgroundColor: 'var(--bg-subtle)' }}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: 'rgba(99,102,241,0.15)' }}>
+                    <User className="w-4 h-4" style={{ color: '#6366f1' }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate" style={{ color: 'var(--text-color)' }}>{m.employee?.name}</p>
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{m.role}</p>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Project Manager */}
-          <Card>
-            <CardHeader className="bg-gray-50 border-b">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <User className="w-5 h-5 text-purple-600" />
-                Project Manager
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                  <User className="w-6 h-6 text-purple-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-semibold text-gray-900">{project.owner?.name || 'N/A'}</p>
-                  <p className="text-sm text-gray-600">{project.owner?.designation || 'Manager'}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Column - Team Members */}
-        <div>
-          <Card>
-            <CardHeader className="bg-gray-50 border-b">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Users className="w-5 h-5 text-indigo-600" />
-                Team Members ({project._count?.members || 0})
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              {project.projectRoles && project.projectRoles.length > 0 ? (
-                <div className="space-y-3">
-                  {project.projectRoles.map((member: any) => (
-                    <div key={member.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                      <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <User className="w-4 h-4 text-indigo-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{member.employee?.name}</p>
-                        <p className="text-xs text-gray-500">{member.role}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500 text-center py-4">No team members assigned</p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-center py-4" style={{ color: 'var(--text-muted)' }}>No team members assigned</p>
+          )}
+        </SectionCard>
       </div>
 
-      {/* Task Management Section */}
-      <Card>
-        <CardHeader className="bg-gray-50 border-b">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Activity className="w-5 h-5 text-blue-600" />
-              Task Management
-            </CardTitle>
-            <Button 
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
-              onClick={onAddTask}
-            >
-              <Plus className="w-4 h-4" />
-              Add Task
-            </Button>
+      {/* Task Management */}
+      <div className="rounded-2xl overflow-hidden" style={card}>
+        <div className="px-5 py-4 flex items-center justify-between"
+          style={{ borderBottom: '1px solid var(--card-border)', backgroundColor: 'var(--bg-subtle)' }}>
+          <div className="flex items-center gap-2">
+            <Activity className="w-4 h-4" style={{ color: 'var(--primary-color)' }} />
+            <span className="text-sm font-semibold" style={{ color: 'var(--text-color)' }}>Task Management</span>
           </div>
-        </CardHeader>
-        <CardContent className="p-6">
-          {/* Task Status Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-5 mb-6">
-              <TabsTrigger value="TODO" className="flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                <span className="hidden sm:inline">To Do</span>
-                <Badge variant="secondary" className="ml-1">{getTasksByStatus('TODO').length}</Badge>
-              </TabsTrigger>
-              <TabsTrigger value="IN_PROGRESS" className="flex items-center gap-2">
-                <Activity className="w-4 h-4" />
-                <span className="hidden sm:inline">In Progress</span>
-                <Badge variant="secondary" className="ml-1">{getTasksByStatus('IN_PROGRESS').length}</Badge>
-              </TabsTrigger>
-              <TabsTrigger value="IN_REVIEW" className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4" />
-                <span className="hidden sm:inline">In Review</span>
-                <Badge variant="secondary" className="ml-1">{getTasksByStatus('IN_REVIEW').length}</Badge>
-              </TabsTrigger>
-              <TabsTrigger value="COMPLETED" className="flex items-center gap-2">
-                <CheckSquare className="w-4 h-4" />
-                <span className="hidden sm:inline">Completed</span>
-                <Badge variant="secondary" className="ml-1">{getTasksByStatus('COMPLETED').length}</Badge>
-              </TabsTrigger>
-              <TabsTrigger value="CANCELLED" className="flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                <span className="hidden sm:inline">Cancelled</span>
-                <Badge variant="secondary" className="ml-1">{getTasksByStatus('CANCELLED').length}</Badge>
-              </TabsTrigger>
-            </TabsList>
+          <button onClick={onAddTask}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+            style={{ background: 'linear-gradient(135deg,#2563eb,#7c3aed)', border: 'none', cursor: 'pointer' }}>
+            <Plus className="w-4 h-4" /> Add Task
+          </button>
+        </div>
 
-            {/* Task Content for each tab */}
-            {['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED', 'CANCELLED'].map(status => {
-              const filteredTasks = getTasksByStatus(status);
+        <div className="p-5">
+          {/* Tab buttons */}
+          <div className="flex items-center gap-1 flex-wrap mb-5">
+            {TASK_STATUSES.map(s => {
+              const count = getTasksByStatus(s).length;
+              const isActive = activeTab === s;
               return (
-                <TabsContent key={status} value={status} className="mt-0">
-                  {filteredTasks.length === 0 ? (
-                    <div className="text-center py-12">
-                      <CheckSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No {status.toLowerCase().replace('_', ' ')} tasks</h3>
-                      <p className="text-gray-600">Tasks will appear here when they match this status.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {filteredTasks.map((task) => (
-                        <Card key={task.id} className="hover:shadow-md transition-shadow">
-                          <CardContent className="p-4">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-2">
-                                  <h4 className="font-semibold text-gray-900">{task.title}</h4>
-                                  <Badge className={getPriorityColor(task.priority)}>
-                                    {task.priority}
-                                  </Badge>
-                                </div>
-                                
-                                <p className="text-sm text-gray-600 mb-3">{task.description}</p>
-                                
-                                <div className="flex items-center gap-6 text-sm text-gray-500 flex-wrap">
-                                  {task.assignedTo && (
-                                    <div className="flex items-center gap-2">
-                                      <User className="w-4 h-4" />
-                                      <span>{task.assignedTo.name}</span>
-                                    </div>
-                                  )}
-                                  {task.dueDate && (
-                                    <div className="flex items-center gap-2">
-                                      <Calendar className="w-4 h-4" />
-                                      <span>{formatDate(task.dueDate)}</span>
-                                    </div>
-                                  )}
-                                  {task.estimatedHours && (
-                                    <div className="flex items-center gap-2">
-                                      <Clock className="w-4 h-4" />
-                                      <span>{task.actualHours || 0}h / {task.estimatedHours}h</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              <div className="flex items-center gap-2 flex-shrink-0">
-                                <select
-                                  value={task.status || 'TODO'}
-                                  onChange={(e) => onUpdateTaskStatus(task.id, e.target.value)}
-                                  className="px-3 py-1 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                >
-                                  <option value="TODO">To Do</option>
-                                  <option value="IN_PROGRESS">In Progress</option>
-                                  <option value="IN_REVIEW">In Review</option>
-                                  <option value="COMPLETED">Completed</option>
-                                  <option value="CANCELLED">Cancelled</option>
-                                </select>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm"
-                                  onClick={() => onDeleteTask(task.id)}
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </TabsContent>
+                <button key={s} onClick={() => setActiveTab(s)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
+                  style={{
+                    backgroundColor: isActive ? 'var(--primary-color)' : 'var(--input-bg)',
+                    color: isActive ? '#fff' : 'var(--text-muted)',
+                    border: '1px solid var(--card-border)', cursor: 'pointer',
+                  }}>
+                  {s.replace('_', ' ')}
+                  <span className="px-1.5 py-0.5 rounded-full text-xs"
+                    style={{ backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : 'var(--bg-subtle)', color: isActive ? '#fff' : 'var(--text-muted)' }}>
+                    {count}
+                  </span>
+                </button>
               );
             })}
-          </Tabs>
-        </CardContent>
-      </Card>
+          </div>
+
+          {/* Task list */}
+          {getTasksByStatus(activeTab).length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <CheckSquare className="w-10 h-10 opacity-30" style={{ color: 'var(--text-muted)' }} />
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No {activeTab.replace('_', ' ').toLowerCase()} tasks</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {getTasksByStatus(activeTab).map(task => {
+                const p = PRIORITY_COLORS[task.priority] || { bg: 'var(--bg-subtle)', color: 'var(--text-muted)' };
+                return (
+                  <div key={task.id} className="p-4 rounded-xl transition-all"
+                    style={{ backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--card-border)' }}>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className="text-sm font-semibold" style={{ color: 'var(--text-color)' }}>{task.title}</span>
+                          <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                            style={{ backgroundColor: p.bg, color: p.color }}>{task.priority}</span>
+                        </div>
+                        {task.description && <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>{task.description}</p>}
+                        <div className="flex items-center gap-4 text-xs flex-wrap" style={{ color: 'var(--text-muted)' }}>
+                          {task.assignedTo && <div className="flex items-center gap-1"><User className="w-3 h-3" />{task.assignedTo.name}</div>}
+                          {task.dueDate && <div className="flex items-center gap-1"><Calendar className="w-3 h-3" />{fmtDate(task.dueDate)}</div>}
+                          {task.estimatedHours && <div className="flex items-center gap-1"><Clock className="w-3 h-3" />{task.actualHours || 0}h / {task.estimatedHours}h</div>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <select value={task.status || 'TODO'} onChange={e => onUpdateTaskStatus(task.id, e.target.value)}
+                          className="px-2 py-1.5 rounded-lg text-xs outline-none"
+                          style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--card-border)', color: 'var(--text-color)' }}>
+                          {TASK_STATUSES.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+                        </select>
+                        <button onClick={() => onDeleteTask(task.id)}
+                          className="p-1.5 rounded-lg transition-colors"
+                          style={{ backgroundColor: 'rgba(239,68,68,0.1)', color: '#f87171', border: 'none', cursor: 'pointer' }}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
