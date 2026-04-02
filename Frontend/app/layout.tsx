@@ -15,6 +15,10 @@ export const metadata: Metadata = {
   title: "PRIMA - Task & Project Management",
   description: "Comprehensive task and project management system with role-based access control",
   keywords: ["task management", "project management", "team collaboration", "productivity"],
+  icons: {
+    icon: '/prima-logo.svg',
+    shortcut: '/prima-logo.svg',
+  },
 };
 
 /**

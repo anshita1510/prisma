@@ -30,7 +30,8 @@ export const AttendancePage = () => {
     currentDate,
     loading,
     error,
-    todayAttendance
+    todayAttendance,
+    refreshData,
   } = useAttendance();
 
   const { toasts, removeToast } = useToast();
@@ -98,7 +99,7 @@ export const AttendancePage = () => {
               <SessionLogsCard timeSlots={todayAttendance.timeSlots} />
             )}
           </div>
-          <ActionsCard currentTime={currentTime} currentDate={currentDate} />
+          <ActionsCard currentTime={currentTime} currentDate={currentDate} onRefresh={refreshData} />
         </div>
 
         <div className="rounded-xl overflow-hidden"
@@ -112,10 +113,10 @@ export const AttendancePage = () => {
                 ...record,
                 id: typeof record.id === 'string' ? parseInt(record.id, 10) : record.id,
                 date: record.date instanceof Date ? record.date.toISOString().split('T')[0] : record.date,
-                timeSlots: record.timeSlots.map(slot => ({
+                timeSlots: (record.timeSlots || []).map(slot => ({
                   ...slot,
-                  checkIn: slot.checkIn ?? (slot as any).startTime ?? null,
-                  checkOut: slot.checkOut ?? (slot as any).endTime ?? null,
+                  checkIn: (slot as any).checkIn ?? (slot as any).start ?? null,
+                  checkOut: (slot as any).checkOut ?? (slot as any).end ?? null,
                 })),
                 isManuallyEdited: false,
               }))}

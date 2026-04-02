@@ -110,8 +110,8 @@ export const AttendanceLog = ({ records, selectedMonth, onMonthChange }: Attenda
             <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Records will appear here once you start checking in</div>
           </div>
         ) : (
-          records.map(record => (
-            <div key={record.id}
+          records.map((record, idx) => (
+            <div key={`${record.id || 'no-id'}-${record.date}-${idx}`}
               className="grid grid-cols-[140px_1fr_150px_120px_140px_60px] gap-4 px-6 py-4 items-center transition-colors"
               style={{ borderBottom: '1px solid var(--card-border)' }}
               onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-subtle)')}

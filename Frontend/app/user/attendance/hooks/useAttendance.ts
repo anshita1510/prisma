@@ -271,38 +271,34 @@ export const useAttendance = () => {
 
         if (statsResponse.success && logsResponse.success && teamStatsResponse.success) {
           // Convert backend data to frontend format
+          const formatHours = (hours: number) => {
+            const h = Math.floor(hours);
+            const m = Math.round((hours - h) * 60);
+            return `${h}h ${m}m`;
+          };
+
           const convertedLogs = logsResponse.data.map((log: any) => {
-            // Calculate effective hours and gross hours from API data
             const workHours = log.workHours || 0;
-            const effectiveHours = workHours; // Effective hours = work hours
             const grossHours = log.checkIn && log.checkOut
               ? (new Date(log.checkOut).getTime() - new Date(log.checkIn).getTime()) / (1000 * 60 * 60)
               : workHours;
 
-            // Format hours to "Xh Ym" format
-            const formatHours = (hours: number) => {
-              const h = Math.floor(hours);
-              const m = Math.round((hours - h) * 60);
-              return `${h}h ${m}m`;
-            };
-
-            // Convert timeSlots from API format to frontend format
-            const timeSlots = (log.timeSlots || []).map((slot: any) => {
-              const checkInTime = new Date(slot.checkIn);
-              const checkOutTime = new Date(slot.checkOut);
-              return {
-                start: checkInTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-                end: checkOutTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-                type: 'work' as const
-              };
-            });
+            // Preserve raw timeSlots (checkIn/checkOut ISO strings) for AttendanceLog component
+            const timeSlots = (log.timeSlots || []).map((slot: any) => ({
+              checkIn: slot.checkIn || null,
+              checkOut: slot.checkOut || null,
+              // also provide start/end for legacy components
+              start: slot.checkIn ? new Date(slot.checkIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '',
+              end: slot.checkOut ? new Date(slot.checkOut).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '',
+              type: 'work' as const,
+            }));
 
             return {
               id: `att-${log.id}`,
               date: new Date(log.date),
               status: log.status.toLowerCase(),
-              timeSlots: timeSlots,
-              effectiveHours: formatHours(effectiveHours),
+              timeSlots,
+              effectiveHours: formatHours(workHours),
               grossHours: formatHours(grossHours),
               arrivalStatus: log.checkIn ? 'on-time' : 'no-entry',
               arrivalTime: log.checkIn ? new Date(log.checkIn).toLocaleTimeString() : undefined,

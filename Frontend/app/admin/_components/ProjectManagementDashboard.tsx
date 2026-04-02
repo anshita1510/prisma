@@ -7,25 +7,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
 } from '@/components/ui/dialog';
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
-  FolderOpen, 
-  Plus, 
-  Calendar, 
-  Users, 
+import {
+  FolderOpen,
+  Plus,
+  Calendar,
+  Users,
   MoreVertical,
   Search,
   Filter,
@@ -66,16 +66,16 @@ export default function ProjectManagementDashboard({ className }: ProjectManagem
   useEffect(() => {
     const currentUser = authService.getStoredUser();
     setUser(currentUser);
-    if (currentUser) {
-      loadProjects();
-      loadDashboardStats();
+    if (currentUser && currentUser.companyId) {
+      loadProjects(currentUser.companyId);
+      loadDashboardStats(currentUser.companyId);
     }
   }, []);
 
-  const loadProjects = async () => {
+  const loadProjects = async (companyId: number) => {
     try {
       setLoading(true);
-      const result = await projectService.getAllProjects(2); // Company ID 2
+      const result = await projectService.getAllProjects(companyId);
       if (result.success) {
         setProjects(result.data);
       }
@@ -86,9 +86,9 @@ export default function ProjectManagementDashboard({ className }: ProjectManagem
     }
   };
 
-  const loadDashboardStats = async () => {
+  const loadDashboardStats = async (companyId: number) => {
     try {
-      const result = await projectService.getDashboardStats(2); // Company ID 2
+      const result = await projectService.getDashboardStats(companyId);
       if (result.success) {
         setDashboardStats(result.data);
       }
@@ -98,8 +98,11 @@ export default function ProjectManagementDashboard({ className }: ProjectManagem
   };
 
   const loadAvailableEmployees = async () => {
+    const companyId = user?.companyId;
+    if (!companyId) return;
+
     try {
-      const result = await projectService.getAvailableEmployees(2); // Company ID 2
+      const result = await projectService.getAvailableEmployees(companyId);
       if (result.success) {
         setAvailableEmployees(result.data);
       }
@@ -110,7 +113,9 @@ export default function ProjectManagementDashboard({ className }: ProjectManagem
 
   const handleProjectCreated = (newProject: Project) => {
     setProjects(prev => [newProject, ...prev]);
-    loadDashboardStats();
+    if (user?.companyId) {
+      loadDashboardStats(user.companyId);
+    }
   };
 
   const handleDeleteProject = async (projectId: number) => {
@@ -120,7 +125,9 @@ export default function ProjectManagementDashboard({ className }: ProjectManagem
       const result = await projectService.deleteProject(projectId);
       if (result.success) {
         setProjects(prev => prev.filter(p => p.id !== projectId));
-        loadDashboardStats();
+        if (user?.companyId) {
+          loadDashboardStats(user.companyId);
+        }
         alert('Project deleted successfully');
       } else {
         alert(`Failed to delete project: ${result.message}`);
@@ -191,7 +198,7 @@ export default function ProjectManagementDashboard({ className }: ProjectManagem
 
   const filteredProjects = projects.filter(project => {
     const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      project.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -247,7 +254,7 @@ export default function ProjectManagementDashboard({ className }: ProjectManagem
             <CardContent>
               <div className="text-2xl font-bold text-green-600">{dashboardStats.projects.completed}</div>
               <p className="text-xs text-muted-foreground mt-1">
-                {dashboardStats.projects.total > 0 ? 
+                {dashboardStats.projects.total > 0 ?
                   Math.round((dashboardStats.projects.completed / dashboardStats.projects.total) * 100) : 0}% completion rate
               </p>
             </CardContent>
@@ -318,22 +325,22 @@ export default function ProjectManagementDashboard({ className }: ProjectManagem
                   </Badge>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     size="sm"
                     onClick={() => handleViewProject(project)}
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     size="sm"
                     onClick={() => handleManageTeam(project)}
                   >
                     <Users className="w-4 h-4" />
                   </Button>
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     size="sm"
                     onClick={() => handleDeleteProject(project.id)}
                     className="text-red-600 hover:text-red-700"
@@ -347,7 +354,7 @@ export default function ProjectManagementDashboard({ className }: ProjectManagem
                 {project.description}
               </CardDescription>
             </CardHeader>
-            
+
             <CardContent className="space-y-4">
               {/* Progress */}
               <div className="space-y-2">
@@ -400,8 +407,8 @@ export default function ProjectManagementDashboard({ className }: ProjectManagem
           <FolderOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No projects found</h3>
           <p className="text-gray-600 mb-4">
-            {searchTerm || statusFilter !== 'all' 
-              ? 'Try adjusting your search or filter criteria' 
+            {searchTerm || statusFilter !== 'all'
+              ? 'Try adjusting your search or filter criteria'
               : 'Get started by creating your first project'}
           </p>
           <CreateProjectForm onProjectCreated={handleProjectCreated} />

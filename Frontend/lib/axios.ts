@@ -3,7 +3,7 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5004',
-  timeout: 30000, // Increased from 10000 to 30000 (30 seconds)
+  timeout: 20000,
   headers: {
     'Content-Type': 'application/json',
   },

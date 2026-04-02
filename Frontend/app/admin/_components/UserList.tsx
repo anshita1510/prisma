@@ -7,34 +7,35 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Users, 
-  Search, 
-  Filter, 
-  Mail, 
-  Phone, 
-  User, 
-  Shield, 
+import {
+  Users,
+  Search,
+  Filter,
+  Mail,
+  Phone,
+  User,
+  Shield,
   Briefcase,
   CheckCircle,
   XCircle,
   Clock,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Hash
 } from 'lucide-react';
 import { userService, User as UserType } from '@/app/services/userService';
 
 const STATUS_COLORS = {
-  ACTIVE: 'bg-green-100 text-green-800',
-  PENDING: 'bg-yellow-100 text-yellow-800',
-  INACTIVE: 'bg-red-100 text-red-800'
+  ACTIVE: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800/50',
+  PENDING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800/50',
+  INACTIVE: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800/50'
 };
 
 const ROLE_COLORS = {
-  SUPER_ADMIN: 'bg-purple-100 text-purple-800',
-  ADMIN: 'bg-blue-100 text-blue-800',
-  MANAGER: 'bg-indigo-100 text-indigo-800',
-  EMPLOYEE: 'bg-gray-100 text-gray-800'
+  SUPER_ADMIN: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800/50',
+  ADMIN: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800/50',
+  MANAGER: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800/50',
+  EMPLOYEE: 'bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-300 dark:border-gray-700/50'
 };
 
 export default function UserList() {
@@ -45,6 +46,7 @@ export default function UserList() {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [error, setError] = useState<string | null>(null);
+  const [expandedUserId, setExpandedUserId] = useState<number | null>(null);
 
   useEffect(() => {
     loadUsers();
@@ -57,13 +59,19 @@ export default function UserList() {
   const loadUsers = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const result = await userService.getUsers();
       if (result.success) {
         setUsers(result.data);
       } else {
-        setError(result.message || 'Failed to load users');
+        // 403 means the role doesn't have access — show empty list gracefully
+        if (result.message?.includes('403') || result.message?.toLowerCase().includes('forbidden')) {
+          setUsers([]);
+          setError('You do not have permission to view all users.');
+        } else {
+          setError(result.message || 'Failed to load users');
+        }
       }
     } catch (error) {
       console.error('Error loading users:', error);
@@ -123,11 +131,13 @@ export default function UserList() {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-12">
+      <Card className="premium-card">
+        <CardContent className="flex items-center justify-center py-20">
           <div className="text-center">
-            <RefreshCw className="w-8 h-8 animate-spin text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">Loading users...</p>
+            <div className="w-16 h-16 rounded-full bg-PRIMAry/10 flex items-center justify-center mx-auto mb-4">
+              <RefreshCw className="w-8 h-8 animate-spin text-PRIMAry" />
+            </div>
+            <p className="text-muted-foreground font-medium">Loading users...</p>
           </div>
         </CardContent>
       </Card>
@@ -135,20 +145,22 @@ export default function UserList() {
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Users className="w-6 h-6 text-blue-600" />
+    <div className="space-y-6 max-w-5xl mx-auto">
+      <Card className="premium-card border-border shadow-xl bg-card/95 backdrop-blur-sm">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 icon-box">
+                <Users className="w-6 h-6" />
+              </div>
               <div>
-                <CardTitle className="text-2xl font-bold">User Management</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-2xl font-bold">User Database</CardTitle>
+                <CardDescription className="text-muted-foreground mt-1">
                   Manage and view all users in the system ({filteredUsers.length} of {users.length} users)
                 </CardDescription>
               </div>
             </div>
-            <Button onClick={loadUsers} variant="outline" size="sm">
+            <Button onClick={loadUsers} variant="outline" size="sm" className="btn-outline-theme whitespace-nowrap">
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
             </Button>
@@ -178,7 +190,7 @@ export default function UserList() {
                 />
               </div>
             </div>
-            
+
             <Select value={roleFilter} onValueChange={setRoleFilter}>
               <SelectTrigger className="w-[150px]">
                 <Filter className="w-4 h-4 mr-2" />
@@ -209,81 +221,108 @@ export default function UserList() {
 
           {/* Users Grid */}
           {filteredUsers.length === 0 ? (
-            <div className="text-center py-12">
-              <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
-              <p className="text-gray-500">
+            <div className="text-center py-16 bg-muted/20 rounded-xl border border-dashed border-border mt-6">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-medium text-foreground mb-2">No users found</h3>
+              <p className="text-muted-foreground max-w-sm mx-auto">
                 {searchTerm || roleFilter !== 'all' || statusFilter !== 'all'
                   ? 'Try adjusting your filters to see more users.'
                   : 'No users have been created yet.'}
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredUsers.map((user) => (
-                <Card key={user.id} className="hover:shadow-lg transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                          <User className="w-6 h-6 text-blue-600" />
+            <div className="space-y-4">
+              {filteredUsers.map((user) => {
+                const isExpanded = expandedUserId === user.id;
+
+                return (
+                  <Card key={user.id} className={`transition-all bg-card border overflow-hidden ${isExpanded ? 'border-PRIMAry ring-1 ring-PRIMAry/50 shadow-md' : 'border-border hover:border-border/80 hover:shadow-md'}`}>
+                    {/* Header Row - Minimal Inline Info */}
+                    <div
+                      className="p-4 flex flex-col sm:flex-row items-center justify-between cursor-pointer hover:bg-muted/20 transition-colors"
+                      onClick={() => setExpandedUserId(isExpanded ? null : user.id)}
+                    >
+                      <div className="flex items-center space-x-4 w-full sm:w-auto">
+                        <div className="w-10 h-10 icon-box rounded-full flex-shrink-0">
+                          <User className="w-5 h-5" />
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-foreground truncate">
                             {user.firstName} {user.lastName}
                           </h3>
-                          <p className="text-sm text-gray-500">{user.designation}</p>
+                          <p className="text-sm text-muted-foreground truncate">{user.email}</p>
                         </div>
                       </div>
-                      <div className="flex flex-col items-end space-y-2">
+
+                      <div className="flex items-center gap-3 mt-4 sm:mt-0 w-full sm:w-auto sm:ml-auto">
+                        <Badge className={`${ROLE_COLORS[user.role as keyof typeof ROLE_COLORS]} hidden md:inline-flex`}>
+                          {user.role}
+                        </Badge>
                         <Badge className={STATUS_COLORS[user.status as keyof typeof STATUS_COLORS]}>
                           <div className="flex items-center space-x-1">
                             {getStatusIcon(user.status)}
-                            <span>{user.status}</span>
+                            <span className="hidden sm:inline">{user.status}</span>
                           </div>
                         </Badge>
-                        <Badge className={ROLE_COLORS[user.role as keyof typeof ROLE_COLORS]}>
-                          <Shield className="w-3 h-3 mr-1" />
-                          {user.role}
-                        </Badge>
+                        <Button variant="ghost" size="sm" className="ml-2">
+                          {isExpanded ? 'Hide Details' : 'View Details'}
+                        </Button>
                       </div>
                     </div>
 
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <Mail className="w-4 h-4" />
-                        <span className="truncate">{user.email}</span>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <Phone className="w-4 h-4" />
-                        <span>{user.phone}</span>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                        <Briefcase className="w-4 h-4" />
-                        <span>{user.designation}</span>
-                      </div>
+                    {/* Expandable Details Section */}
+                    {isExpanded && (
+                      <div className="border-t border-border px-5 py-6 bg-muted/10">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-                      {user.employeeCode && (
-                        <div className="flex items-center space-x-2 text-sm text-gray-600">
-                          <User className="w-4 h-4" />
-                          <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
-                            {user.employeeCode}
-                          </span>
+                          <div className="space-y-3">
+                            <h4 className="text-xs uppercase font-semibold text-muted-foreground tracking-wider">Contact Info</h4>
+                            <div className="flex items-center space-x-3 text-sm text-foreground">
+                              <div className="w-7 h-7 rounded bg-muted flex items-center justify-center"><Mail className="w-3.5 h-3.5 text-muted-foreground" /></div>
+                              <span>{user.email}</span>
+                            </div>
+                            <div className="flex items-center space-x-3 text-sm text-foreground">
+                              <div className="w-7 h-7 rounded bg-muted flex items-center justify-center"><Phone className="w-3.5 h-3.5 text-muted-foreground" /></div>
+                              <span>{user.phone || 'N/A'}</span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-3">
+                            <h4 className="text-xs uppercase font-semibold text-muted-foreground tracking-wider">Work Details</h4>
+                            <div className="flex items-center space-x-3 text-sm text-foreground">
+                              <div className="w-7 h-7 rounded bg-muted flex items-center justify-center"><Briefcase className="w-3.5 h-3.5 text-muted-foreground" /></div>
+                              <span>{user.designation}</span>
+                            </div>
+                            {user.employeeCode && (
+                              <div className="flex items-center space-x-3 text-sm text-foreground">
+                                <div className="w-7 h-7 rounded bg-muted flex items-center justify-center"><Hash className="w-3.5 h-3.5 text-muted-foreground" /></div>
+                                <span className="font-mono text-xs bg-muted px-2 py-1 rounded border border-border">
+                                  {user.employeeCode}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="space-y-3">
+                            <h4 className="text-xs uppercase font-semibold text-muted-foreground tracking-wider">System Information</h4>
+                            <div className="flex items-center space-x-3 text-sm text-foreground">
+                              <div className="w-7 h-7 rounded bg-muted flex items-center justify-center"><Shield className="w-3.5 h-3.5 text-muted-foreground" /></div>
+                              <span>Role: {user.role}</span>
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-2 px-1 space-y-1.5">
+                              <p className="flex justify-between"><span>Created:</span> <span>{formatDate(user.createdAt)}</span></p>
+                              <p className="flex justify-between font-mono"><span>User ID:</span> <span>{user.id}</span></p>
+                            </div>
+                          </div>
+
                         </div>
-                      )}
-                    </div>
-
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span>Created: {formatDate(user.createdAt)}</span>
-                        <span>ID: {user.id}</span>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    )}
+                  </Card>
+                );
+              })}
             </div>
           )}
         </CardContent>

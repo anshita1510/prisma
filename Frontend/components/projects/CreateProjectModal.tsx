@@ -10,7 +10,6 @@ interface CreateProjectModalProps {
   onSuccess: () => void;
 }
 
-interface Department { id: number; name: string }
 interface Employee { id: number; name: string; designation: string; department?: { id: number; name: string } }
 
 const field = (label: string, required = false) => (
@@ -33,8 +32,7 @@ const inputCls = {
 } as const;
 
 export function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProjectModalProps) {
-  const [form, setForm] = useState({ name: '', description: '', departmentId: 0, clientName: '', startDate: '', endDate: '' });
-  const [departments, setDepartments] = useState<Department[]>([]);
+  const [form, setForm] = useState({ name: '', description: '', clientName: '', startDate: '', endDate: '' });
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
@@ -57,8 +55,6 @@ export function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProject
       const result = await Promise.race([projectService.getAvailableEmployees(cid), timeout]);
       if (result.success && result.data?.length) {
         setEmployees(result.data);
-        const depts = Array.from(new Map(result.data.filter((e: any) => e.department).map((e: any) => [e.department.id, e.department])).values());
-        setDepartments(depts as Department[]);
       }
     } catch { }
     finally { setDataLoading(false); }
@@ -66,16 +62,13 @@ export function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProject
 
   const handleSubmit = async () => {
     if (!form.name.trim()) return setError('Project name is required');
-    if (!form.departmentId) return setError('Please select a department');
     if (!form.clientName.trim()) return setError('Client name is required');
     if (!form.startDate || !form.endDate) return setError('Start and end dates are required');
     if (new Date(form.startDate) >= new Date(form.endDate)) return setError('End date must be after start date');
     setLoading(true); setError('');
     try {
-      const u = JSON.parse(localStorage.getItem('user') || 'null');
       const result = await projectService.createProject({
         name: form.name.trim(), description: form.description?.trim() || '',
-        departmentId: form.departmentId, companyId: u.companyId, ownerId: u.employeeId,
         startDate: form.startDate, endDate: form.endDate, status: 'PLANNING' as const,
         teamMembers: selected.map(id => ({ employeeId: id, role: 'MEMBER' as const })),
       });
@@ -85,7 +78,7 @@ export function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProject
     finally { setLoading(false); }
   };
 
-  const reset = () => { setForm({ name: '', description: '', departmentId: 0, clientName: '', startDate: '', endDate: '' }); setSelected([]); setError(''); };
+  const reset = () => { setForm({ name: '', description: '', clientName: '', startDate: '', endDate: '' }); setSelected([]); setError(''); };
   const handleClose = () => { reset(); onClose(); };
   const toggle = (id: number) => setSelected(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
 
@@ -140,22 +133,12 @@ export function CreateProjectModal({ isOpen, onClose, onSuccess }: CreateProject
             </div>
           </div>
 
-          {/* Row 2: Department + Company ID */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              {field('Department', true)}
-              <select value={form.departmentId} onChange={e => setForm(f => ({ ...f, departmentId: parseInt(e.target.value) }))}
-                style={inputCls}>
-                <option value={0}>Select department</option>
-                {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-              </select>
-            </div>
-            <div>
-              {field('Company ID')}
-              <div className="px-3 py-2.5 rounded-xl text-sm font-medium"
-                style={{ backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--card-border)', color: 'var(--text-muted)' }}>
-                {companyId || '—'}
-              </div>
+          {/* Company ID */}
+          <div>
+            {field('Company ID')}
+            <div className="px-3 py-2.5 rounded-xl text-sm font-medium"
+              style={{ backgroundColor: 'var(--bg-subtle)', border: '1px solid var(--card-border)', color: 'var(--text-muted)' }}>
+              {companyId || '—'}
             </div>
           </div>
 

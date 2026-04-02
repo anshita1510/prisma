@@ -1,21 +1,4 @@
 import api from '@/lib/axios';
-import axios from 'axios';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5004';
-
-const API = axios.create({
-  baseURL: `${API_BASE_URL}/api/users`,
-  timeout: 10000,
-});
-
-// Add auth token to requests
-API.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
 
 export interface CreateUserData {
   email: string;
@@ -23,7 +6,7 @@ export interface CreateUserData {
   lastName: string;
   phone: string;
   designation: string;
-  role: 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'EMPLOYEE';
+  role: string;
   employeeCode?: string;
 }
 
@@ -43,87 +26,82 @@ export interface User {
 }
 
 export const userService = {
-  // Create/Invite new user
   async createUser(userData: CreateUserData) {
     try {
-      console.log('🚀 Sending request to: /create-user');
-      console.log('Payload:', JSON.stringify(userData, null, 2));
-
-      const response = await API.post('/create-user', userData);
-      console.log('✅ Success:', response.data);
-
+      const response = await api.post('/api/users/register', userData);
       return {
         success: true,
         message: response.data.message,
-        data: response.data
+        data: response.data,
       };
     } catch (error: any) {
-      console.error('❌ API ERROR:', error);
       if (error.response) {
         return {
           success: false,
-          message: error.response.data?.error || error.response.data?.message || 'Server error'
+          message:
+            error.response.data?.error ||
+            error.response.data?.message ||
+            `Server error (${error.response.status})`,
         };
       }
       return {
         success: false,
-        message: error.code === 'ECONNABORTED'
-          ? 'Request timed out. Please check the server is running.'
-          : 'Network error - backend not reachable'
+        message:
+          error.code === 'ECONNABORTED'
+            ? 'Request timed out. Please check the server is running.'
+            : 'Network error — backend not reachable',
       };
     }
   },
 
-  // Get all users (for admin)
   async getUsers() {
     try {
-      const response = await API.get('/');
+      const response = await api.get('/api/users');
       return {
         success: true,
-        data: response.data.users || []
+        data: response.data.users || [],
       };
     } catch (error: any) {
       console.error('Get users error:', error);
+      const status = error.response?.status;
       return {
         success: false,
-        message: error.response?.data?.error || 'Failed to fetch users',
-        data: []
+        message: status === 403
+          ? '403 Forbidden — insufficient permissions'
+          : error.response?.data?.error || 'Failed to fetch users',
+        data: [],
       };
     }
   },
 
-  // Update user credentials
   async updateUser(userId: number, userData: Partial<CreateUserData>) {
     try {
-      const response = await API.put(`/update/${userId}`, userData);
+      const response = await api.put(`/api/users/update/${userId}`, userData);
       return {
         success: true,
         message: response.data.message,
-        data: response.data.user
+        data: response.data.user,
       };
     } catch (error: any) {
-      console.error('Update user error:', error);
       return {
         success: false,
-        message: error.response?.data?.error || 'Failed to update user'
+        message: error.response?.data?.error || 'Failed to update user',
       };
     }
   },
 
-  // Update user password
   async updatePassword(userId: number, newPassword: string) {
     try {
-      const response = await API.post(`/${userId}/update-password`, { newPassword });
+      const response = await api.post(`/api/users/${userId}/update-password`, { newPassword });
       return {
         success: true,
-        message: response.data.message
+        message: response.data.message,
       };
     } catch (error: any) {
-      console.error('Update password error:', error);
       return {
         success: false,
-        message: error.response?.data?.error || 'Failed to update password'
+        message: error.response?.data?.error || 'Failed to update password',
       };
     }
-  }
+  },
 };

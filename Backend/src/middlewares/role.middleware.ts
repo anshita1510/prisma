@@ -60,7 +60,15 @@ export const authorize = (options: AccessOptions) => {
     console.log('userDesignation (after toUpperCase):', userDesignation);
     console.log('roleAllowed check:', options.roles?.includes(userRole));
     console.log('designationAllowed check:', options.designations?.includes(userDesignation));
-    // ... rest of function
+
+    const roleAllowed = options.roles ? options.roles.includes(userRole) : false;
+    const designationAllowed = options.designations && userDesignation ? options.designations.includes(userDesignation) : false;
+
+    if (!roleAllowed && !designationAllowed) {
+      return res.status(403).json({ success: false, message: 'Forbidden: Insufficient privileges' });
+    }
+
+    return next();
   };
 };
 /**

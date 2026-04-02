@@ -7,27 +7,27 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
 } from '@/components/ui/dialog';
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
-  Plus, 
-  Calendar, 
-  DollarSign, 
-  Users, 
-  Building, 
+import {
+  Plus,
+  Calendar,
+  DollarSign,
+  Users,
+  Building,
   User,
   CheckCircle,
   AlertCircle,
@@ -56,8 +56,8 @@ export default function CreateProjectForm({ onProjectCreated, onClose }: CreateP
     name: '',
     description: '',
     code: '',
-    companyId: 2, // Default company ID
-    departmentId: 2, // Default department ID
+    companyId: 0,
+    departmentId: 0,
     ownerId: 0,
     startDate: '',
     endDate: '',
@@ -69,8 +69,13 @@ export default function CreateProjectForm({ onProjectCreated, onClose }: CreateP
 
   useEffect(() => {
     const user = authService.getStoredUser();
-    if (user && user.employeeId) {
-      setFormData(prev => ({ ...prev, ownerId: user.employeeId }));
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        ownerId: user.employeeId || 0,
+        companyId: user.companyId || 0,
+        departmentId: user.departmentId || 0
+      }));
     }
   }, []);
 
@@ -118,7 +123,7 @@ export default function CreateProjectForm({ onProjectCreated, onClose }: CreateP
 
   const handleInputChange = (field: keyof CreateProjectData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
@@ -143,8 +148,8 @@ export default function CreateProjectForm({ onProjectCreated, onClose }: CreateP
   };
 
   const updateTeamMemberRole = (employeeId: number, role: 'MANAGER' | 'MEMBER' | 'VIEWER') => {
-    setSelectedTeamMembers(prev => 
-      prev.map(member => 
+    setSelectedTeamMembers(prev =>
+      prev.map(member =>
         member.employeeId === employeeId ? { ...member, role } : member
       )
     );
@@ -166,28 +171,28 @@ export default function CreateProjectForm({ onProjectCreated, onClose }: CreateP
     }
 
     setLoading(true);
-    
+
     // Add debugging
     console.log('🚀 Creating project with data:', formData);
     console.log('🔑 Auth token exists:', !!localStorage.getItem('token'));
     console.log('🌐 API Base URL:', process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5004');
-    
+
     try {
       const result = await projectService.createProject(formData);
-      
+
       console.log('📡 API Response:', result);
-      
+
       if (result.success) {
         console.log('✅ Project created successfully:', result.data);
         setCreatedProject(result.data);
         setCurrentStep(3);
-        
+
         // Assign team members if any
         if (selectedTeamMembers.length > 0) {
           console.log('👥 Assigning team members:', selectedTeamMembers);
           await assignTeamMembers(result.data.id);
         }
-        
+
         if (onProjectCreated) {
           onProjectCreated(result.data);
         }
@@ -219,8 +224,8 @@ export default function CreateProjectForm({ onProjectCreated, onClose }: CreateP
       name: '',
       description: '',
       code: '',
-      companyId: 2,
-      departmentId: 2,
+      companyId: user?.companyId || 0,
+      departmentId: user?.departmentId || 0,
       ownerId: user?.employeeId || 0,
       startDate: '',
       endDate: '',
@@ -397,8 +402,8 @@ export default function CreateProjectForm({ onProjectCreated, onClose }: CreateP
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Select 
-                        value={member.role} 
+                      <Select
+                        value={member.role}
                         onValueChange={(value) => updateTeamMemberRole(member.employeeId, value as 'MANAGER' | 'MEMBER' | 'VIEWER')}
                       >
                         <SelectTrigger className="w-32">
@@ -434,7 +439,7 @@ export default function CreateProjectForm({ onProjectCreated, onClose }: CreateP
       <div className="flex justify-center">
         <CheckCircle className="w-16 h-16 text-green-600" />
       </div>
-      
+
       <div>
         <h3 className="text-xl font-semibold text-gray-900 mb-2">Project Created Successfully!</h3>
         <p className="text-gray-600">
@@ -504,17 +509,15 @@ export default function CreateProjectForm({ onProjectCreated, onClose }: CreateP
         <div className="flex items-center justify-center space-x-4 py-4">
           {[1, 2, 3].map((step) => (
             <div key={step} className="flex items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                currentStep >= step 
-                  ? 'bg-blue-600 text-white' 
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep >= step
+                  ? 'bg-blue-600 text-white'
                   : 'bg-gray-200 text-gray-600'
-              }`}>
+                }`}>
                 {step}
               </div>
               {step < 3 && (
-                <div className={`w-12 h-1 mx-2 ${
-                  currentStep > step ? 'bg-blue-600' : 'bg-gray-200'
-                }`} />
+                <div className={`w-12 h-1 mx-2 ${currentStep > step ? 'bg-blue-600' : 'bg-gray-200'
+                  }`} />
               )}
             </div>
           ))}
@@ -535,7 +538,7 @@ export default function CreateProjectForm({ onProjectCreated, onClose }: CreateP
             >
               {currentStep > 1 ? 'Previous' : 'Cancel'}
             </Button>
-            
+
             <Button
               onClick={() => {
                 if (currentStep === 1) {

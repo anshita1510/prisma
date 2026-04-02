@@ -246,7 +246,7 @@ router.get(
 router.post(
     "/register",
     authenticate,
-    requireAnyRole(Role.ADMIN, Role.SUPER_ADMIN),
+    requireAnyRole(Role.ADMIN, Role.SUPER_ADMIN, Role.MANAGER),
     controller.inviteEmployee
 );
 
@@ -254,7 +254,7 @@ router.post(
 router.post(
     "/create-user",
     authenticate,
-    requireAnyRole(Role.ADMIN, Role.SUPER_ADMIN),
+    requireAnyRole(Role.ADMIN, Role.SUPER_ADMIN, Role.MANAGER),
     controller.inviteEmployee
 );
 

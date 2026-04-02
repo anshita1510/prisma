@@ -45,7 +45,7 @@ export function CreateTaskModal({ isOpen, onClose, onSuccess, projectId, project
   const [error, setError] = useState<string>('');
   const [user, setUser] = useState<any>(null);
   const [showPreview, setShowPreview] = useState(false);
-  
+
   // Editable fields in preview mode
   const [editablePriority, setEditablePriority] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'>('MEDIUM');
   const [editableEstimatedHours, setEditableEstimatedHours] = useState<number>(4);
@@ -66,7 +66,7 @@ export function CreateTaskModal({ isOpen, onClose, onSuccess, projectId, project
     setDataLoading(true);
     try {
       const result = await dynamicProjectService.getProjectMembers(projectId);
-      
+
       if (result.success && result.data) {
         const memberEmployees = result.data
           .filter((member: any) => member.employee)
@@ -99,7 +99,7 @@ export function CreateTaskModal({ isOpen, onClose, onSuccess, projectId, project
     setError('');
 
     try {
-      const assignedUser = formData.assignedToId 
+      const assignedUser = formData.assignedToId
         ? employees.find(e => e.id === parseInt(formData.assignedToId))
         : null;
 
@@ -136,22 +136,6 @@ export function CreateTaskModal({ isOpen, onClose, onSuccess, projectId, project
     setError('');
 
     try {
-      const userStr = localStorage.getItem('user');
-      if (!userStr) {
-        setError('User information not found. Please log in again.');
-        setLoading(false);
-        return;
-      }
-
-      const userData = JSON.parse(userStr);
-      const createdById = userData.employeeId;
-
-      if (!createdById) {
-        setError('Employee ID not found. Please log in again.');
-        setLoading(false);
-        return;
-      }
-
       // Map generated status to valid backend status
       let backendStatus: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | 'CANCELLED' = 'TODO';
       if (generatedTask.status === 'IN_PROGRESS') {
@@ -173,13 +157,12 @@ export function CreateTaskModal({ isOpen, onClose, onSuccess, projectId, project
         dueDate: generatedTask.dueDate,
         startDate: generatedTask.startDate,
         estimatedHours: editableEstimatedHours, // Use editable value
-        createdById: createdById,
       };
 
       console.log('📤 Submitting task creation with data:', taskData);
 
       const result = await dynamicProjectService.createTask(taskData);
-      
+
       console.log('📥 API Response:', result);
 
       if (result.success) {
@@ -247,7 +230,7 @@ export function CreateTaskModal({ isOpen, onClose, onSuccess, projectId, project
             {showPreview ? 'Review Generated Task' : 'Create New Task'}
           </DialogTitle>
         </DialogHeader>
-        
+
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start gap-3">
             <span className="text-red-500 mt-0.5">⚠️</span>
@@ -426,16 +409,16 @@ export function CreateTaskModal({ isOpen, onClose, onSuccess, projectId, project
 
             {/* Action Buttons */}
             <div className="flex justify-end space-x-3 pt-4 border-t">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => setShowPreview(false)}
                 disabled={loading}
                 className="px-6"
               >
                 Edit
               </Button>
-              <Button 
+              <Button
                 onClick={handleSubmit}
                 disabled={loading}
                 className="px-6 bg-blue-600 hover:bg-blue-700"
@@ -460,7 +443,7 @@ export function CreateTaskModal({ isOpen, onClose, onSuccess, projectId, project
                 <Briefcase className="w-4 h-4 text-blue-600" />
                 Task Information
               </h3>
-              
+
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="title" className="font-medium">Task Title *</Label>
@@ -496,7 +479,7 @@ export function CreateTaskModal({ isOpen, onClose, onSuccess, projectId, project
                 <Calendar className="w-4 h-4 text-green-600" />
                 Timeline
               </h3>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="startDate" className="font-medium">Start Date</Label>
@@ -530,7 +513,7 @@ export function CreateTaskModal({ isOpen, onClose, onSuccess, projectId, project
                 <Users className="w-4 h-4 text-indigo-600" />
                 Assignment
               </h3>
-              
+
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="assignedTo" className="font-medium">Assign To</Label>
@@ -583,16 +566,16 @@ export function CreateTaskModal({ isOpen, onClose, onSuccess, projectId, project
 
             {/* Action Buttons */}
             <div className="flex justify-end space-x-3 pt-4 border-t">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={handleClose}
                 disabled={loading}
                 className="px-6"
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={handleGeneratePreview}
                 disabled={loading}
                 className="px-6 bg-blue-600 hover:bg-blue-700"

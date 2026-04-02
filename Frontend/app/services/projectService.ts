@@ -1,19 +1,6 @@
-import axios from 'axios';
+import api from '@/lib/axios';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5004';
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-});
-
-// Add auth token to requests
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
 
 export interface Project {
   id: number;
@@ -129,9 +116,9 @@ export interface CreateProjectData {
   name: string;
   description?: string;
   code?: string;
-  companyId: number;
-  departmentId: number;
-  ownerId: number;
+  companyId?: number; // Optional:backend uses token
+  departmentId?: number;
+  ownerId?: number; // Optional:backend uses token
   startDate?: string;
   endDate?: string;
   budget?: number;
@@ -159,7 +146,7 @@ export interface CreateTaskData {
   code?: string;
   projectId: number;
   assignedToId?: number;
-  createdById: number;
+  createdById?: number; // Optional: backend uses token
   status?: 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'COMPLETED' | 'CANCELLED';
   priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   dueDate?: string;
@@ -194,11 +181,11 @@ export const projectService = {
       console.log('📤 Sending project creation request:', projectData);
       console.log('🔗 API URL:', `${API_BASE_URL}/api/project-management`);
       console.log('🔑 Token in localStorage:', !!localStorage.getItem('token'));
-      
+
       const response = await api.post('/api/project-management', projectData);
-      
+
       console.log('📥 Raw API response:', response);
-      
+
       return {
         success: true,
         data: response.data.data,
@@ -212,7 +199,7 @@ export const projectService = {
         data: error.response?.data,
         message: error.message
       });
-      
+
       return {
         success: false,
         message: error.response?.data?.message || 'Failed to create project'
@@ -263,7 +250,7 @@ export const projectService = {
 
       const url = `/api/project-management${params.toString() ? `?${params.toString()}` : ''}`;
       const response = await api.get(url);
-      
+
       return {
         success: true,
         data: response.data.data
@@ -405,7 +392,7 @@ export const projectService = {
 
       const url = `/api/project-management/${projectId}/tasks${params.toString() ? `?${params.toString()}` : ''}`;
       const response = await api.get(url);
-      
+
       return {
         success: true,
         data: response.data.data
@@ -445,7 +432,7 @@ export const projectService = {
 
       const url = `/api/project-management/dashboard/stats${params.toString() ? `?${params.toString()}` : ''}`;
       const response = await api.get(url);
-      
+
       return {
         success: true,
         data: response.data.data

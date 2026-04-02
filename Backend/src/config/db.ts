@@ -7,4 +7,8 @@ export const prisma = new PrismaClient({
         },
     },
     log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+    // Hard limit on individual query execution time (15s)
+    transactionOptions: {
+        timeout: 15000,
+    },
 });

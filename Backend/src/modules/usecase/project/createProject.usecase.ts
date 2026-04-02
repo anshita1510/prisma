@@ -31,7 +31,7 @@ export class CreateProjectUsecase {
    * Execute project creation with full authorization and validation
    */
   async execute(
-    request: CreateProjectRequest, 
+    request: CreateProjectRequest,
     creator: UserContext
   ): Promise<CreateProjectResponse> {
     try {
@@ -91,7 +91,7 @@ export class CreateProjectUsecase {
    * Validate input data
    */
   private async validateInput(
-    request: CreateProjectRequest, 
+    request: CreateProjectRequest,
     creator: UserContext
   ): Promise<{ isValid: boolean; errors: string[] }> {
     const errors: string[] = [];
@@ -162,7 +162,7 @@ export class CreateProjectUsecase {
    * Validate business rules
    */
   private async validateBusinessRules(
-    request: CreateProjectRequest, 
+    request: CreateProjectRequest,
     creator: UserContext
   ): Promise<{ isValid: boolean; errors: string[] }> {
     const errors: string[] = [];
@@ -233,14 +233,13 @@ export class CreateProjectUsecase {
             user: {
               select: {
                 isActive: true,
-                status: true
               }
             }
           }
         });
 
         const validEmployeeIds = employees
-          .filter(emp => emp.user.isActive && emp.user.status === 'ACTIVE')
+          .filter(emp => emp.user.isActive)
           .map(emp => emp.id);
 
         const invalidIds = employeeIds.filter(id => !validEmployeeIds.includes(id));
@@ -264,7 +263,7 @@ export class CreateProjectUsecase {
    * Create project with team members in a transaction
    */
   private async createProjectWithTeam(
-    request: CreateProjectRequest, 
+    request: CreateProjectRequest,
     creator: UserContext
   ): Promise<any> {
     return await prisma.$transaction(async (tx) => {
@@ -275,24 +274,24 @@ export class CreateProjectUsecase {
         const timestamp = Date.now().toString().slice(-6); // Last 6 digits of timestamp
         const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
         projectCode = `PRJ${timestamp}${random}`;
-        
+
         // Verify uniqueness (retry if collision)
         let attempts = 0;
         while (attempts < 5) {
           const existingCode = await tx.project.findFirst({
             where: { code: projectCode }
           });
-          
+
           if (!existingCode) {
             break; // Code is unique
           }
-          
+
           // Generate new code if collision
           const newRandom = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
           projectCode = `PRJ${timestamp}${newRandom}`;
           attempts++;
         }
-        
+
         if (attempts >= 5) {
           throw new Error('Failed to generate unique project code after multiple attempts');
         }
@@ -416,14 +415,14 @@ export class CreateProjectUsecase {
    * Create audit log entry
    */
   private async createAuditLog(
-    projectId: number, 
-    creator: UserContext, 
+    projectId: number,
+    creator: UserContext,
     action: string
   ): Promise<void> {
     try {
       // This would integrate with your existing audit system
       console.log(`Audit Log: ${action} - Project ${projectId} by User ${creator.id}`);
-      
+
       // Example audit log creation (adjust based on your audit schema)
       // await prisma.auditLog.create({
       //   data: {

@@ -7,25 +7,25 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '../../../components/ui/alert';
-import { Loader2, UserPlus, Mail, Phone, User, Briefcase, Shield, CheckCircle, AlertCircle, LogIn } from 'lucide-react';
+import { Loader2, UserPlus, Mail, Phone, User, Briefcase, CheckCircle, AlertCircle, LogIn } from 'lucide-react';
 import { userService, CreateUserData } from '@/app/services/userService';
 import { authService } from '@/app/services/authService';
 
-const ROLES = [
-  { value: 'EMPLOYEE', label: 'Employee', description: 'Basic user with limited access' },
-  { value: 'MANAGER', label: 'Manager', description: 'Can manage team and projects' },
-  { value: 'ADMIN', label: 'Admin', description: 'Full administrative access' },
-  { value: 'SUPER_ADMIN', label: 'Super Admin', description: 'Complete system access' }
-];
 
 const DESIGNATIONS = [
-  'INTERN',
-  'SOFTWARE_ENGINEER',
-  'SENIOR_ENGINEER',
-  'TECH_LEAD',
-  'MANAGER',
-  'HR',
-  'DIRECTOR'
+  { value: 'INTERN', label: 'Intern' },
+  { value: 'SOFTWARE_ENGINEER', label: 'Software Engineer' },
+  { value: 'SENIOR_ENGINEER', label: 'Senior Engineer' },
+  { value: 'TECH_LEAD', label: 'Tech Lead' },
+  { value: 'MANAGER', label: 'Manager' },
+  { value: 'HR', label: 'HR' },
+  { value: 'DIRECTOR', label: 'Director' },
+];
+
+const ROLES = [
+  { value: 'EMPLOYEE', label: 'Employee' },
+  { value: 'MANAGER', label: 'Manager' },
+  { value: 'ADMIN', label: 'Admin' },
 ];
 
 export default function CreateUserForm() {
@@ -35,7 +35,7 @@ export default function CreateUserForm() {
     lastName: '',
     phone: '',
     designation: '',
-    role: 'EMPLOYEE',
+    role: '',
     employeeCode: ''
   });
 
@@ -55,7 +55,7 @@ export default function CreateUserForm() {
         try {
           const parsedUser = JSON.parse(user);
           setCurrentUser(parsedUser);
-          setIsAuthenticated(['ADMIN', 'SUPER_ADMIN'].includes(parsedUser.role));
+          setIsAuthenticated(['ADMIN', 'SUPER_ADMIN', 'MANAGER'].includes(parsedUser.role));
         } catch (error) {
           console.error('Error parsing user data:', error);
           setIsAuthenticated(false);
@@ -228,10 +228,10 @@ export default function CreateUserForm() {
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         const user = JSON.parse(storedUser);
-        if (!['ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
+        if (!['ADMIN', 'SUPER_ADMIN', 'MANAGER'].includes(user.role)) {
           setMessage({
             type: 'error',
-            text: 'You do not have permission to create users. Admin access required.'
+            text: 'You do not have permission to create users. Admin or Manager access required.'
           });
           setLoading(false);
           return;
@@ -244,6 +244,7 @@ export default function CreateUserForm() {
       const result = await userService.createUser(formData);
 
       if (result.success) {
+        window.alert(result.message || 'User created successfully! An invitation email has been sent.');
         setMessage({
           type: 'success',
           text: result.message || 'User created successfully! An invitation email has been sent.'
@@ -256,7 +257,7 @@ export default function CreateUserForm() {
           lastName: '',
           phone: '',
           designation: '',
-          role: 'EMPLOYEE',
+          role: '',
           employeeCode: ''
         });
         setErrors({});
@@ -306,7 +307,7 @@ export default function CreateUserForm() {
       lastName: '',
       phone: '',
       designation: '',
-      role: 'EMPLOYEE',
+      role: '',
       employeeCode: ''
     });
     setErrors({});
@@ -500,8 +501,8 @@ export default function CreateUserForm() {
               </p>
             </div>
 
-            {/* Designation and Role Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Designation Field */}
               <div className="space-y-2">
                 <Label htmlFor="designation" className="flex items-center space-x-2">
                   <Briefcase className="w-4 h-4" />
@@ -518,9 +519,9 @@ export default function CreateUserForm() {
                     <SelectValue placeholder="Select designation" />
                   </SelectTrigger>
                   <SelectContent>
-                    {DESIGNATIONS.map((designation) => (
-                      <SelectItem key={designation} value={designation}>
-                        {designation.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
+                    {DESIGNATIONS.map((d) => (
+                      <SelectItem key={d.value} value={d.value}>
+                        <span className="font-medium">{d.label}</span>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -533,14 +534,15 @@ export default function CreateUserForm() {
                 )}
               </div>
 
+              {/* Role Field */}
               <div className="space-y-2">
                 <Label htmlFor="role" className="flex items-center space-x-2">
-                  <Shield className="w-4 h-4" />
+                  <User className="w-4 h-4" />
                   <span>Role *</span>
                 </Label>
                 <Select
                   value={formData.role}
-                  onValueChange={(value) => handleInputChange('role', value as CreateUserData['role'])}
+                  onValueChange={(value) => handleInputChange('role', value)}
                 >
                   <SelectTrigger
                     className={errors.role ? 'border-red-500 focus:border-red-500' : ''}
@@ -549,12 +551,9 @@ export default function CreateUserForm() {
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
-                    {ROLES.map((role) => (
-                      <SelectItem key={role.value} value={role.value}>
-                        <div className="flex flex-col">
-                          <span className="font-medium">{role.label}</span>
-                          <span className="text-xs text-gray-500">{role.description}</span>
-                        </div>
+                    {ROLES.map((d) => (
+                      <SelectItem key={d.value} value={d.value}>
+                        <span className="font-medium">{d.label}</span>
                       </SelectItem>
                     ))}
                   </SelectContent>

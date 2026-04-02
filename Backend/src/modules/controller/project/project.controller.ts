@@ -5,7 +5,7 @@ import { CreateProjectUsecase } from '../../usecase/project/createProject.usecas
 import { AuthorizationUtil, UserContext } from '../../../shared/utils/authorization.util';
 import { prisma } from '../../../config/db';
 
-class ProjectController {
+export class ProjectController {
   // Helper method to extract user context
   private extractUserContext = (req: Request): UserContext | null => {
     if (!req.user) {
@@ -67,8 +67,8 @@ class ProjectController {
         name,
         description,
         code,
-        companyId: parseInt(companyId) || userContext.companyId || 2,
-        departmentId: parseInt(departmentId) || userContext.departmentId || 2,
+        companyId: userContext.companyId!, // Use non-null assertion as it's validated by auth
+        departmentId: userContext.departmentId!,
         startDate: startDate ? new Date(startDate) : undefined,
         endDate: endDate ? new Date(endDate) : undefined,
         budget: budget ? parseFloat(budget) : undefined,
@@ -236,7 +236,7 @@ class ProjectController {
       }
 
       const projects = await projectService.getAllProjects(
-        companyId ? parseInt(companyId as string) : userContext.companyId,
+        userContext.companyId!,
         departmentId ? parseInt(departmentId as string) : undefined,
         ownerId ? parseInt(ownerId as string) : undefined
       );
@@ -604,7 +604,7 @@ class ProjectController {
         code,
         projectId: parseInt(projectId),
         assignedToId: assignedToId ? parseInt(assignedToId) : undefined,
-        createdById: resolvedCreatedById,
+        createdById: userContext.employeeId!, // Always use authenticatd employeeId
         status: status as TaskStatus,
         priority: priority as TaskPriority,
         dueDate: dueDate ? new Date(dueDate) : undefined,
@@ -728,7 +728,7 @@ class ProjectController {
       }
 
       const stats = await projectService.getProjectDashboardStats(
-        companyId ? parseInt(companyId as string) : userContext.companyId,
+        userContext.companyId!,
         departmentId ? parseInt(departmentId as string) : undefined
       );
 
@@ -767,7 +767,7 @@ class ProjectController {
       }
 
       const employees = await AuthorizationUtil.getAssignableUsers(
-        finalCompanyId,
+        userContext.companyId!,
         departmentId ? parseInt(departmentId as string) : undefined
       );
 

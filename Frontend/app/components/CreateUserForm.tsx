@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Phone, Building, Hash, UserCheck, Briefcase, Send, RotateCcw, ChevronDown, RefreshCw } from 'lucide-react';
+import { User, Mail, Phone, Building, Hash, Briefcase, Send, RotateCcw, ChevronDown, RefreshCw, CheckCircle, X } from 'lucide-react';
 import { userService, CreateUserData, Company } from '../services/user.service';
 
 interface CreateUserFormProps {
@@ -17,7 +17,6 @@ interface CreateUserFormData {
   lastName: string;
   phone: string;
   designation: string;
-  role: 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'EMPLOYEE';
   companyName?: string;
   companyId?: string | number;
 }
@@ -34,7 +33,6 @@ export default function CreateUserForm({
     lastName: '',
     phone: '',
     designation: '',
-    role: 'EMPLOYEE',
     companyName: currentUserCompany?.name || '',
     companyId: currentUserCompany?.id || ''
   });
@@ -44,6 +42,7 @@ export default function CreateUserForm({
   const [loadingCompanies, setLoadingCompanies] = useState(false);
   const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
 
+
   // Load companies for SuperAdmin
   useEffect(() => {
     if (currentUserRole === 'SUPER_ADMIN') {
@@ -51,21 +50,19 @@ export default function CreateUserForm({
     }
   }, [currentUserRole]);
 
-  // Refresh companies when component receives focus (to catch newly created companies)
+  // Refresh companies when component receives focus
   useEffect(() => {
     const handleFocus = () => {
       if (currentUserRole === 'SUPER_ADMIN') {
         loadCompanies();
       }
     };
-
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
   }, [currentUserRole]);
 
   const loadCompanies = async () => {
     if (currentUserRole !== 'SUPER_ADMIN') return;
-
     setLoadingCompanies(true);
     try {
       const response = await userService.getCompanies();
@@ -105,7 +102,6 @@ export default function CreateUserForm({
       return false;
     }
 
-    // For SuperAdmin, company selection is required
     if (currentUserRole === 'SUPER_ADMIN' && !formData.companyId) {
       onError?.('Please select a company');
       return false;
@@ -117,14 +113,7 @@ export default function CreateUserForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    console.log('🔍 Form submission started');
-    console.log('🔍 Current form data:', JSON.stringify(formData, null, 2));
-    console.log('🔍 Current user role:', currentUserRole);
-
-    if (!validateForm()) {
-      console.log('❌ Form validation failed');
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
 
@@ -135,24 +124,21 @@ export default function CreateUserForm({
         lastName: formData.lastName.trim(),
         phone: formData.phone.trim(),
         designation: formData.designation,
-        role: formData.role,
+        role: "EMPLOYEE",
       };
 
-      // Add company data based on user role
       if (currentUserRole === 'SUPER_ADMIN') {
         userData.companyId = formData.companyId;
         userData.companyName = formData.companyName;
       }
-      // For Admin/Manager, company info is handled on backend from their user details
-
-      console.log('🔍 Final user data to send:', JSON.stringify(userData, null, 2));
 
       const response = await userService.createUser(userData);
 
-      if (response.success) {
-        onSuccess?.(`User created successfully! An invitation email has been sent to ${formData.email}.`);
-        resetForm();
-      }
+      // Since the request didn't throw an error, it is a success!
+      const msg = response?.message || `User Created Successfully! An invitation email has been sent to ${formData.email}.`;
+
+      onSuccess?.(msg);
+      resetForm();
 
     } catch (err: any) {
       console.error('❌ Form submission error:', err);
@@ -169,23 +155,21 @@ export default function CreateUserForm({
       lastName: '',
       phone: '',
       designation: '',
-      role: 'EMPLOYEE',
       companyName: currentUserCompany?.name || '',
       companyId: currentUserCompany?.id || ''
     });
   };
 
-  const isCompanyFieldDisabled = currentUserRole !== 'SUPER_ADMIN';
-
   return (
-    <div className="p-2" style={{ color: 'var(--text-color)' }}>
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-          <User className="w-5 h-5 text-blue-600" />
+    <div className="p-2">
+
+      <div className="flex items-center gap-3 mb-8">
+        <div className="w-12 h-12 icon-box">
+          <User className="w-6 h-6" />
         </div>
         <div>
-          <h2 className="text-xl font-semibold" style={{ color: 'var(--text-color)' }}>Create New User</h2>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          <h2 className="text-2xl font-bold">Create New User</h2>
+          <p className="text-sm text-muted-foreground mt-1">
             {currentUserRole === 'SUPER_ADMIN'
               ? 'Add a new user to any company in the system.'
               : `Add a new user to ${currentUserCompany?.name || 'your company'}.`
@@ -207,8 +191,7 @@ export default function CreateUserForm({
             value={formData.email}
             onChange={handleInputChange}
             placeholder="name@company.com"
-            className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            style={{ backgroundColor: 'var(--input-bg, var(--card-bg))', borderColor: 'var(--card-border)', color: 'var(--text-color)' }}
+            className="w-full px-4 py-3 border bg-input/50 backdrop-blur-sm border-border rounded-lg text-foreground transition-all duration-200 focus:ring-2 focus:ring-PRIMAry/50 focus:border-PRIMAry"
             required
           />
         </div>
@@ -261,8 +244,7 @@ export default function CreateUserForm({
             value={formData.phone}
             onChange={handleInputChange}
             placeholder="+1 555 000 0000"
-            className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            style={{ backgroundColor: 'var(--input-bg, var(--card-bg))', borderColor: 'var(--card-border)', color: 'var(--text-color)' }}
+            className="w-full px-4 py-3 border bg-input/50 backdrop-blur-sm border-border rounded-lg text-foreground transition-all duration-200 focus:ring-2 focus:ring-PRIMAry/50 focus:border-PRIMAry"
             required
           />
         </div>
@@ -287,23 +269,21 @@ export default function CreateUserForm({
               <button
                 type="button"
                 onClick={() => setShowCompanyDropdown(!showCompanyDropdown)}
-                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-left flex items-center justify-between"
-                style={{ backgroundColor: 'var(--input-bg, var(--card-bg))', borderColor: 'var(--card-border)', color: 'var(--text-color)' }}
+                className="w-full px-4 py-3 border bg-input/50 backdrop-blur-sm border-border rounded-lg text-foreground transition-all duration-200 focus:ring-2 focus:ring-PRIMAry/50 focus:border-PRIMAry text-left flex items-center justify-between"
                 disabled={loadingCompanies}
               >
-                <span style={{ color: formData.companyName ? 'var(--text-color)' : 'var(--text-muted)' }}>
+                <span className={formData.companyName ? "text-foreground" : "text-muted-foreground"}>
                   {loadingCompanies ? 'Loading companies...' : (formData.companyName || 'Select a company')}
                 </span>
-                <ChevronDown className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
               </button>
 
               {showCompanyDropdown && (
-                <div className="absolute z-10 w-full mt-1 border rounded-lg shadow-lg max-h-60 overflow-y-auto"
-                  style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
+                <div className="absolute z-50 w-full mt-1 border overflow-y-auto bg-card border-border shadow-lg max-h-60 rounded-lg">
                   {loadingCompanies ? (
-                    <div className="px-4 py-3" style={{ color: 'var(--text-muted)' }}>Loading companies...</div>
+                    <div className="px-4 py-3 text-muted-foreground">Loading companies...</div>
                   ) : companies.length === 0 ? (
-                    <div className="px-4 py-3" style={{ color: 'var(--text-muted)' }}>
+                    <div className="px-4 py-3 text-muted-foreground">
                       No companies found. Create a company first in the "Manage Companies" tab.
                     </div>
                   ) : (
@@ -312,10 +292,10 @@ export default function CreateUserForm({
                         key={company.id}
                         type="button"
                         onClick={() => handleCompanySelect(company)}
-                        className="w-full px-4 py-3 text-left hover:bg-black/5 focus:bg-black/5 focus:outline-none"
+                        className="w-full px-4 py-3 text-left hover:bg-muted focus:bg-muted focus:outline-none transition-colors"
                       >
-                        <div className="font-medium" style={{ color: 'var(--text-color)' }}>{company.name}</div>
-                        <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                        <div className="font-medium text-foreground">{company.name}</div>
+                        <div className="text-sm text-muted-foreground">
                           {company.code} • {company.userCount || 0} users
                         </div>
                       </button>
@@ -332,79 +312,45 @@ export default function CreateUserForm({
           </div>
         )}
 
-        {/* Company Info Display - For Admin/Manager */}
         {currentUserRole !== 'SUPER_ADMIN' && currentUserCompany && (
           <div>
-            <label className="flex items-center gap-2 text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>
+            <label className="flex items-center gap-2 text-sm font-medium mb-2 text-muted-foreground">
               <Building className="w-4 h-4" />
               Company
             </label>
-            <div className="w-full px-4 py-3 border rounded-lg" style={{ backgroundColor: 'var(--bg-color)', borderColor: 'var(--card-border)', color: 'var(--text-muted)' }}>
-              <div className="font-medium" style={{ color: 'var(--text-color)' }}>{currentUserCompany.name}</div>
-              <div className="text-sm">{currentUserCompany.code}</div>
+            <div className="w-full px-4 py-3 border rounded-lg bg-muted/50 border-border">
+              <div className="font-medium text-foreground">{currentUserCompany.name}</div>
+              <div className="text-sm text-muted-foreground">{currentUserCompany.code}</div>
             </div>
-            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+            <p className="text-xs mt-1 text-muted-foreground">
               Users will be added to your company automatically
             </p>
           </div>
         )}
 
-        {/* Designation and Role */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="flex items-center gap-2 text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>
-              <Briefcase className="w-4 h-4" />
-              Designation *
-            </label>
-            <select
-              name="designation"
-              value={formData.designation}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              style={{ backgroundColor: 'var(--input-bg, var(--card-bg))', borderColor: 'var(--card-border)', color: 'var(--text-color)' }}
-              required
-            >
-              <option value="">Select designation</option>
-              <option value="Director">Director</option>
-              <option value="Software Engineer">Software Engineer</option>
-              <option value="Senior Software Engineer">Senior Software Engineer</option>
-              <option value="Team Lead">Team Lead</option>
-              <option value="Manager">Manager</option>
-              <option value="Project Manager">Project Manager</option>
-              <option value="Product Manager">Product Manager</option>
-              <option value="Designer">Designer</option>
-              <option value="QA Engineer">QA Engineer</option>
-              <option value="DevOps Engineer">DevOps Engineer</option>
-              <option value="Data Analyst">Data Analyst</option>
-              <option value="HR">HR</option>
-              <option value="Admin">Admin</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-          <div>
-            <label className="flex items-center gap-2 text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>
-              <UserCheck className="w-4 h-4" />
-              Role *
-            </label>
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              style={{ backgroundColor: 'var(--input-bg, var(--card-bg))', borderColor: 'var(--card-border)', color: 'var(--text-color)' }}
-              required
-            >
-              <option value="EMPLOYEE">EMPLOYEE</option>
-              <option value="HR">HR</option>
-              <option value="MANAGER">MANAGER</option>
-              {(currentUserRole === 'SUPER_ADMIN' || currentUserRole === 'ADMIN') && (
-                <option value="ADMIN">ADMIN</option>
-              )}
-              {currentUserRole === 'SUPER_ADMIN' && (
-                <option value="SUPER_ADMIN">SUPER_ADMIN</option>
-              )}
-            </select>
-          </div>
+        {/* Designation */}
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium mb-2" style={{ color: 'var(--text-muted)' }}>
+            <Briefcase className="w-4 h-4" />
+            Designation *
+          </label>
+          <select
+            name="designation"
+            value={formData.designation}
+            onChange={handleInputChange}
+            className="w-full px-4 py-3 border bg-input/50 backdrop-blur-sm border-border rounded-lg text-foreground transition-all duration-200 focus:ring-2 focus:ring-PRIMAry/50 focus:border-PRIMAry"
+            required
+          >
+            <option value="">Select designation</option>
+            <option value="INTERN">Intern → Employee</option>
+            <option value="SOFTWARE_ENGINEER">Software Engineer → Employee</option>
+            <option value="SENIOR_ENGINEER">Senior Engineer → Employee</option>
+            <option value="TECH_LEAD">Tech Lead → Manager</option>
+            <option value="MANAGER">Manager → Manager</option>
+            <option value="HR">HR → Manager</option>
+            <option value="DIRECTOR">Director → Manager</option>
+          </select>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Role is automatically assigned based on designation.</p>
         </div>
 
         {/* Action Buttons */}
@@ -412,7 +358,7 @@ export default function CreateUserForm({
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+            className="flex items-center gap-2 btn-PRIMAry-gradient text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
           >
             {loading ? (
               <>
@@ -429,8 +375,7 @@ export default function CreateUserForm({
           <button
             type="button"
             onClick={resetForm}
-            className="flex items-center gap-2 px-6 py-3 border rounded-lg hover:opacity-80 transition-colors font-medium"
-            style={{ borderColor: 'var(--card-border)', color: 'var(--text-muted)' }}
+            className="flex items-center gap-2 px-6 py-3 border btn-outline-theme transition-colors font-medium"
           >
             <RotateCcw className="w-4 h-4" />
             Reset Form
@@ -438,13 +383,16 @@ export default function CreateUserForm({
         </div>
       </form>
 
-      <div className="mt-8 p-4 rounded-lg border" style={{ backgroundColor: 'var(--accent-subtle)', borderColor: 'var(--accent-color)', opacity: 0.9 }}>
-        <h3 className="font-medium mb-2" style={{ color: 'var(--accent-color)' }}>What happens next?</h3>
-        <ul className="text-sm space-y-1" style={{ color: 'var(--text-muted)' }}>
-          <li>• The user will receive an invitation email with setup instructions</li>
-          <li>• They can set their password and complete their profile</li>
-          <li>• The user will be assigned to the {currentUserRole === 'SUPER_ADMIN' ? 'selected' : 'your'} company and role</li>
-          <li>• You can manage their permissions and access from the user management section</li>
+      <div className="mt-8 p-6 rounded-xl border bg-PRIMAry/5 border-PRIMAry/20 dark:bg-PRIMAry/10 dark:border-PRIMAry/20 shadow-sm backdrop-blur-sm">
+        <h3 className="font-semibold mb-3 flex items-center gap-2 text-PRIMAry dark:text-blue-400">
+          <CheckCircle className="w-4 h-4" />
+          What happens next?
+        </h3>
+        <ul className="text-sm space-y-2 text-muted-foreground">
+          <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-PRIMAry/50 mt-1.5"></div> The user will receive an invitation email with setup instructions</li>
+          <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-PRIMAry/50 mt-1.5"></div> They can set their password and complete their profile</li>
+          <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-PRIMAry/50 mt-1.5"></div> The user will be assigned to the {currentUserRole === 'SUPER_ADMIN' ? 'selected' : 'your'} company and role</li>
+          <li className="flex items-start gap-2"><div className="w-1.5 h-1.5 rounded-full bg-PRIMAry/50 mt-1.5"></div> You can manage their permissions and access from the user management section</li>
         </ul>
       </div>
     </div>

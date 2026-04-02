@@ -37,9 +37,7 @@ const inviteEmployeeUsecase = new InviteEmployeeUsecase(userRepo, sendEmailUseCa
 
 // Fixed: Compare using string values instead of enum type
 export function isAdminRole(role: Role): boolean {
-  return role === "ADMIN" || role === "SUPER_ADMIN";
-  // OR more explicitly:
-  // return [Role.ADMIN, Role.SUPER_ADMIN].includes(role); // This also works!
+  return role === "ADMIN" || role === "SUPER_ADMIN" || role === "MANAGER";
 }
 
 /* -------------------------------------------------------------------------- */
@@ -107,61 +105,32 @@ export class UserController {
         return res.status(403).json({ error: "Forbidden: Admin access required" });
       }
 
-      const { email, firstName, lastName, phone, designation, role, employeeCode, companyName, companyId } = req.body;
+      const { email, firstName, lastName, phone, designation, employeeCode, companyName, companyId } = req.body;
 
-      console.log('Extracted fields:', {
+      if (!email || !firstName || !lastName || !phone || !designation) {
+        return res.status(400).json({ error: "All fields are required" });
+      }
+
+      // Validate designation is a known value
+      const validDesignations = ['INTERN', 'SOFTWARE_ENGINEER', 'SENIOR_ENGINEER', 'TECH_LEAD', 'MANAGER', 'HR', 'DIRECTOR'];
+      if (!validDesignations.includes(designation.toUpperCase())) {
+        return res.status(400).json({ error: `Invalid designation. Must be one of: ${validDesignations.join(', ')}` });
+      }
+
+      console.log('✅ All validations passed, calling usecase...');
+
+      await inviteEmployeeUsecase.execute(user.role, {
         email,
         firstName,
         lastName,
         phone,
         designation,
-        role,
         employeeCode,
         companyName,
-        companyId
-      });
+        companyId,
+      }, user.id);
 
-      if (!email || !firstName || !lastName || !phone || !designation) {
-        console.log('❌ Missing required fields:', {
-          email: !!email,
-          firstName: !!firstName,
-          lastName: !!lastName,
-          phone: !!phone,
-          designation: !!designation,
-          // role: !!role
-        });
-        return res.status(400).json({ error: "All fields are required" });
-      }
-
-      // Validate role is a valid enum value (safe check)
-      if (!Object.values(Role).includes(role as Role)) {
-        console.log('❌ Invalid role:', role, 'Valid roles:', Object.values(Role));
-        return res.status(400).json({ error: "Invalid role" });
-      }
-
-      console.log('✅ All validations passed, calling usecase...');
-
-      const t0 = Date.now();
-      const usecaseTimeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Request timed out. Please try again.')), 12000)
-      );
-
-      await Promise.race([
-        inviteEmployeeUsecase.execute(user.role, {
-          email,
-          firstName,
-          lastName,
-          phone,
-          designation,
-          role: role as Role,
-          employeeCode,
-          companyName,
-          companyId,
-        }, user.id),
-        usecaseTimeout
-      ]);
-
-      console.log(`✅ Usecase done in ${Date.now() - t0}ms`);
+      console.log(`✅ Usecase done`);
       console.log('Auth is here: ', req.body.authorization);
       console.log("REQ.USER 👉", user);
 

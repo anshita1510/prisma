@@ -20,57 +20,50 @@ export class InviteEmployeeUsecase {
       lastName: string;
       phone: string;
       designation: string;
-      role: Role;
       employeeCode?: string;
       companyId?: number | string;
       companyName?: string;
       departmentId?: number;
     },
-    inviterUserId?: number // Add inviter user ID to get their company details
+    inviterUserId?: number
   ) {
-    const allowedRoles: Role[] = [Role.SUPER_ADMIN, Role.ADMIN];
+    const allowedRoles: Role[] = [Role.SUPER_ADMIN, Role.ADMIN, Role.MANAGER];
 
     if (!allowedRoles.includes(inviterRole)) {
       throw new Error("Unauthorized");
     }
 
-    /* 🚫 Prevent SUPER_ADMIN creation */
-    if (data.role === Role.SUPER_ADMIN) {
-      throw new Error("Cannot invite Super Admin");
-    }
+    /* 🔄 Derive role from designation */
+    const managerDesignations = ['MANAGER', 'HR', 'DIRECTOR', 'TECH_LEAD'];
+    const derivedRole: Role = managerDesignations.includes(data.designation.toUpperCase())
+      ? Role.MANAGER
+      : Role.EMPLOYEE;
 
     const t0 = Date.now();
     console.log(`⏱ [0ms] inviteEmployee started for ${data.email}`);
 
-    /* 👤 Check existing user */
-    const existingUser = await this.userRepo.findByEmail(data.email);
-    console.log(`⏱ [${Date.now() - t0}ms] findByEmail done`);
-    if (existingUser) {
-      throw new Error("User with this email already exists");
-    }
+    /* 👤 Check existing user + employee code in parallel */
+    const [existingUser, existingEmployee] = await Promise.all([
+      this.userRepo.findByEmail(data.email),
+      data.employeeCode
+        ? prisma.employee.findUnique({ where: { employeeCode: data.employeeCode } })
+        : Promise.resolve(null),
+    ]);
+    console.log(`⏱ [${Date.now() - t0}ms] existence checks done`);
 
-    /* 🆔 Check existing employee code if provided */
-    if (data.employeeCode) {
-      const existingEmployee = await prisma.employee.findUnique({
-        where: { employeeCode: data.employeeCode }
-      });
-      console.log(`⏱ [${Date.now() - t0}ms] employeeCode check done`);
-      if (existingEmployee) {
-        throw new Error("Employee code already exists");
-      }
-    }
+    if (existingUser) throw new Error("User with this email already exists");
+    if (existingEmployee) throw new Error("Employee code already exists");
 
-    /* ⏳ Tokens & Expiry */
+    /* ⏳ Tokens & Expiry + bcrypt — all in parallel */
     const inviteToken = crypto.randomBytes(32).toString("hex");
     const inviteExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
     const tempPassword = crypto.randomBytes(6).toString("hex");
     const rawOtp = Math.floor(100000 + Math.random() * 900000).toString();
 
     console.log(`⏱ [${Date.now() - t0}ms] starting bcrypt (parallel)`);
     const [hashedTempPassword, hashedOtp] = await Promise.all([
-      bcrypt.hash(tempPassword, 8),
-      bcrypt.hash(rawOtp, 8),
+      bcrypt.hash(tempPassword, 6),
+      bcrypt.hash(rawOtp, 6),
     ]);
     console.log(`⏱ [${Date.now() - t0}ms] bcrypt done`);
 
@@ -121,7 +114,7 @@ export class InviteEmployeeUsecase {
       lastName: data.lastName,
       phone: data.phone,
       designation: data.designation,
-      role: data.role,
+      role: derivedRole,
       status: Status.ACTIVE,  // Changed from PENDING to ACTIVE
       isActive: true,         // Changed from false to true
       tempPassword: hashedTempPassword,

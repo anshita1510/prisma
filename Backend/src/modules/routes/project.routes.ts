@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { ProjectController } from '../controller/project.controller';
+import { ProjectController } from '../controller/project/project.controller';
 import { authenticate } from '../../middlewares/auth.middleware';
 
 const router = Router();
@@ -15,7 +15,10 @@ const projectController = new ProjectController();
 // All routes require authentication
 router.use(authenticate);
 
+// ─────────────────────────────────────────────────
 // Project CRUD routes
+// ─────────────────────────────────────────────────
+
 /**
  * @swagger
  * /api/projects:
@@ -32,7 +35,6 @@ router.use(authenticate);
  *             type: object
  *             required:
  *               - name
- *               - description
  *             properties:
  *               name:
  *                 type: string
@@ -40,6 +42,13 @@ router.use(authenticate);
  *               description:
  *                 type: string
  *                 example: "Complete redesign of company website"
+ *               code:
+ *                 type: string
+ *                 example: "PRJ001"
+ *               companyId:
+ *                 type: integer
+ *               departmentId:
+ *                 type: integer
  *               startDate:
  *                 type: string
  *                 format: date
@@ -48,21 +57,31 @@ router.use(authenticate);
  *                 type: string
  *                 format: date
  *                 example: "2026-06-15"
+ *               budget:
+ *                 type: number
  *               status:
  *                 type: string
- *                 enum: [PLANNING, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED]
+ *                 enum: [PLANNING, ACTIVE, ON_HOLD, COMPLETED, CANCELLED]
  *                 example: "PLANNING"
- *               priority:
- *                 type: string
- *                 enum: [LOW, MEDIUM, HIGH, URGENT]
- *                 example: "HIGH"
+ *               teamMembers:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     employeeId:
+ *                       type: integer
+ *                     role:
+ *                       type: string
+ *                       enum: [OWNER, MANAGER, MEMBER, VIEWER]
  *     responses:
  *       201:
  *         description: Project created successfully
  *       400:
- *         description: Invalid request data
+ *         description: Validation failed
  *       401:
  *         description: Unauthorized
+ *       403:
+ *         description: Insufficient permissions
  */
 router.post('/', projectController.createProject);
 
@@ -70,56 +89,87 @@ router.post('/', projectController.createProject);
  * @swagger
  * /api/projects:
  *   get:
- *     summary: Get all projects
+ *     summary: Get all projects (filtered by user permissions)
  *     tags: [Projects]
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
- *         name: status
+ *         name: companyId
  *         schema:
- *           type: string
- *           enum: [PLANNING, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED]
- *         description: Filter by project status
+ *           type: integer
+ *         description: Filter by company ID
  *       - in: query
- *         name: priority
+ *         name: departmentId
  *         schema:
- *           type: string
- *           enum: [LOW, MEDIUM, HIGH, URGENT]
- *         description: Filter by priority
+ *           type: integer
+ *         description: Filter by department ID
+ *       - in: query
+ *         name: ownerId
+ *         schema:
+ *           type: integer
+ *         description: Filter by owner employee ID
  *     responses:
  *       200:
  *         description: List of projects retrieved
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: string
- *                       name:
- *                         type: string
- *                       description:
- *                         type: string
- *                       status:
- *                         type: string
- *                       priority:
- *                         type: string
  *       401:
  *         description: Unauthorized
  */
-router.get('/', projectController.getProjects);
+router.get('/', projectController.getAllProjects);
 
 /**
  * @swagger
- * /api/projects/{id}:
+ * /api/projects/dashboard:
+ *   get:
+ *     summary: Get project dashboard statistics
+ *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: companyId
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: departmentId
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Dashboard stats retrieved
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/dashboard', projectController.getDashboardStats);
+
+/**
+ * @swagger
+ * /api/projects/employees:
+ *   get:
+ *     summary: Get available employees for project assignment
+ *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: companyId
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: departmentId
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Available employees retrieved
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/employees', projectController.getAvailableEmployees);
+
+/**
+ * @swagger
+ * /api/projects/{projectId}:
  *   get:
  *     summary: Get project by ID
  *     tags: [Projects]
@@ -127,24 +177,26 @@ router.get('/', projectController.getProjects);
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: projectId
  *         required: true
  *         schema:
- *           type: string
+ *           type: integer
  *         description: Project ID
  *     responses:
  *       200:
  *         description: Project details retrieved
  *       401:
  *         description: Unauthorized
+ *       403:
+ *         description: Insufficient permissions
  *       404:
  *         description: Project not found
  */
-router.get('/:id', projectController.getProjectById);
+router.get('/:projectId', projectController.getProject);
 
 /**
  * @swagger
- * /api/projects/{id}:
+ * /api/projects/{projectId}:
  *   put:
  *     summary: Update project
  *     tags: [Projects]
@@ -152,11 +204,10 @@ router.get('/:id', projectController.getProjectById);
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: projectId
  *         required: true
  *         schema:
- *           type: string
- *         description: Project ID
+ *           type: integer
  *     requestBody:
  *       required: true
  *       content:
@@ -170,16 +221,17 @@ router.get('/:id', projectController.getProjectById);
  *                 type: string
  *               status:
  *                 type: string
- *                 enum: [PLANNING, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED]
- *               priority:
- *                 type: string
- *                 enum: [LOW, MEDIUM, HIGH, URGENT]
+ *                 enum: [PLANNING, ACTIVE, ON_HOLD, COMPLETED, CANCELLED]
  *               startDate:
  *                 type: string
  *                 format: date
  *               endDate:
  *                 type: string
  *                 format: date
+ *               budget:
+ *                 type: number
+ *               progressPercentage:
+ *                 type: integer
  *     responses:
  *       200:
  *         description: Project updated successfully
@@ -187,80 +239,337 @@ router.get('/:id', projectController.getProjectById);
  *         description: Invalid request data
  *       401:
  *         description: Unauthorized
+ *       403:
+ *         description: Insufficient permissions
  *       404:
  *         description: Project not found
  */
-router.put('/:id', projectController.updateProject);
+router.put('/:projectId', projectController.updateProject);
 
 /**
  * @swagger
- * /api/projects/{id}:
+ * /api/projects/{projectId}:
  *   delete:
- *     summary: Delete project
+ *     summary: Delete project (soft delete)
  *     tags: [Projects]
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: projectId
  *         required: true
  *         schema:
- *           type: string
- *         description: Project ID
+ *           type: integer
  *     responses:
  *       200:
  *         description: Project deleted successfully
  *       401:
  *         description: Unauthorized
+ *       403:
+ *         description: Insufficient permissions
  *       404:
  *         description: Project not found
  */
-router.delete('/:id', projectController.deleteProject);
+router.delete('/:projectId', projectController.deleteProject);
 
-// Project members
+// ─────────────────────────────────────────────────
+// Team Member Management routes
+// ─────────────────────────────────────────────────
+
 /**
  * @swagger
- * /api/projects/{id}/members:
+ * /api/projects/{projectId}/members:
  *   get:
- *     summary: Get project members
+ *     summary: Get project team members
  *     tags: [Projects]
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: projectId
  *         required: true
  *         schema:
- *           type: string
- *         description: Project ID
+ *           type: integer
  *     responses:
  *       200:
- *         description: Project members retrieved
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: string
- *                       name:
- *                         type: string
- *                       email:
- *                         type: string
- *                       role:
- *                         type: string
+ *         description: Team members retrieved
  *       401:
  *         description: Unauthorized
- *       404:
- *         description: Project not found
+ *       403:
+ *         description: Insufficient permissions
  */
-router.get('/:id/members', projectController.getProjectMembers);
+router.get('/:projectId/members', projectController.getProjectTeamMembers);
+
+/**
+ * @swagger
+ * /api/projects/{projectId}/members:
+ *   post:
+ *     summary: Assign a team member to the project
+ *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - employeeId
+ *               - role
+ *             properties:
+ *               employeeId:
+ *                 type: integer
+ *               role:
+ *                 type: string
+ *                 enum: [OWNER, MANAGER, MEMBER, VIEWER]
+ *     responses:
+ *       201:
+ *         description: Team member assigned
+ *       400:
+ *         description: Invalid request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Insufficient permissions
+ */
+router.post('/:projectId/members', projectController.assignTeamMember);
+
+/**
+ * @swagger
+ * /api/projects/{projectId}/members/{employeeId}:
+ *   put:
+ *     summary: Update team member role
+ *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: path
+ *         name: employeeId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - role
+ *             properties:
+ *               role:
+ *                 type: string
+ *                 enum: [OWNER, MANAGER, MEMBER, VIEWER]
+ *     responses:
+ *       200:
+ *         description: Role updated
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Insufficient permissions
+ */
+router.put('/:projectId/members/:employeeId', projectController.updateTeamMemberRole);
+
+/**
+ * @swagger
+ * /api/projects/{projectId}/members/{employeeId}:
+ *   delete:
+ *     summary: Remove a team member from the project
+ *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: path
+ *         name: employeeId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Team member removed
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Insufficient permissions
+ */
+router.delete('/:projectId/members/:employeeId', projectController.removeTeamMember);
+
+// ─────────────────────────────────────────────────
+// Task Management routes
+// ─────────────────────────────────────────────────
+
+/**
+ * @swagger
+ * /api/projects/{projectId}/tasks:
+ *   get:
+ *     summary: Get all tasks for a project
+ *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [TODO, IN_PROGRESS, IN_REVIEW, COMPLETED, CANCELLED]
+ *       - in: query
+ *         name: assignedToId
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Tasks retrieved
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/:projectId/tasks', projectController.getProjectTasks);
+
+/**
+ * @swagger
+ * /api/projects/tasks:
+ *   post:
+ *     summary: Create a new task
+ *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - projectId
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               projectId:
+ *                 type: integer
+ *               assignedToId:
+ *                 type: integer
+ *               status:
+ *                 type: string
+ *                 enum: [TODO, IN_PROGRESS, IN_REVIEW, COMPLETED, CANCELLED]
+ *               priority:
+ *                 type: string
+ *                 enum: [LOW, MEDIUM, HIGH, URGENT]
+ *               dueDate:
+ *                 type: string
+ *                 format: date
+ *               startDate:
+ *                 type: string
+ *                 format: date
+ *               estimatedHours:
+ *                 type: integer
+ *               milestoneId:
+ *                 type: integer
+ *               parentTaskId:
+ *                 type: integer
+ *     responses:
+ *       201:
+ *         description: Task created successfully
+ *       400:
+ *         description: Invalid request
+ *       401:
+ *         description: Unauthorized
+ */
+router.post('/tasks', projectController.createTask);
+
+/**
+ * @swagger
+ * /api/projects/tasks/{taskId}:
+ *   put:
+ *     summary: Update a task
+ *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Task updated
+ *       400:
+ *         description: Invalid request
+ *       401:
+ *         description: Unauthorized
+ */
+router.put('/tasks/:taskId', projectController.updateTask);
+
+/**
+ * @swagger
+ * /api/projects/tasks/{taskId}:
+ *   delete:
+ *     summary: Delete a task
+ *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Task deleted
+ *       401:
+ *         description: Unauthorized
+ */
+router.delete('/tasks/:taskId', projectController.deleteTask);
+
+// ─────────────────────────────────────────────────
+// Permissions route
+// ─────────────────────────────────────────────────
+
+/**
+ * @swagger
+ * /api/projects/{projectId}/permissions:
+ *   get:
+ *     summary: Check user permissions for a project
+ *     tags: [Projects]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: projectId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Permissions returned
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/:projectId/permissions', projectController.checkPermissions);
 
 export default router;

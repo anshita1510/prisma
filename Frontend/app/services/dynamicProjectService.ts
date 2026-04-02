@@ -103,9 +103,9 @@ export interface CreateProjectPayload {
   name: string;
   description?: string;
   code?: string;
-  departmentId: number;
-  companyId: number;
-  ownerId: number;
+  departmentId?: number;
+  companyId?: number; // Optional
+  ownerId?: number; // Optional
   startDate?: string;
   endDate?: string;
   budget?: number;
@@ -278,12 +278,12 @@ export const dynamicProjectService = {
     try {
       console.log('📤 Creating task with payload:', payload);
       console.log('🔗 Endpoint: /api/project-management/' + payload.projectId + '/tasks');
-      
+
       const response = await api.post(
         `/api/project-management/${payload.projectId}/tasks`,
         payload
       );
-      
+
       console.log('✅ Task created response:', response.data);
       return {
         success: true,

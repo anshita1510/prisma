@@ -36,9 +36,10 @@ const ActionButton = ({ icon, label, onClick, variant = 'default', disabled = fa
 interface ActionsCardProps {
   currentTime: string;
   currentDate: string;
+  onRefresh?: () => void;
 }
 
-export const ActionsCard = ({ currentTime, currentDate }: ActionsCardProps) => {
+export const ActionsCard = ({ currentTime, currentDate, onRefresh }: ActionsCardProps) => {
   const { currentUser, refreshData, todayAttendance } = useAttendance();
   const { success, error } = useToast();
   const [isCheckedIn, setIsCheckedIn] = useState(false);
@@ -77,6 +78,7 @@ export const ActionsCard = ({ currentTime, currentDate }: ActionsCardProps) => {
       if (res.data.success) {
         success(res.data.message || 'Checked in!');
         await refreshData();
+        onRefresh?.();
       } else error(res.data.message || 'Check-in failed');
     } catch (err: any) { error(err.response?.data?.message || 'Check-in failed'); }
     finally { setLoading(false); }
@@ -89,6 +91,7 @@ export const ActionsCard = ({ currentTime, currentDate }: ActionsCardProps) => {
       if (res.data.success) {
         success(res.data.message || 'Checked out!');
         await refreshData();
+        onRefresh?.();
       } else error(res.data.message || 'Check-out failed');
     } catch (err: any) { error(err.response?.data?.message || 'Check-out failed'); }
     finally { setLoading(false); }

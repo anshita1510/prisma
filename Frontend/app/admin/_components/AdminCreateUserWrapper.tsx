@@ -84,19 +84,10 @@ export default function AdminCreateUserWrapper() {
           loadCurrentUserCompany();
         }
       } else {
-        const demo = authService.createDemoSession();
-
-        setCurrentUser(demo.user);
-        setIsAuthenticated(true);
-
         setMessage({
-          type: 'success',
-          text: 'Demo admin session created!'
+          type: 'error',
+          text: 'Auto login failed. Please ensure your session is valid.'
         });
-
-        if (demo.user.role !== 'SUPER_ADMIN') {
-          loadCurrentUserCompany();
-        }
       }
     } catch (error) {
       console.error(error);
@@ -121,46 +112,46 @@ export default function AdminCreateUserWrapper() {
   // 🔒 Not Authenticated UI
   if (!isAuthenticated) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
-        <Card className="border-orange-200">
+      <div className="w-full">
+        <Card className="premium-card border-orange-200/50 bg-orange-50/50 dark:bg-orange-950/10 dark:border-orange-900/30">
           <CardHeader>
             <div className="flex items-center space-x-2">
-              <AlertCircle className="w-6 h-6 text-orange-600" />
-              <CardTitle className="text-orange-800">
+              <AlertCircle className="w-6 h-6 text-orange-600 dark:text-orange-500" />
+              <CardTitle className="text-orange-800 dark:text-orange-400">
                 Authentication Required
               </CardTitle>
             </div>
-            <CardDescription className="text-orange-700">
+            <CardDescription className="text-orange-700 dark:text-orange-300">
               You need to be logged in as an admin to create users.
             </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-4">
-            <p className="text-sm text-orange-700">
-              Please log in with admin credentials.
+            <p className="text-sm text-orange-700 dark:text-orange-300">
+              Please check your session or log in again.
             </p>
 
             <Button
               onClick={handleQuickLogin}
               disabled={loading}
-              className="bg-orange-600 hover:bg-orange-700"
+              className="bg-orange-600 hover:bg-orange-700 text-white"
             >
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Logging in...
+                  Verifying...
                 </>
               ) : (
                 <>
                   <LogIn className="w-4 h-4 mr-2" />
-                  Quick Admin Login
+                  Retry Access
                 </>
               )}
             </Button>
 
             {message && (
-              <Alert className={message.type === 'error' ? 'border-red-200' : 'border-green-200'}>
-                <AlertDescription>
+              <Alert className={message.type === 'error' ? 'border-red-200 bg-red-50/50 dark:border-red-900/30' : 'border-green-200 bg-green-50/50'}>
+                <AlertDescription className={message.type === 'error' ? 'text-red-600' : 'text-green-600'}>
                   {message.text}
                 </AlertDescription>
               </Alert>
@@ -173,9 +164,9 @@ export default function AdminCreateUserWrapper() {
 
   // ✅ Authenticated UI
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <Card>
-        <CardContent className="pt-6">
+    <div className="w-full max-w-4xl mx-auto">
+      <Card className="premium-card backdrop-blur-sm bg-card/95 border-border shadow-xl">
+        <CardContent className="pt-8 px-6 sm:px-10 pb-10">
           {message && (
             <Alert className={`mb-6 ${message.type === 'error' ? 'border-red-400' : 'border-green-400'}`}>
               <div className="flex items-center gap-2">
