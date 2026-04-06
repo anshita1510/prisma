@@ -11,7 +11,7 @@ import {
 import { useTheme } from "@/lib/theme/ThemeContext";
 
 /* ── Types ─────────────────────────────────────────────────── */
-type AuthProvider = "LOCAL" | "GOOGLE" | "MICROSOFT" | "MOBILE" | "NEW_USER";
+type AuthProvider = "LOCAL" | "GOOGLE" | "MICROSOFT" | "GITHUB" | "MOBILE" | "NEW_USER";
 type Toast = { id: number; type: "success" | "error"; message: string };
 
 const MAX_ATTEMPTS = 5;
@@ -247,9 +247,9 @@ export default function LeftPanel() {
       const checkData = await checkRes.json();
       if (!checkRes.ok) throw new Error(checkData.error || "Failed to check user.");
 
-      const provider = checkData.provider as AuthProvider;
+      const provider = checkData.provider as "GOOGLE" | "MICROSOFT" | "GITHUB" | "LOCAL" | "NEW_USER";
 
-      if (provider === "GOOGLE" || provider === "MICROSOFT") {
+      if (provider === "GOOGLE" || provider === "MICROSOFT" || provider === "GITHUB") {
         const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5004";
         window.location.href = `${base}/api/auth/${provider.toLowerCase()}`;
         return;

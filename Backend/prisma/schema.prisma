@@ -72,6 +72,7 @@ model User {
   authProvider         AuthProvider @default(LOCAL)
   googleId             String?      @unique
   microsoftId          String?      @unique
+  githubId             String?      @unique
   ceoId                String?      @unique
   isVerified           Boolean      @default(false)
   verificationToken    String?      @unique
@@ -606,6 +607,7 @@ enum AuthProvider {
   LOCAL
   GOOGLE
   MICROSOFT
+  GITHUB
   MOBILE
 }
 

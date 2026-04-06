@@ -306,8 +306,8 @@ export default function TeamPage() {
                   <div className="flex items-center gap-3">
                     <Users className="w-8 h-8 text-blue-600" />
                     <div>
-                      <p className="text-2xl font-bold">{teamMembers.length}</p>
-                      <p className="text-sm text-gray-600">Total Members</p>
+                      <p className="text-2xl font-bold" style={{ color: 'var(--text-color)' }}>{teamMembers.length}</p>
+                      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Total Members</p>
                     </div>
                   </div>
                 </CardContent>
@@ -320,10 +320,10 @@ export default function TeamPage() {
                       <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold">
+                      <p className="text-2xl font-bold" style={{ color: 'var(--text-color)' }}>
                         {teamMembers.filter(m => m.status === 'ACTIVE').length}
                       </p>
-                      <p className="text-sm text-gray-600">Active Now</p>
+                      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Active Now</p>
                     </div>
                   </div>
                 </CardContent>
@@ -334,10 +334,10 @@ export default function TeamPage() {
                   <div className="flex items-center gap-3">
                     <CheckSquare className="w-8 h-8 text-green-600" />
                     <div>
-                      <p className="text-2xl font-bold">
+                      <p className="text-2xl font-bold" style={{ color: 'var(--text-color)' }}>
                         {teamMembers.reduce((sum, m) => sum + m.completedTasks, 0)}
                       </p>
-                      <p className="text-sm text-gray-600">Tasks Completed</p>
+                      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Tasks Completed</p>
                     </div>
                   </div>
                 </CardContent>
@@ -348,10 +348,10 @@ export default function TeamPage() {
                   <div className="flex items-center gap-3">
                     <Clock className="w-8 h-8 text-orange-600" />
                     <div>
-                      <p className="text-2xl font-bold">
+                      <p className="text-2xl font-bold" style={{ color: 'var(--text-color)' }}>
                         {teamMembers.reduce((sum, m) => sum + m.activeTasks, 0)}
                       </p>
-                      <p className="text-sm text-gray-600">Active Tasks</p>
+                      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Active Tasks</p>
                     </div>
                   </div>
                 </CardContent>
@@ -394,29 +394,29 @@ export default function TeamPage() {
 
                     {/* Contact Info */}
                     <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Mail className="w-4 h-4" />
+                      <div className="flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
+                        <Mail className="w-4 h-4 opacity-70" />
                         <span className="truncate">{member.email}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Phone className="w-4 h-4" />
+                      <div className="flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
+                        <Phone className="w-4 h-4 opacity-70" />
                         <span>{member.phone}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <MapPin className="w-4 h-4" />
+                      <div className="flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>
+                        <MapPin className="w-4 h-4 opacity-70" />
                         <span>{member.location}</span>
                       </div>
                     </div>
 
                     {/* Task Stats */}
-                    <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t" style={{ borderColor: 'var(--card-border)' }}>
                       <div className="text-center">
-                        <p className="text-lg font-bold text-orange-600">{member.activeTasks}</p>
-                        <p className="text-xs text-gray-600">Active Tasks</p>
+                        <p className="text-lg font-bold" style={{ color: 'var(--PRIMAry-color)' }}>{member.activeTasks}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Active Tasks</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-lg font-bold text-green-600">{member.completedTasks}</p>
-                        <p className="text-xs text-gray-600">Completed</p>
+                        <p className="text-lg font-bold" style={{ color: '#22c55e' }}>{member.completedTasks}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Completed</p>
                       </div>
                     </div>
                   </CardContent>
@@ -428,8 +428,8 @@ export default function TeamPage() {
             {filteredMembers.length === 0 && (
               <div className="text-center py-12">
                 <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No team members found</h3>
-                <p className="text-gray-600 mb-4">
+                <h3 className="text-lg font-medium mb-2" style={{ color: 'var(--text-color)' }}>No team members found</h3>
+                <p className="mb-4" style={{ color: 'var(--text-muted)' }}>
                   {searchTerm ? 'Try adjusting your search terms' : 'Get started by adding your first team member'}
                 </p>
                 {isManager && (

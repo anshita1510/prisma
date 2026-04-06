@@ -27,6 +27,12 @@ function resolveTheme(theme: Theme): ResolvedTheme {
 
 function applyTheme(resolved: ResolvedTheme) {
   document.documentElement.setAttribute("data-theme", resolved);
+  // Also toggle the 'dark' class for shadcn/Tailwind compatibility
+  if (resolved === "dark") {
+    document.documentElement.classList.add("dark");
+  } else {
+    document.documentElement.classList.remove("dark");
+  }
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {

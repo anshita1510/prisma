@@ -7,6 +7,7 @@ import swaggerUi from 'swagger-ui-express';
 import passport from './config/passport'; // Import passport config
 import authRoutes from './modules/routes/auth/auth.routes';
 import passportGoogleRoutes from './modules/routes/auth/passport-google.routes'; // New Passport routes
+import githubAuthRoutes from './modules/routes/auth/github-oauth.routes';
 import leaveRoutes from './modules/routes/leave/leave.routes';
 import attendanceRoutes from './modules/routes/attendance/attendance.routes'; // New attendance routes with my-logs endpoint
 import projectRoutes from './modules/routes/project.routes';
@@ -124,6 +125,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
 // Routes
 app.use('/api/users', authRoutes);
 app.use('/api/auth', passportGoogleRoutes); // Use Passport routes
+app.use('/api/auth', githubAuthRoutes); // GitHub OAuth routes
 
 // Test endpoint to verify OAuth routes are loaded
 app.get('/api/auth/test', (req, res) => {
@@ -132,6 +134,8 @@ app.get('/api/auth/test', (req, res) => {
     availableRoutes: [
       'GET /api/auth/google',
       'GET /api/auth/google/callback',
+      'GET /api/auth/github',
+      'GET /api/auth/github/callback',
       'POST /api/auth/logout'
     ]
   });

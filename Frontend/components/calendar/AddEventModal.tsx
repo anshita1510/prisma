@@ -280,13 +280,43 @@ export function AddEventModal({ isOpen, onClose, onSuccess, selectedDate, editEv
 
           {/* Attendees */}
           <div style={sectionStyle}>
-            <label style={labelStyle}>
-              <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 inline" /> Attendees</span>
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label style={labelStyle}>
+                <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5 inline" /> Attendees</span>
+              </label>
+              {availableUsers.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedAttendees.length === availableUsers.length) {
+                      setSelectedAttendees([]);
+                    } else {
+                      setSelectedAttendees(availableUsers.map(u => u.id));
+                    }
+                  }}
+                  className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded transition-all"
+                  style={{
+                    backgroundColor: 'var(--PRIMAry-subtle)',
+                    color: 'var(--PRIMAry-color)',
+                    border: '1px solid var(--PRIMAry-color)',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--PRIMAry-color)';
+                    (e.currentTarget as HTMLElement).style.color = '#fff';
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--PRIMAry-subtle)';
+                    (e.currentTarget as HTMLElement).style.color = 'var(--PRIMAry-color)';
+                  }}>
+                  {selectedAttendees.length === availableUsers.length ? 'Unselect All' : 'Select All'}
+                </button>
+              )}
+            </div>
             {availableUsers.length === 0 ? (
               <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No company members found</p>
             ) : (
-              <div className="space-y-1 max-h-36 overflow-y-auto">
+              <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
                 {availableUsers.map(user => (
                   <label key={user.id}
                     className="flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer transition-colors"

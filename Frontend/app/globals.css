@@ -218,6 +218,11 @@ html.theme-transitioning *::after {
   #__next {
     height: 100%;
   }
+
+  /* Fix for date/time picker icons in dark mode */
+  [data-theme="dark"] input::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+  }
 }
 
 @layer components {

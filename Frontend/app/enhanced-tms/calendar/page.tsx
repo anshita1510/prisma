@@ -130,7 +130,15 @@ export default function CalendarPage() {
   useEffect(() => { loadEvents(); }, [loadEvents]);
 
   // Merge festivals + API events + user-created events
-  const allEvents = [...FESTIVALS, ...apiEvents, ...customEvents];
+  // Merge festivals + API events + user-created events without duplicates
+  const allEvents = (() => {
+    const map = new Map<string, CalendarEvent>();
+    // Precedence: Custom > API > Festivals
+    FESTIVALS.forEach(e => map.set(e.id, e));
+    apiEvents.forEach(e => map.set(e.id, e));
+    customEvents.forEach(e => map.set(e.id, e));
+    return Array.from(map.values());
+  })();
 
   const navigateMonth = (dir: 'prev' | 'next') => {
     const d = new Date(currentDate);
