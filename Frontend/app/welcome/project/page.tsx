@@ -5,17 +5,17 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  FolderOpen, 
-  Users, 
-  Calendar, 
+import {
+  FolderOpen,
+  Users,
+  Calendar,
   ArrowRight,
   CheckCircle,
   Clock,
   AlertCircle
 } from 'lucide-react';
 import { authService } from '@/app/services/authService';
-import { enhancedProjectService } from '@/app/services/enhancedProjectService';
+import { projectService } from '@/app/services/project.service';
 
 export default function WelcomeProjectPage() {
   const router = useRouter();
@@ -39,9 +39,9 @@ export default function WelcomeProjectPage() {
       setUser(currentUser);
 
       // Load user's projects
-      const response = await enhancedProjectService.getProjects({ limit: 5 });
+      const response = await projectService.getProjects();
       if (response.success) {
-        setProjects(response.data?.projects || []);
+        setProjects(response.data?.projects || response.data || []);
       }
     } catch (error) {
       console.error('Error loading welcome data:', error);
@@ -211,9 +211,9 @@ export default function WelcomeProjectPage() {
                       </Badge>
                     </div>
                   ))}
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="w-full mt-3"
                     onClick={handleNavigateToProjects}
                   >
@@ -235,16 +235,16 @@ export default function WelcomeProjectPage() {
         {/* Action Buttons */}
         <div className="text-center space-y-4">
           <div className="space-x-4">
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               onClick={handleNavigateToTMS}
               className="bg-blue-600 hover:bg-blue-700"
             >
               <FolderOpen className="h-5 w-5 mr-2" />
               Go to Enhanced TMS Dashboard
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="lg"
               onClick={handleNavigateToProjects}
             >
@@ -252,7 +252,7 @@ export default function WelcomeProjectPage() {
               Manage Projects
             </Button>
           </div>
-          
+
           <p className="text-sm text-gray-500 mt-4">
             Need help? Check out our{' '}
             <Button variant="link" className="p-0 h-auto text-blue-600">
@@ -273,7 +273,7 @@ export default function WelcomeProjectPage() {
                     Administrator Access Confirmed
                   </h3>
                   <p className="text-blue-800 text-sm">
-                    You have full access to the Task Management System. You can create projects, 
+                    You have full access to the Task Management System. You can create projects,
                     manage teams, assign tasks, and view comprehensive analytics across all departments.
                   </p>
                 </div>

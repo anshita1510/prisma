@@ -156,19 +156,9 @@ export default function TeamPage() {
 
   const loadProjects = async () => {
     try {
-      const userStr = localStorage.getItem('user');
-      const user = userStr ? JSON.parse(userStr) : null;
-
-      if (!user?.companyId) return;
-
-      const { dynamicProjectService } = await import('@/app/services/dynamicProjectService');
-      const result = await dynamicProjectService.getAllProjects({
-        companyId: user.companyId
-      });
-
-      if (result.success && result.data) {
-        setProjects(result.data);
-      }
+      const { projectService } = await import('@/app/services/project.service');
+      const result = await projectService.getProjects();
+      setProjects(result.projects || []);
     } catch (error) {
       console.error('❌ Error loading projects:', error);
     }

@@ -15,12 +15,13 @@ export class TaskController {
   createTask = async (req: Request, res: Response) => {
     try {
       const validatedData = CreateTaskDto.parse(req.body);
-      const { employeeId, companyId } = req.user as any;
+      const { employeeId, companyId, role } = req.user as any;
 
       const task = await this.taskService.createTask(
         validatedData,
         employeeId,
-        companyId
+        companyId,
+        role
       );
 
       res.status(201).json({

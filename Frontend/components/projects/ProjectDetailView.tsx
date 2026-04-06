@@ -237,7 +237,7 @@ export function ProjectDetailView({ project, tasks, onBack, onAddTask, onDeleteP
         <div className="px-5 py-4 flex items-center justify-between"
           style={{ borderBottom: '1px solid var(--card-border)', backgroundColor: 'var(--bg-subtle)' }}>
           <div className="flex items-center gap-2">
-            <Activity className="w-4 h-4" style={{ color: 'var(--primary-color)' }} />
+            <Activity className="w-4 h-4" style={{ color: 'var(--PRIMAry-color)' }} />
             <span className="text-sm font-semibold" style={{ color: 'var(--text-color)' }}>Task Management</span>
           </div>
           <button onClick={onAddTask}
@@ -257,13 +257,14 @@ export function ProjectDetailView({ project, tasks, onBack, onAddTask, onDeleteP
                 <button key={s} onClick={() => setActiveTab(s)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all"
                   style={{
-                    backgroundColor: isActive ? 'var(--primary-color)' : 'var(--input-bg)',
-                    color: isActive ? '#fff' : 'var(--text-muted)',
-                    border: '1px solid var(--card-border)', cursor: 'pointer',
+                    backgroundColor: isActive ? 'var(--PRIMAry-color)' : 'var(--input-bg)',
+                    color: isActive ? '#fff' : 'var(--text-color)',
+                    border: `1px solid ${isActive ? 'var(--PRIMAry-color)' : 'var(--card-border)'}`,
+                    cursor: 'pointer',
                   }}>
                   {s.replace('_', ' ')}
                   <span className="px-1.5 py-0.5 rounded-full text-xs"
-                    style={{ backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : 'var(--bg-subtle)', color: isActive ? '#fff' : 'var(--text-muted)' }}>
+                    style={{ backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : 'var(--card-border)', color: isActive ? '#fff' : 'var(--text-color)' }}>
                     {count}
                   </span>
                 </button>

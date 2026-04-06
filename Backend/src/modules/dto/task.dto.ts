@@ -9,8 +9,19 @@ export const CreateTaskDto = z.object({
   projectId: z.number().int().positive(),
   assignedToId: z.number().int().positive().optional(),
   priority: TaskPriorityEnum.optional().default('MEDIUM'),
-  dueDate: z.string().datetime().optional(),
-  startDate: z.string().datetime().optional(),
+  dueDate: z.string().optional().transform(val => {
+    if (!val) return undefined;
+    // Accept both date-only (2026-04-15) and full ISO datetime
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return undefined;
+    return d.toISOString();
+  }),
+  startDate: z.string().optional().transform(val => {
+    if (!val) return undefined;
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return undefined;
+    return d.toISOString();
+  }),
   estimatedHours: z.number().int().positive().optional()
 });
 
@@ -20,8 +31,18 @@ export const UpdateTaskDto = z.object({
   assignedToId: z.number().int().positive().optional(),
   status: TaskStatusEnum.optional(),
   priority: TaskPriorityEnum.optional(),
-  dueDate: z.string().datetime().optional(),
-  startDate: z.string().datetime().optional(),
+  dueDate: z.string().optional().transform(val => {
+    if (!val) return undefined;
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return undefined;
+    return d.toISOString();
+  }),
+  startDate: z.string().optional().transform(val => {
+    if (!val) return undefined;
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return undefined;
+    return d.toISOString();
+  }),
   estimatedHours: z.number().int().positive().optional(),
   actualHours: z.number().int().positive().optional(),
   isActive: z.boolean().optional()

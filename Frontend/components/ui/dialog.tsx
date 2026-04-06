@@ -31,8 +31,8 @@ const Dialog = ({ open, onOpenChange, children }: DialogProps) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div 
-        className="fixed inset-0 bg-black/50 animate-in fade-in-0" 
+      <div
+        className="fixed inset-0 bg-black/50 animate-in fade-in-0"
         onClick={() => onOpenChange?.(false)}
       />
       <div className="relative z-50 animate-in fade-in-0 zoom-in-95">
@@ -69,9 +69,15 @@ const DialogContent = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "bg-white rounded-lg shadow-lg p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto",
+      "rounded-xl shadow-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto",
       className
     )}
+    style={{
+      backgroundColor: 'var(--card-bg)',
+      color: 'var(--text-color)',
+      border: '1px solid var(--card-border)',
+      boxShadow: 'var(--shadow-lg)',
+    }}
     onClick={(e) => e.stopPropagation()}
     {...props}
   >
@@ -95,6 +101,7 @@ const DialogTitle = React.forwardRef<
   <h2
     ref={ref}
     className={cn("text-lg font-semibold leading-none tracking-tight", className)}
+    style={{ color: 'var(--text-color)' }}
     {...props}
   />
 ))

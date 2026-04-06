@@ -169,9 +169,9 @@ export default function UserList() {
 
         <CardContent>
           {error && (
-            <Alert className="mb-6 border-red-200 bg-red-50">
-              <AlertCircle className="h-4 w-4 text-red-600" />
-              <AlertDescription className="text-red-800">
+            <Alert className="mb-6 border-red-300 bg-red-50 dark:bg-red-950/20 dark:border-red-900/40">
+              <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+              <AlertDescription className="text-red-800 dark:text-red-300">
                 {error}
               </AlertDescription>
             </Alert>
@@ -181,7 +181,7 @@ export default function UserList() {
           <div className="flex flex-wrap gap-4 mb-6">
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
                   placeholder="Search users by name, email, phone, or employee ID..."
                   value={searchTerm}

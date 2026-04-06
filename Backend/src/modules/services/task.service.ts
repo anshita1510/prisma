@@ -9,44 +9,61 @@ export class TaskService {
     this.taskRepository = new TaskRepository(prisma);
   }
 
-  async createTask(data: CreateTaskDtoType, createdById: number, companyId: number) {
-    // Verify project exists and user has access
+  async createTask(data: CreateTaskDtoType, createdById: number, companyId: number, role?: string) {
+    const isManager = role && ['ADMIN', 'SUPER_ADMIN', 'MANAGER'].includes(role);
+
+    // Debug: log what we're searching for
+    console.log('🔍 createTask lookup:', { projectId: data.projectId, companyId, createdById, role, isManager });
+
+    // Verify project exists in the company — managers can create tasks in any company project
     const project = await this.prisma.project.findFirst({
-      where: { 
-        id: data.projectId, 
-        companyId,
-        OR: [
-          { ownerId: createdById },
-          { members: { some: { id: createdById } } }
-        ]
+      where: {
+        id: data.projectId,
+        ...(companyId ? { companyId } : {}),
       }
     });
 
+    console.log('📦 project found:', project ? `id=${project.id} companyId=${project.companyId}` : 'NULL');
+
     if (!project) {
+      // Try finding the project without companyId filter to debug
+      const projectAny = await this.prisma.project.findUnique({ where: { id: data.projectId } });
+      console.log('🔎 project without companyId filter:', projectAny ? `id=${projectAny.id} companyId=${projectAny.companyId}` : 'NOT FOUND AT ALL');
       throw new Error('Project not found or access denied');
     }
 
-    // Verify assignee if provided
-    if (data.assignedToId) {
-      const assignee = await this.prisma.employee.findFirst({
-        where: { 
-          id: data.assignedToId,
-          companyId,
-          OR: [
-            { id: project.ownerId },
-            { memberProjects: { some: { id: project.id } } }
-          ]
-        }
-      });
+    // Use the project's actual companyId if token companyId was missing
+    const resolvedCompanyId = companyId || project.companyId;
 
-      if (!assignee) {
-        throw new Error('Assignee must be project owner or member');
+    // For non-managers, verify they are a member or owner of the project
+    if (!isManager) {
+      const isMember = await this.prisma.projectMember.findFirst({
+        where: { projectId: project.id, employeeId: createdById, isActive: true }
+      });
+      if (!isMember && project.ownerId !== createdById) {
+        throw new Error('Project not found or access denied');
       }
+    }
+
+    // Resolve createdById: if it's a userId (admin case), find the employee record
+    let resolvedCreatedById = createdById;
+    if (createdById) {
+      const employeeById = await this.prisma.employee.findFirst({
+        where: { id: createdById, companyId: resolvedCompanyId }
+      });
+      if (!employeeById) {
+        const employeeByUserId = await this.prisma.employee.findFirst({
+          where: { userId: createdById, companyId: resolvedCompanyId }
+        });
+        resolvedCreatedById = employeeByUserId?.id ?? project.ownerId;
+      }
+    } else {
+      resolvedCreatedById = project.ownerId;
     }
 
     return this.taskRepository.create({
       ...data,
-      createdById
+      createdById: resolvedCreatedById
     });
   }
 
@@ -61,7 +78,7 @@ export class TaskService {
 
   async getTaskById(id: number, companyId: number, employeeId: number, isManager: boolean) {
     const task = await this.taskRepository.findById(id, companyId);
-    
+
     if (!task) {
       throw new Error('Task not found');
     }
@@ -69,7 +86,7 @@ export class TaskService {
     // Check access for non-managers
     if (!isManager) {
       const hasAccess = await this.taskRepository.checkTaskAccess(id, employeeId, companyId);
-      
+
       if (!hasAccess) {
         throw new Error('Access denied');
       }
@@ -88,7 +105,7 @@ export class TaskService {
     // Check access for non-managers
     if (!isManager) {
       const hasAccess = await this.taskRepository.checkTaskAccess(id, employeeId, companyId);
-      
+
       if (!hasAccess) {
         throw new Error('Access denied');
       }
@@ -102,12 +119,12 @@ export class TaskService {
     // Verify assignee if provided
     if (data.assignedToId) {
       const assignee = await this.prisma.employee.findFirst({
-        where: { 
+        where: {
           id: data.assignedToId,
           companyId,
           OR: [
             { id: task.project.ownerId },
-            { memberProjects: { some: { id: task.projectId } } }
+            { projectRoles: { some: { projectId: task.projectId, isActive: true } } }
           ]
         }
       });
@@ -138,7 +155,7 @@ export class TaskService {
   async addTaskComment(taskId: number, data: CreateTaskCommentDtoType, authorId: number, companyId: number) {
     // Verify task exists and user has access
     const hasAccess = await this.taskRepository.checkTaskAccess(taskId, authorId, companyId);
-    
+
     if (!hasAccess) {
       throw new Error('Task not found or access denied');
     }
@@ -170,7 +187,7 @@ export class TaskService {
         companyId,
         OR: [
           { ownerId: employeeId },
-          { members: { some: { id: employeeId } } }
+          { projectRoles: { some: { employeeId, isActive: true } } }
         ]
       };
     }

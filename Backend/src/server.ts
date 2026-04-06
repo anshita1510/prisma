@@ -11,8 +11,6 @@ import leaveRoutes from './modules/routes/leave/leave.routes';
 import attendanceRoutes from './modules/routes/attendance/attendance.routes'; // New attendance routes with my-logs endpoint
 import projectRoutes from './modules/routes/project.routes';
 import taskRoutes from './modules/routes/task.routes';
-import enhancedProjectRoutesV2 from './modules/routes/enhanced-project.routes';
-import enhancedTaskRoutes from './modules/routes/enhanced-task.routes';
 import notificationRoutes from './modules/routes/notification.routes';
 import newProjectRoutes from './modules/routes/project/project.routes';
 import employeeRoutes from './modules/routes/employee.routes';
@@ -149,9 +147,6 @@ app.use('/api/ceos', ceoRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
-// Enhanced TMS Routes
-app.use('/api/v2/projects', enhancedProjectRoutesV2);
-app.use('/api/v2/tasks', enhancedTaskRoutes);
 app.use('/api/notifications', notificationRoutes);
 
 // Test route
