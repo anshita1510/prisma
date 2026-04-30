@@ -1114,8 +1114,7 @@ npm test
 
 ## 👥 Team
 
-Anshita
-Deepak Singla 
+vishnu
 
 ## 🙏 Acknowledgments
 
